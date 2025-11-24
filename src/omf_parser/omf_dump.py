@@ -5,8 +5,11 @@ import sys
 import os
 import argparse
 
-from .omf_parser import OMFCompleteParser
-from .constants import MODE_AUTO, MODE_MS, MODE_IBM, MODE_PHARLAP, MODE_NAMES
+if __name__ == "__main__" and __package__ is None:
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from omf_parser.omf_parser import OMFCompleteParser
+from omf_parser.constants import MODE_AUTO, MODE_MS, MODE_IBM, MODE_PHARLAP, MODE_NAMES
 
 
 def main():

@@ -74,7 +74,7 @@ class MicrosoftHandlersMixin:
         print(f"    Allocation: {COMDAT_ALLOCATION_NAMES.get(allocation, f'Reserved({allocation})')}")
         print(f"  Alignment: {COMDAT_ALIGN_NAMES.get(align, f'Unknown({align})')}")
 
-        offset_size = 4 if is_32bit else 2
+        offset_size = sub.get_offset_field_size(is_32bit)
         enum_offset = sub.parse_numeric(offset_size)
         print(f"  Enum Offset: 0x{enum_offset:X}")
 
@@ -119,7 +119,7 @@ class MicrosoftHandlersMixin:
                 print(f"    [!] Warning: Location type 2 (DWord) only valid for B3H records")
                 print(f"        Spec states: 'not supported yet' for this type")
 
-            val_size = 4 if is_32bit else 2
+            val_size = sub.get_offset_field_size(is_32bit)
             offset = sub.parse_numeric(val_size)
             value = sub.parse_numeric(val_size)
 
@@ -156,7 +156,7 @@ class MicrosoftHandlersMixin:
                 loc_names = {0: "Byte(8)", 1: "Word(16)", 2: "DWord(32)"}
             loc_str = loc_names.get(loc_type, f"Unknown({loc_type})")
 
-            val_size = 4 if is_32bit else 2
+            val_size = sub.get_offset_field_size(is_32bit)
             offset = sub.parse_numeric(val_size)
             value = sub.parse_numeric(val_size)
 
@@ -183,8 +183,8 @@ class MicrosoftHandlersMixin:
         print("  Line Number Entries:")
 
         while sub.bytes_remaining() > 0:
-            line_num = sub.parse_numeric(2)
-            offset_size = 4 if is_32bit else 2
+            line_num = sub.parse_numeric(2)  # Line number always 2 bytes
+            offset_size = sub.get_offset_field_size(is_32bit)
             offset = sub.parse_numeric(offset_size)
 
             if line_num == 0:

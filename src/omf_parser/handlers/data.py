@@ -10,7 +10,7 @@ class DataHandlersMixin:
         is_32bit = (rec_type == 0xA1)
 
         seg_idx = sub.parse_index()
-        offset_size = 4 if is_32bit else 2
+        offset_size = sub.get_offset_field_size(is_32bit)
         offset = sub.parse_numeric(offset_size)
         data_len = sub.bytes_remaining()
 
@@ -29,7 +29,7 @@ class DataHandlersMixin:
         is_32bit = (rec_type == 0xA3)
 
         seg_idx = sub.parse_index()
-        offset_size = 4 if is_32bit else 2
+        offset_size = sub.get_offset_field_size(is_32bit)
         offset = sub.parse_numeric(offset_size)
 
         print(f"  Segment: {self.get_segdef(seg_idx)}")
@@ -95,7 +95,7 @@ class DataHandlersMixin:
                 idx = None
                 # Per Spec Page 44: T3/F3 use explicit 16-bit numbers, not OMF indexes
                 if method == 3:
-                    idx = sub.parse_numeric(2)  # Explicit 16-bit frame number
+                    idx = sub.parse_numeric(2)  # Explicit 16-bit frame number (always 2 bytes)
                 elif method < 3:
                     idx = sub.parse_index()     # Variable-length OMF index
 
@@ -209,7 +209,7 @@ class DataHandlersMixin:
 
                 disp = None
                 if target_method < 4:
-                    disp_size = 4 if is_32bit else 2
+                    disp_size = sub.get_offset_field_size(is_32bit)
                     disp = sub.parse_numeric(disp_size)
 
                 print(f"    FIXUP @{data_offset:03X}")

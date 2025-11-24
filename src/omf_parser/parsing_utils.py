@@ -76,6 +76,37 @@ class ParsingMixin:
             return struct.unpack(f'{endian}I', raw)[0]
         return 0
 
+    def get_offset_field_size(self, is_32bit):
+        """
+        Determine size for offset/displacement/length fields in data records.
+
+        Handles the difference between:
+        - TIS OMF standard: odd record types (0x99, 0x91, etc.) = 4 bytes
+        - Easy OMF-386 (PharLap): EVEN record types (0x98, 0x90, etc.) with 0xAA marker = 4 bytes
+
+        Only applies to specific fields listed in Easy OMF-386 spec:
+        - Segment length in SEGDEF
+        - Public offset in PUBDEF
+        - Data offset in LEDATA/LIDATA
+        - Target displacement in FIXUPP/MODEND
+        - Line offset in LINNUM
+
+        Does NOT apply to:
+        - OMF indexes (always variable 1-2 bytes)
+        - Line numbers (always 2 bytes)
+        - Frame numbers (always 2 bytes)
+        - Repeat/block counts (special handling in LIDATA)
+        - Record lengths, checksums, flags
+
+        Args:
+            is_32bit: True if record type is odd (0x99, 0x91, 0xA1, etc.)
+
+        Returns:
+            4 if 32-bit fields should be used, 2 otherwise
+        """
+        from .constants import MODE_PHARLAP
+        return 4 if (is_32bit or self.target_mode == MODE_PHARLAP) else 2
+
     def parse_variable_length_int(self):
         """Parse variable-length numeric for COMDEF/TYPDEF. Spec Page 55."""
         b = self.read_byte()

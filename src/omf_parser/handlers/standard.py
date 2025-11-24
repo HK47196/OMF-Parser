@@ -61,7 +61,7 @@ class StandardHandlersMixin:
             frame_offset = sub.read_byte()
             print(f"    Absolute Frame: 0x{frame_num:04X}, Offset: 0x{frame_offset:02X}")
 
-        size_bytes = 4 if is_32bit else 2
+        size_bytes = sub.get_offset_field_size(is_32bit)
         length = sub.parse_numeric(size_bytes)
 
         if big and length == 0:
@@ -197,7 +197,7 @@ class StandardHandlersMixin:
             if not name and sub.bytes_remaining() == 0:
                 break
 
-            offset_size = 4 if is_32bit else 2
+            offset_size = sub.get_offset_field_size(is_32bit)
             offset = sub.parse_numeric(offset_size)
             type_idx = sub.parse_index()
 
@@ -271,7 +271,7 @@ class StandardHandlersMixin:
                 print(f"    Target Method: {target_method}, Datum: {target_datum}")
 
                 if p_bit == 0:
-                    disp_size = 4 if is_32bit else 2
+                    disp_size = sub.get_offset_field_size(is_32bit)
                     disp = sub.parse_numeric(disp_size)
                     print(f"    Target Displacement: 0x{disp:X}")
 
@@ -287,8 +287,8 @@ class StandardHandlersMixin:
         print("  Line Number Entries:")
 
         while sub.bytes_remaining() > 0:
-            line_num = sub.parse_numeric(2)
-            offset_size = 4 if is_32bit else 2
+            line_num = sub.parse_numeric(2)  # Line number always 2 bytes
+            offset_size = sub.get_offset_field_size(is_32bit)
             offset = sub.parse_numeric(offset_size)
 
             if line_num == 0:
