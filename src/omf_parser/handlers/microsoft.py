@@ -116,7 +116,7 @@ class MicrosoftHandlersMixin:
 
             # Validate location type 2 per spec
             if loc_type == 2 and rec_type == 0xB2:
-                print(f"    [!] Warning: Location type 2 (DWord) only valid for B3H records")
+                self.add_warning(f"    [!] Warning: Location type 2 (DWord) only valid for B3H records")
                 print(f"        Spec states: 'not supported yet' for this type")
 
             val_size = sub.get_offset_field_size(is_32bit)

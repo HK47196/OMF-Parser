@@ -111,18 +111,18 @@ class DataHandlersMixin:
                     # Validate frame methods per spec:
                     # F3, F6 are explicitly "Invalid", F7 is undefined (not enumerated)
                     if method == 3:
-                        print(f"    [!] WARNING: FRAME method F3 is Invalid per spec (explicit frame number not supported)")
+                        self.add_warning(f"    [!] WARNING: FRAME method F3 is Invalid per spec (explicit frame number not supported)")
                     elif method == 6:
-                        print(f"    [!] WARNING: FRAME method F6 is Invalid per spec")
+                        self.add_warning(f"    [!] WARNING: FRAME method F6 is Invalid per spec")
                     elif method == 7:
-                        print(f"    [!] WARNING: FRAME method F7 is undefined (not enumerated in spec)")
+                        self.add_warning(f"    [!] WARNING: FRAME method F7 is undefined (not enumerated in spec)")
                     frame_threads[thred] = (method, idx)
                 else:
                     method_name = method_names_target[method]
                     # Validate target methods per spec:
                     # T7 is undefined (only T0-T6 are enumerated)
                     if method == 7:
-                        print(f"    [!] WARNING: TARGET method T7 is undefined (not enumerated in spec)")
+                        self.add_warning(f"    [!] WARNING: TARGET method T7 is undefined (not enumerated in spec)")
                     target_threads[thred] = (method, idx)
 
                 out = f"    THREAD {kind}#{thred} Method={method_name}"

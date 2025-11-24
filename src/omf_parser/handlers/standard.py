@@ -2,7 +2,7 @@
 
 from ..constants import (
     COMMENT_CLASSES, A0_SUBTYPES, RESERVED_SEGMENTS,
-    ALIGN_NAMES, COMBINE_NAMES, MODE_PHARLAP
+    ALIGN_NAMES, COMBINE_NAMES, MODE_PHARLAP, KNOWN_VENDORS
 )
 
 
@@ -163,7 +163,7 @@ class StandardHandlersMixin:
             else:
                 # Unknown component type - stop parsing to avoid desync
                 components.append(f"Unknown({comp_type:02X})")
-                print(f"    [!] WARNING: Unknown GRPDEF component type 0x{comp_type:02X}, stopping component parsing")
+                self.add_warning(f"    [!] WARNING: Unknown GRPDEF component type 0x{comp_type:02X}, stopping component parsing")
                 break
 
         for comp in components:
@@ -259,7 +259,7 @@ class StandardHandlersMixin:
 
                 # Per Spec Page 27: P-bit must be 0
                 if p_bit != 0:
-                    print(f"    [!] WARNING: MODEND P-bit is {p_bit}, must be 0 per spec")
+                    self.add_warning(f"    [!] WARNING: MODEND P-bit is {p_bit}, must be 0 per spec")
 
                 if frame_method < 3:
                     frame_datum = sub.parse_index()
@@ -303,17 +303,33 @@ class StandardHandlersMixin:
 
         parts = version.split('.')
         if len(parts) >= 3:
-            print(f"    TIS Base Version: {parts[0]}")
-            print(f"    Vendor Number: {parts[1]}")
-            print(f"    Vendor Version: {parts[2]}")
+            tis_base = parts[0]
+            vendor_num = parts[1]
+            vendor_ver = parts[2]
+
+            print(f"    TIS Base Version: {tis_base}")
+            print(f"    Vendor Number: {vendor_num}")
+            print(f"    Vendor Version: {vendor_ver}")
+
+            # Warn about vendor extensions
+            try:
+                vendor_int = int(vendor_num)
+                if vendor_int != 0:
+                    vendor_name = KNOWN_VENDORS.get(vendor_int, "Unknown")
+                    self.add_warning(f"    [!] WARNING: Non-TIS vendor extensions present (vendor {vendor_int}: {vendor_name})")
+            except ValueError:
+                pass
 
     def handle_vendext(self, sub):
         """Handle VENDEXT (CEH). Spec Page 72."""
         vendor_num = sub.parse_numeric(2)
-        print(f"  Vendor Number: {vendor_num}")
 
-        if vendor_num == 0:
-            print("    (Reserved for TIS)")
+        vendor_name = KNOWN_VENDORS.get(vendor_num)
+        if vendor_name:
+            print(f"  Vendor Number: {vendor_num} ({vendor_name})")
+        else:
+            print(f"  Vendor Number: {vendor_num}")
+            self.add_warning(f"  [!] WARNING: Unrecognized vendor number - parser may not handle extensions correctly")
 
         if sub.bytes_remaining() > 0:
             print(f"  Extension Data: {sub.data[sub.offset:].hex().upper()}")
@@ -438,7 +454,7 @@ class StandardHandlersMixin:
             print("  Intel Copyright (ignored)")
 
         elif 0x02 <= cls <= 0x9B and cls not in COMMENT_CLASSES:
-            print("  [Reserved for Intel products]")
+            self.add_warning(f"  [!] WARNING: Comment class 0x{cls:02X} is Intel-reserved but unrecognized (may be Intel product extension)")
             if sub.bytes_remaining() > 0:
                 print(f"  Data: {sub.data[sub.offset:].hex().upper()}")
 
@@ -501,7 +517,7 @@ class StandardHandlersMixin:
             print(f"  Executable String: {text}")
 
         elif cls == 0xA6:
-            print("  Incremental Compilation Error")
+            self.add_error("  Incremental Compilation Error")
             print("    Linker should terminate with fatal error")
 
         elif cls == 0xA7:
@@ -551,6 +567,15 @@ class StandardHandlersMixin:
         elif cls == 0xFF:
             text = sub.data[sub.offset:].decode('ascii', errors='replace')
             print(f"  Command Line: {text}")
+
+        elif 0xC0 <= cls <= 0xFF and cls not in COMMENT_CLASSES:
+            self.add_warning(f"  [!] WARNING: User-defined comment class 0x{cls:02X} (vendor-specific, modern OMF should use VENDEXT)")
+            if sub.bytes_remaining() > 0:
+                text = sub.data[sub.offset:]
+                try:
+                    print(f"  Data: {text.decode('ascii')}")
+                except Exception:
+                    print(f"  Data: {text.hex().upper()}")
 
         else:
             if sub.bytes_remaining() > 0:
@@ -647,6 +672,6 @@ class StandardHandlersMixin:
             print("    $$TYPES should use sstPreComp instead of sstTypes")
 
         else:
-            print(f"    [FATAL] Unknown A0 subtype 0x{subtype:02X} - linker will abort on this record")
+            self.add_error(f"    [FATAL] Unknown A0 subtype 0x{subtype:02X} - linker will abort on this record")
             if sub.bytes_remaining() > 0:
                 print(f"    Data: {sub.data[sub.offset:].hex().upper()}")

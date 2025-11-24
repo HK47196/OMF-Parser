@@ -214,3 +214,11 @@ MODE_NAMES = {
     MODE_IBM: "IBM LINK386",
     MODE_PHARLAP: "PharLap"
 }
+
+
+# Known vendor numbers for VENDEXT/VERNUM records
+# Vendor numbers are assigned by the TIS Committee
+KNOWN_VENDORS = {
+    0: "TIS (reserved)",
+    # Additional vendor numbers can be added as they're discovered in real files
+}

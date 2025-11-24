@@ -54,6 +54,10 @@ class OMFCompleteParser(
         self.typdefs = ["<null>"]
         self.last_data_record = None
 
+        # Collect warnings and errors for end-of-parse summary
+        self.warnings = []
+        self.errors = []
+
     def get_lname(self, index):
         if index is None:
             return "?"
@@ -88,6 +92,16 @@ class OMFCompleteParser(
             return self.typdefs[index]
         return f"Type#{index}"
 
+    def add_warning(self, message):
+        """Add a warning message and print it immediately."""
+        print(message)
+        self.warnings.append(message)
+
+    def add_error(self, message):
+        """Add an error message and print it immediately."""
+        print(message)
+        self.errors.append(message)
+
     def detect_mode(self):
         if self.file_size == 0:
             return MODE_MS
@@ -96,7 +110,7 @@ class OMFCompleteParser(
         saved_offset = self.offset
         self.offset = 0
 
-        detected_mode = MODE_MS  # Default fallback
+        detected_mode = MODE_MS
         records_checked = 0
         max_records = 10
 
@@ -132,8 +146,8 @@ class OMFCompleteParser(
                             flags = content[0]
                             cls = content[1]
 
-                            # Easy OMF comment class (0xAA) indicates PharLap
-                            # MUST check this before text content block, since 0xAA comments
+                            # Easy OMF COMENT class (0xAA) indicates PharLap
+                            # MUST check this before text content block, since 0xAA COMENT records
                             # may not have additional text data beyond the class byte
                             if cls == 0xAA:
                                 detected_mode = MODE_PHARLAP
@@ -167,9 +181,7 @@ class OMFCompleteParser(
                     except Exception:
                         pass
 
-                # Check Library Header (0xF0) - default to MS for libraries
                 elif rec_type == 0xF0:
-                    # Keep checking other records in case there are vendor COMMENTs
                     if detected_mode == MODE_MS:
                         detected_mode = MODE_MS
 
@@ -228,7 +240,7 @@ class OMFCompleteParser(
 
             raw_len = self.read_bytes(2)
             if not raw_len:
-                print(f"\n[!] Error: Unexpected EOF reading record length at {rec_start:06X}")
+                self.add_error(f"\n[!] Error: Unexpected EOF reading record length at {rec_start:06X}")
                 break
             rec_len = struct.unpack('<H', raw_len)[0]
 
@@ -237,11 +249,11 @@ class OMFCompleteParser(
             if rec_len > 1024:
                 allowed_large = [0x88, 0xA2, 0xA3, 0xF0, 0xF1]  # COMENT, LIDATA, LIDATA32, LIBHDR, LIBEND
                 if rec_type not in allowed_large:
-                    print(f"[!] WARNING: Record length {rec_len} exceeds 1024 bytes (type 0x{rec_type:02X})")
+                    self.add_warning(f"[!] WARNING: Record length {rec_len} exceeds 1024 bytes (type 0x{rec_type:02X})")
 
             raw_content = self.read_bytes(rec_len)
             if raw_content is None or len(raw_content) < rec_len:
-                print(f"\n[!] Error: Unexpected EOF reading record content at {rec_start:06X}")
+                self.add_error(f"\n[!] Error: Unexpected EOF reading record content at {rec_start:06X}")
                 break
 
             record_count += 1
@@ -250,7 +262,7 @@ class OMFCompleteParser(
             if not first_record_checked and not self.is_lib:
                 first_record_checked = True
                 if rec_type not in [0x80, 0x82]:
-                    print(f"  [!] WARNING: First record is 0x{rec_type:02X}, but spec requires THEADR (0x80) or LHEADR (0x82)")
+                    self.add_warning(f"  [!] WARNING: First record is 0x{rec_type:02X}, but spec requires THEADR (0x80) or LHEADR (0x82)")
 
             # Library records F0/F1 do NOT have checksums
             is_lib_rec = rec_type in [0xF0, 0xF1]
@@ -264,6 +276,9 @@ class OMFCompleteParser(
             # Inherit mode and endianness settings
             sub.is_big_endian = self.is_big_endian
             sub.target_mode = self.target_mode
+            # Share warnings and errors lists with parent
+            sub.warnings = self.warnings
+            sub.errors = self.errors
 
             checksum = None
             checksum_status = ""
@@ -286,7 +301,7 @@ class OMFCompleteParser(
                 if rec_type == 0xF1:
                     stop_record_parsing = True
             except Exception as e:
-                print(f"  [!] Error parsing record: {e}")
+                self.add_error(f"  [!] Error parsing record: {e}")
                 if sub.data:
                     print(f"      Raw: {sub.data[:32].hex().upper()}")
 
@@ -296,6 +311,22 @@ class OMFCompleteParser(
         print()
         print(f"{'='*60}")
         print(f"Total Records: {record_count}")
+
+        # Print summary of warnings and errors
+        if self.warnings or self.errors:
+            print(f"{'='*60}")
+            print("SUMMARY:")
+
+            if self.errors:
+                print(f"\nErrors ({len(self.errors)}):")
+                for error in self.errors:
+                    print(error)
+
+            if self.warnings:
+                print(f"\nWarnings ({len(self.warnings)}):")
+                for warning in self.warnings:
+                    print(warning)
+
         print(f"{'='*60}")
 
     def _dispatch_handler(self, sub, rec_type, rec_len, stop_parsing):

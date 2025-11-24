@@ -47,10 +47,8 @@ Architectural Modes:
         print(f"Error: File not found: {args.file}")
         sys.exit(1)
 
-    # Create parser instance
     parser = OMFCompleteParser(args.file)
 
-    # Handle mode selection
     mode_map = {
         'auto': MODE_AUTO,
         'ms': MODE_MS,
@@ -60,7 +58,6 @@ Architectural Modes:
 
     requested_mode = mode_map[args.mode]
 
-    # Load file data for detection
     try:
         with open(args.file, 'rb') as f:
             parser.data = f.read()
@@ -69,7 +66,6 @@ Architectural Modes:
         print(f"Error reading file: {e}")
         sys.exit(1)
 
-    # Auto-detect or use explicit mode
     if requested_mode == MODE_AUTO:
         detected = parser.detect_mode()
         parser.target_mode = detected
@@ -78,7 +74,6 @@ Architectural Modes:
     else:
         parser.target_mode = requested_mode
 
-    # Run the parser
     parser.run()
 
 
