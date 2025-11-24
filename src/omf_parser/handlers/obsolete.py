@@ -13,7 +13,7 @@ class ObsoleteHandlersMixin:
         if name:
             print(f"    Name: {name}")
         if sub.bytes_remaining() > 0:
-            print(f"    Attributes: {sub.data[sub.offset:].hex().upper()}")
+            print(f"    Attributes: {sub.format_hex_with_ascii(sub.data[sub.offset:])}")
 
     def handle_regint(self, sub):
         """Handle REGINT (70H) - Register Initialization. Spec Appendix 3."""
@@ -46,7 +46,7 @@ class ObsoleteHandlersMixin:
         print(f"    Data Length: {data_len} bytes")
         if data_len > 0:
             preview = sub.data[sub.offset:sub.offset + min(16, data_len)]
-            print(f"    Data Preview: {preview.hex().upper()}")
+            print(f"    Data Preview: {sub.format_hex_with_ascii(preview)}")
 
     def handle_ridata_pidata(self, sub, rec_type):
         """Handle RIDATA (74H) / PIDATA (86H). Spec Appendix 3."""
@@ -85,7 +85,7 @@ class ObsoleteHandlersMixin:
             print(f"    File Location: 0x{file_location:08X}")
 
         if sub.bytes_remaining() > 0:
-            print(f"    Additional Data: {sub.data[sub.offset:].hex().upper()}")
+            print(f"    Additional Data: {sub.format_hex_with_ascii(sub.data[sub.offset:])}")
 
     def handle_endrec(self, sub):
         """Handle ENDREC (78H) - End Record. Spec Appendix 3."""
@@ -121,7 +121,7 @@ class ObsoleteHandlersMixin:
             print(f"    Debug Info Length: {debug_len} bytes")
             if debug_len > 0 and sub.bytes_remaining() > 0:
                 debug_data = sub.read_bytes(min(debug_len, sub.bytes_remaining()))
-                print(f"    Debug Data: {debug_data.hex().upper()}")
+                print(f"    Debug Data: {sub.format_hex_with_ascii(debug_data)}")
 
     def handle_blkend(self, sub):
         """Handle BLKEND (7CH) - Block End. Spec Appendix 3."""
@@ -133,14 +133,14 @@ class ObsoleteHandlersMixin:
         print("  [Obsolete] Debug Symbols")
         print("    Local symbols including stack and based symbols")
         if sub.bytes_remaining() > 0:
-            print(f"    Data: {sub.data[sub.offset:].hex().upper()}")
+            print(f"    Data: {sub.format_hex_with_ascii(sub.data[sub.offset:])}")
 
     def handle_libhed_obsolete(self, sub):
         """Handle LIBHED (A4H) - Obsolete Intel Library Header. Spec Appendix 3."""
         print("  [Obsolete Intel] Library Header")
         print("    Note: Conflicts with MS EXESTR comment class")
         if sub.bytes_remaining() > 0:
-            print(f"    Data: {sub.data[sub.offset:].hex().upper()}")
+            print(f"    Data: {sub.format_hex_with_ascii(sub.data[sub.offset:])}")
 
     def handle_libnam_obsolete(self, sub):
         """Handle LIBNAM (A6H) - Obsolete Intel Library Names. Spec Appendix 3."""
@@ -165,4 +165,4 @@ class ObsoleteHandlersMixin:
         print("  [Obsolete Intel] Library Dictionary")
         print("    Public symbols grouped by defining module")
         if sub.bytes_remaining() > 0:
-            print(f"    Data: {sub.data[sub.offset:].hex().upper()}")
+            print(f"    Data: {sub.format_hex_with_ascii(sub.data[sub.offset:])}")

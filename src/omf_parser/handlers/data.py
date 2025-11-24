@@ -20,7 +20,7 @@ class DataHandlersMixin:
 
         if data_len > 0:
             preview = sub.data[sub.offset:sub.offset + min(16, data_len)]
-            print(f"  Data Preview: {preview.hex().upper()}")
+            print(f"  Data Preview: {sub.format_hex_with_ascii(preview)}")
 
         self.last_data_record = ('LEDATA', seg_idx, offset)
 
@@ -59,7 +59,7 @@ class DataHandlersMixin:
                     return
                 content = sub.read_bytes(content_len)
                 if content:
-                    print(f"{prefix}Repeat {repeat_count}x: {content.hex().upper()}")
+                    print(f"{prefix}Repeat {repeat_count}x: {sub.format_hex_with_ascii(content)}")
             else:
                 # Content is nested blocks
                 print(f"{prefix}Repeat {repeat_count}x ({block_count} nested blocks):")

@@ -332,7 +332,7 @@ class StandardHandlersMixin:
             self.add_warning(f"  [!] WARNING: Unrecognized vendor number - parser may not handle extensions correctly")
 
         if sub.bytes_remaining() > 0:
-            print(f"  Extension Data: {sub.data[sub.offset:].hex().upper()}")
+            print(f"  Extension Data: {sub.format_hex_with_ascii(sub.data[sub.offset:])}")
 
     def handle_locsym(self, sub):
         """Handle LOCSYM (92H) - Local Symbols. Spec Appendix 3."""
@@ -395,7 +395,7 @@ class StandardHandlersMixin:
 
             else:
                 print(f"  Unknown Leaf Type: 0x{leaf_type:02X}")
-                print(f"  Remaining: {sub.data[sub.offset:].hex().upper()}")
+                print(f"  Remaining: {sub.format_hex_with_ascii(sub.data[sub.offset:])}")
 
         else:
             # Intel standard format - Eight-Leaf Descriptor
@@ -427,7 +427,7 @@ class StandardHandlersMixin:
                 else:
                     print(f"    Unknown Leaf Type: 0x{leaf_type:02X}")
                     remaining = sub.data[sub.offset:sub.offset + 16]
-                    print(f"    Remaining: {remaining.hex().upper()}")
+                    print(f"    Remaining: {sub.format_hex_with_ascii(remaining)}")
 
         self.typdefs.append(f"TYPDEF#{len(self.typdefs)}")
 
@@ -459,7 +459,7 @@ class StandardHandlersMixin:
         elif 0x02 <= cls <= 0x9B and cls not in COMMENT_CLASSES:
             self.add_warning(f"  [!] WARNING: Comment class 0x{cls:02X} is Intel-reserved but unrecognized (may be Intel product extension)")
             if sub.bytes_remaining() > 0:
-                print(f"  Data: {sub.data[sub.offset:].hex().upper()}")
+                print(f"  Data: {sub.format_hex_with_ascii(sub.data[sub.offset:])}")
 
         elif cls == 0x81:
             lib_name = sub.parse_name()
@@ -578,7 +578,7 @@ class StandardHandlersMixin:
                 try:
                     print(f"  Data: {text.decode('ascii')}")
                 except Exception:
-                    print(f"  Data: {text.hex().upper()}")
+                    print(f"  Data: {sub.format_hex_with_ascii(text)}")
 
         else:
             if sub.bytes_remaining() > 0:
@@ -586,7 +586,7 @@ class StandardHandlersMixin:
                 try:
                     print(f"  Data: {text.decode('ascii')}")
                 except Exception:
-                    print(f"  Data: {text.hex().upper()}")
+                    print(f"  Data: {sub.format_hex_with_ascii(text)}")
 
     def handle_coment_a0(self, sub):
         """Handle Comment Class A0 - OMF Extensions. Spec Page 12."""
@@ -677,4 +677,4 @@ class StandardHandlersMixin:
         else:
             self.add_error(f"    [FATAL] Unknown A0 subtype 0x{subtype:02X} - linker will abort on this record")
             if sub.bytes_remaining() > 0:
-                print(f"    Data: {sub.data[sub.offset:].hex().upper()}")
+                print(f"    Data: {sub.format_hex_with_ascii(sub.data[sub.offset:])}")

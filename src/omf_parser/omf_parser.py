@@ -303,7 +303,7 @@ class OMFCompleteParser(
             except Exception as e:
                 self.add_error(f"  [!] Error parsing record: {e}")
                 if sub.data:
-                    print(f"      Raw: {sub.data[:32].hex().upper()}")
+                    print(f"      Raw: {sub.format_hex_with_ascii(sub.data[:32])}")
 
         if self.is_lib and stop_record_parsing:
             self.handle_library_dictionary()
@@ -412,4 +412,6 @@ class OMFCompleteParser(
         else:
             print(f"  [?] Unhandled record type: {rec_type:02X}")
             if sub.data:
-                print(f"      Raw: {sub.data[:32].hex().upper()}{'...' if len(sub.data) > 32 else ''}")
+                preview = sub.data[:32]
+                suffix = '...' if len(sub.data) > 32 else ''
+                print(f"      Raw: {sub.format_hex_with_ascii(preview)}{suffix}")

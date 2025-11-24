@@ -130,3 +130,12 @@ class ParsingMixin:
         if total == 0:
             return True, "Valid"
         return False, f"Invalid (sum={total:02X})"
+
+    @staticmethod
+    def format_hex_with_ascii(data):
+        """Format bytes as hex with ASCII representation in parentheses."""
+        if not data:
+            return ""
+        hex_str = data.hex().upper()
+        ascii_str = ''.join(chr(b) if 32 <= b < 127 else '.' for b in data)
+        return f"{hex_str} (\"{ascii_str}\")"
