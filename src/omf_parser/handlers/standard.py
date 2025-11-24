@@ -442,7 +442,10 @@ class StandardHandlersMixin:
         np = (flags & 0x80) >> 7
         nl = (flags & 0x40) >> 6
 
-        cls_name = COMMENT_CLASSES.get(cls, f"0x{cls:02X}")
+        if cls in COMMENT_CLASSES:
+            cls_name = f"{COMMENT_CLASSES[cls]} (0x{cls:02X})"
+        else:
+            cls_name = f"0x{cls:02X}"
         print(f"  Comment Class: {cls_name}")
         print(f"  Flags: NoPurge={np}, NoList={nl}")
 
