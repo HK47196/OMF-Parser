@@ -132,7 +132,14 @@ class OMFCompleteParser(
                             flags = content[0]
                             cls = content[1]
 
-                            # Check comment text
+                            # Easy OMF comment class (0xAA) indicates PharLap
+                            # MUST check this before text content block, since 0xAA comments
+                            # may not have additional text data beyond the class byte
+                            if cls == 0xAA:
+                                detected_mode = MODE_PHARLAP
+                                break
+
+                            # Check comment text if present
                             if len(content) > 2:
                                 text = content[2:].decode('ascii', errors='ignore').lower()
 
@@ -141,11 +148,6 @@ class OMFCompleteParser(
                                     break
                                 elif 'ibm' in text or 'link386' in text:
                                     detected_mode = MODE_IBM
-                                    break
-
-                                # Easy OMF comment class (0xAA) indicates PharLap
-                                if cls == 0xAA:
-                                    detected_mode = MODE_PHARLAP
                                     break
                     except Exception:
                         pass
@@ -212,6 +214,7 @@ class OMFCompleteParser(
 
         stop_record_parsing = False
         record_count = 0
+        first_record_checked = False
 
         while self.offset < self.file_size and not stop_record_parsing:
             if self.is_lib and self.data[self.offset] == 0x00:
@@ -242,6 +245,12 @@ class OMFCompleteParser(
                 break
 
             record_count += 1
+
+            # Spec: THEADR (0x80) or LHEADR (0x82) must be the first record in object modules
+            if not first_record_checked and not self.is_lib:
+                first_record_checked = True
+                if rec_type not in [0x80, 0x82]:
+                    print(f"  [!] WARNING: First record is 0x{rec_type:02X}, but spec requires THEADR (0x80) or LHEADR (0x82)")
 
             # Library records F0/F1 do NOT have checksums
             is_lib_rec = rec_type in [0xF0, 0xF1]
