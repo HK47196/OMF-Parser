@@ -32,9 +32,12 @@ class Scanner:
     def __init__(self, data: bytes):
         self.data = data
         self.offset = 0
-        self.features = set()  # Extension features (not variant-specific)
+        self.features = set()
         self.variant: Variant = TIS_STANDARD
         self.is_library = False
+        self.mixed_variants = False
+        self._module_variant: Variant = TIS_STANDARD
+        self._seen_variants: set = set()
 
     def scan(self) -> list[RecordInfo]:
         """Scan the file and return list of records.
@@ -63,11 +66,28 @@ class Scanner:
 
             records.append(record)
             self._detect_features(record)
+            self._track_module_boundaries(record)
 
             if record.type == 0xF1:
                 break
 
+        if self._module_variant != TIS_STANDARD:
+            self._seen_variants.add(self._module_variant.name)
+
+        if self.is_library and len(self._seen_variants) > 1:
+            self.mixed_variants = True
+
         return records
+
+    def _track_module_boundaries(self, record: RecordInfo):
+        """Track module boundaries to detect mixed variants in libraries."""
+        if record.type in (0x80, 0x82):
+            if self._module_variant != TIS_STANDARD:
+                self._seen_variants.add(self._module_variant.name)
+            self._module_variant = TIS_STANDARD
+        elif record.type in (0x8A, 0x8B):
+            if self._module_variant != TIS_STANDARD:
+                self._seen_variants.add(self._module_variant.name)
 
     def _read_record(self) -> Optional[RecordInfo]:
         """Read a single record from current offset."""
@@ -133,21 +153,23 @@ class Scanner:
 
         comment_class = record.content[1]
 
-        # 0xAA = Easy OMF-386 marker (PharLap)
-        if comment_class == 0xAA:
+        if comment_class == 0xAA:  # Easy OMF-386 (PharLap)
             self.variant = PHARLAP
+            self._module_variant = PHARLAP
+            self.features.add('easy_omf')
+            self.features.add('pharlap')
 
         if len(record.content) > 2:
             try:
                 text = record.content[2:].decode('ascii', errors='ignore').lower()
-                # Check for vendor-specific strings to identify variant
                 if 'pharlap' in text or 'phar lap' in text:
                     if self.variant == TIS_STANDARD:
                         self.variant = PHARLAP
+                    self._module_variant = PHARLAP
                 elif 'ibm' in text or 'link386' in text:
                     self.variant = IBM_LINK386
-                # Borland is an extension, not a variant
-                elif 'borland' in text:
+                    self._module_variant = IBM_LINK386
+                elif 'borland' in text:  # extension, not a variant
                     self.features.add('borland')
             except Exception:
                 pass

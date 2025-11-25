@@ -1,117 +1,126 @@
 """Intel/TIS standard COMENT class handlers."""
 
 from . import coment_class
-from ..parsing import format_hex_with_ascii
-from ..constants import A0_SUBTYPES
+from ..constants import (
+    A0_SUBTYPES, A0_IMPDEF, A0_EXPDEF, A0_INCDEF,
+    A0_PROTECTED_MEMORY, A0_LNKDIR, A0_BIG_ENDIAN, A0_PRECOMP
+)
+from ..models import (
+    ComentTranslator, ComentCopyright, ComentLibSpec, ComentDosseg,
+    ComentNewOmf, ComentLinkPass, ComentLibMod, ComentExeStr,
+    ComentIncErr, ComentNoPad, ComentWkExt, ComentLzExt,
+    ComentEasyOmf, ComentOmfExtensions,
+    A0ImpDef, A0ExpDef, A0IncDef, A0ProtectedMemory, A0LnkDir,
+    A0BigEndian, A0PreComp
+)
+
+
+def _decode_text(text):
+    """Helper to decode text bytes."""
+    if text:
+        try:
+            return text.decode('ascii', errors='replace')
+        except:
+            return None
+    return None
 
 
 @coment_class(0x00)
 def handle_translator(omf, sub, flags, text):
     """Translator - identifies compiler/assembler."""
-    if text:
-        try:
-            print(f"  Translator: {text.decode('ascii', errors='replace')}")
-        except:
-            print(f"  Translator: {format_hex_with_ascii(text)}")
+    decoded = _decode_text(text)
+    return ComentTranslator(translator=decoded or text.hex() if text else "")
 
 
 @coment_class(0x01)
 def handle_copyright(omf, sub, flags, text):
     """Intel Copyright."""
-    if text:
-        try:
-            print(f"  Copyright: {text.decode('ascii', errors='replace')}")
-        except:
-            print(f"  Copyright: {format_hex_with_ascii(text)}")
+    decoded = _decode_text(text)
+    return ComentCopyright(copyright=decoded or text.hex() if text else "")
 
 
 @coment_class(0x81)
 def handle_libspec(omf, sub, flags, text):
     """Library Specifier (obsolete)."""
-    print("  [Obsolete] Library Specifier")
-    if text:
-        try:
-            print(f"  Library: {text.decode('ascii', errors='replace')}")
-        except:
-            print(f"  Library: {format_hex_with_ascii(text)}")
+    decoded = _decode_text(text)
+    return ComentLibSpec(library=decoded or text.hex() if text else "")
 
 
 @coment_class(0x9E)
 def handle_dosseg(omf, sub, flags, text):
     """DOSSEG - DOS segment ordering."""
-    print("  DOSSEG: Use DOS segment ordering convention")
+    return ComentDosseg()
 
 
 @coment_class(0xA1)
 def handle_new_omf(omf, sub, flags, text):
     """New OMF Extension."""
-    print("  New OMF Extension marker")
-    if text:
-        print(f"  Data: {format_hex_with_ascii(text)}")
+    return ComentNewOmf(data=text if text else None)
 
 
 @coment_class(0xA2)
 def handle_link_pass(omf, sub, flags, text):
     """Link Pass Separator."""
-    print("  Link Pass Separator")
-    if text and len(text) >= 1:
-        print(f"  Pass: {text[0]}")
+    pass_num = text[0] if text and len(text) >= 1 else None
+    return ComentLinkPass(pass_num=pass_num)
 
 
 @coment_class(0xA3)
 def handle_libmod(omf, sub, flags, text):
     """LIBMOD - Library Module Name."""
-    if text:
-        try:
-            print(f"  Library Module: {text.decode('ascii', errors='replace')}")
-        except:
-            print(f"  Library Module: {format_hex_with_ascii(text)}")
+    decoded = _decode_text(text)
+    return ComentLibMod(module_name=decoded or text.hex() if text else "")
 
 
 @coment_class(0xA4)
 def handle_exestr(omf, sub, flags, text):
     """EXESTR - Executable String."""
-    if text:
-        try:
-            print(f"  Exe String: {text.decode('ascii', errors='replace')}")
-        except:
-            print(f"  Exe String: {format_hex_with_ascii(text)}")
+    decoded = _decode_text(text)
+    return ComentExeStr(exe_string=decoded or text.hex() if text else "")
 
 
 @coment_class(0xA6)
 def handle_incerr(omf, sub, flags, text):
     """INCERR - Incremental Compilation Error."""
-    print("  Incremental Compilation Error - forces full recompile")
+    return ComentIncErr()
 
 
 @coment_class(0xA7)
 def handle_nopad(omf, sub, flags, text):
     """NOPAD - No Segment Padding."""
-    print("  NOPAD: Do not pad segments")
+    return ComentNoPad()
 
 
 @coment_class(0xA8)
 def handle_wkext(omf, sub, flags, text):
     """WKEXT - Weak Extern."""
-    print("  Weak Extern definitions:")
+    result = ComentWkExt()
     pos = 0
     while pos < len(text) - 1:
         weak_idx = text[pos]
         default_idx = text[pos + 1]
-        print(f"    Weak Ext#{weak_idx} -> Default Ext#{default_idx}")
+        result.entries.append({
+            'weak_index': weak_idx,
+            'default_index': default_idx
+        })
         pos += 2
+    return result
 
 
 @coment_class(0xA9)
 def handle_lzext(omf, sub, flags, text):
     """LZEXT - Lazy Extern."""
-    print("  Lazy Extern definitions:")
+    result = ComentLzExt()
     pos = 0
     while pos < len(text) - 1:
         lazy_idx = text[pos]
         default_idx = text[pos + 1]
-        print(f"    Lazy Ext#{lazy_idx} -> Default Ext#{default_idx}")
+        result.entries.append({
+            'lazy_index': lazy_idx,
+            'default_index': default_idx
+        })
         pos += 2
+    return result
 
 
 @coment_class(0xAA)
@@ -119,88 +128,87 @@ def handle_easy_omf(omf, sub, flags, text):
     """Easy OMF-386 marker (PharLap)."""
     omf.features.add('easy_omf')
     omf.features.add('pharlap')
-    print("  Easy OMF-386: 32-bit extensions enabled")
-    if text:
-        try:
-            print(f"  Marker: {text.decode('ascii', errors='replace')}")
-        except:
-            print(f"  Marker: {format_hex_with_ascii(text)}")
+
+    decoded = _decode_text(text) if text else None
+    return ComentEasyOmf(marker=decoded)
 
 
 @coment_class(0xA0)
 def handle_omf_extensions(omf, sub, flags, text):
     """OMF Extensions (A0 subtypes)."""
     if not text:
-        return
+        return None
 
     subtype = text[0]
     subtype_name = A0_SUBTYPES.get(subtype, f"Unknown(0x{subtype:02X})")
-    print(f"  A0 Subtype: {subtype_name}")
+
+    result = ComentOmfExtensions(subtype=subtype, subtype_name=subtype_name)
 
     remaining = text[1:]
 
-    if subtype == 0x01:  # IMPDEF
-        _handle_impdef(omf, remaining)
-    elif subtype == 0x02:  # EXPDEF
-        _handle_expdef(omf, remaining)
-    elif subtype == 0x03:  # INCDEF
-        _handle_incdef(omf, remaining)
-    elif subtype == 0x04:  # Protected Memory Library
-        print("    DLL uses protected memory (_loadds)")
-    elif subtype == 0x05:  # LNKDIR
-        _handle_lnkdir(omf, remaining)
-    elif subtype == 0x06:  # Big-endian
+    if subtype == A0_IMPDEF:
+        result.content = _parse_impdef(omf, remaining)
+    elif subtype == A0_EXPDEF:
+        result.content = _parse_expdef(omf, remaining)
+    elif subtype == A0_INCDEF:
+        result.content = _parse_incdef(omf, remaining)
+    elif subtype == A0_PROTECTED_MEMORY:
+        result.content = A0ProtectedMemory()
+    elif subtype == A0_LNKDIR:
+        result.content = _parse_lnkdir(omf, remaining)
+    elif subtype == A0_BIG_ENDIAN:
         omf.features.add('big_endian')
-        print("    Target is big-endian architecture")
-    elif subtype == 0x07:  # PRECOMP
-        print("    $$TYPES should use sstPreComp instead of sstTypes")
+        result.content = A0BigEndian()
+    elif subtype == A0_PRECOMP:
+        result.content = A0PreComp()
     else:
-        omf.add_warning(f"    [!] Unknown A0 subtype 0x{subtype:02X}")
-        if remaining:
-            print(f"    Data: {format_hex_with_ascii(remaining)}")
+        result.warnings.append(f"Unknown A0 subtype 0x{subtype:02X}")
+
+    return result
 
 
-def _handle_impdef(omf, data):
-    """Handle IMPDEF subtype."""
+def _parse_impdef(omf, data):
+    """Parse IMPDEF subtype."""
     if len(data) < 3:
-        return
+        return None
 
     ord_flag = data[0]
     pos = 1
 
-    # Parse internal name
     int_name_len = data[pos]
     int_name = data[pos + 1:pos + 1 + int_name_len].decode('ascii', errors='replace')
     pos += 1 + int_name_len
 
-    # Parse module name
     if pos >= len(data):
-        return
+        return None
     mod_name_len = data[pos]
     mod_name = data[pos + 1:pos + 1 + mod_name_len].decode('ascii', errors='replace')
     pos += 1 + mod_name_len
 
-    print(f"    Internal Name: {int_name}")
-    print(f"    Module Name: {mod_name}")
+    result = A0ImpDef(
+        by_ordinal=(ord_flag != 0),
+        internal_name=int_name,
+        module_name=mod_name
+    )
 
     if ord_flag == 0:
         if pos < len(data):
             entry_len = data[pos]
             if entry_len == 0:
-                print(f"    Entry: (same as internal)")
+                result.entry_name = None  # same as internal
             else:
-                entry_name = data[pos + 1:pos + 1 + entry_len].decode('ascii', errors='replace')
-                print(f"    Entry Name: {entry_name}")
+                result.entry_name = data[pos + 1:pos + 1 + entry_len].decode('ascii', errors='replace')
     else:
         if pos + 1 < len(data):
-            ordinal = data[pos] | (data[pos + 1] << 8)
-            print(f"    Ordinal: {ordinal}")
+            result.ordinal = data[pos] | (data[pos + 1] << 8)
+
+    return result
 
 
-def _handle_expdef(omf, data):
-    """Handle EXPDEF subtype."""
+def _parse_expdef(omf, data):
+    """Parse EXPDEF subtype."""
     if len(data) < 2:
-        return
+        return None
 
     exp_flag = data[0]
     pos = 1
@@ -210,34 +218,35 @@ def _handle_expdef(omf, data):
     no_data = (exp_flag & 0x20) != 0
     parm_count = exp_flag & 0x1F
 
-    # Parse exported name
     exp_name_len = data[pos]
     exp_name = data[pos + 1:pos + 1 + exp_name_len].decode('ascii', errors='replace')
     pos += 1 + exp_name_len
 
-    # Parse internal name
     if pos >= len(data):
-        return
+        return None
     int_name_len = data[pos]
     int_name = data[pos + 1:pos + 1 + int_name_len].decode('ascii', errors='replace') if int_name_len else ""
     pos += 1 + int_name_len
 
-    print(f"    Exported Name: {exp_name}")
-    if int_name:
-        print(f"    Internal Name: {int_name}")
-    else:
-        print(f"    Internal Name: (same as exported)")
-    print(f"    By Ordinal: {by_ordinal}, Resident: {resident}, NoData: {no_data}, Parms: {parm_count}")
+    result = A0ExpDef(
+        exported_name=exp_name,
+        internal_name=int_name if int_name else exp_name,
+        by_ordinal=by_ordinal,
+        resident=resident,
+        no_data=no_data,
+        parm_count=parm_count
+    )
 
     if by_ordinal and pos + 1 < len(data):
-        ordinal = data[pos] | (data[pos + 1] << 8)
-        print(f"    Export Ordinal: {ordinal}")
+        result.ordinal = data[pos] | (data[pos + 1] << 8)
+
+    return result
 
 
-def _handle_incdef(omf, data):
-    """Handle INCDEF subtype."""
+def _parse_incdef(omf, data):
+    """Parse INCDEF subtype."""
     if len(data) < 4:
-        return
+        return None
 
     extdef_delta = data[0] | (data[1] << 8)
     linnum_delta = data[2] | (data[3] << 8)
@@ -247,25 +256,29 @@ def _handle_incdef(omf, data):
     if linnum_delta >= 0x8000:
         linnum_delta -= 0x10000
 
-    print(f"    EXTDEF Delta: {extdef_delta}")
-    print(f"    LINNUM Delta: {linnum_delta}")
+    return A0IncDef(extdef_delta=extdef_delta, linnum_delta=linnum_delta)
 
 
-def _handle_lnkdir(omf, data):
-    """Handle LNKDIR subtype."""
+def _parse_lnkdir(omf, data):
+    """Parse LNKDIR subtype."""
     if len(data) < 3:
-        return
+        return None
 
     bit_flags = data[0]
     pcode_ver = data[1]
     cv_ver = data[2]
 
-    print(f"    Bit Flags: 0x{bit_flags:02X}")
+    result = A0LnkDir(
+        bit_flags=bit_flags,
+        pcode_version=pcode_ver,
+        cv_version=cv_ver
+    )
+
     if bit_flags & 0x01:
-        print("      - Output new .EXE format")
+        result.flags_meanings.append("Output new .EXE format")
     if bit_flags & 0x02:
-        print("      - Omit CodeView $PUBLICS")
+        result.flags_meanings.append("Omit CodeView $PUBLICS")
     if bit_flags & 0x04:
-        print("      - Run MPC utility")
-    print(f"    Pseudocode Version: {pcode_ver}")
-    print(f"    CodeView Version: {cv_ver}")
+        result.flags_meanings.append("Run MPC utility")
+
+    return result

@@ -1,10 +1,14 @@
 """Standard OMF record handlers."""
 
 from . import omf_record
-from ..parsing import format_hex_with_ascii
 from ..constants import (
     RESERVED_SEGMENTS, ALIGN_NAMES, COMBINE_NAMES,
     KNOWN_VENDORS, VAR_TYPE_NAMES
+)
+from ..models import (
+    ParsedTheadr, ParsedLNames, ParsedSegDef, ParsedGrpDef,
+    ParsedPubDef, ParsedExtDef, ParsedCExtDef, ParsedModEnd,
+    ParsedLinNum, ParsedVerNum, ParsedVendExt, ParsedLocSym, ParsedTypDef
 )
 
 
@@ -20,7 +24,8 @@ def handle_theadr(omf, record):
     sub = omf.make_parser(record)
     name = sub.parse_name()
     rec_name = "THEADR" if record.type == 0x80 else "LHEADR"
-    print(f"  {rec_name} Module: '{name}'")
+
+    return ParsedTheadr(record_name=rec_name, module_name=name)
 
 
 @omf_record(0x96, 0xCA)
@@ -30,15 +35,22 @@ def handle_lnames(omf, record):
     rec_name = "LNAMES" if record.type == 0x96 else "LLNAMES (Local)"
     start_idx = len(omf.lnames)
 
+    names = []
     while sub.bytes_remaining() > 0:
         name = sub.parse_name()
         omf.lnames.append(name)
+        idx = len(omf.lnames) - 1
+        is_reserved = name in RESERVED_SEGMENTS
+        names.append((idx, name, is_reserved))
 
     end_idx = len(omf.lnames) - 1
-    print(f"  {rec_name}: Added indices {start_idx} to {end_idx}")
-    for i in range(start_idx, len(omf.lnames)):
-        marker = " [RESERVED]" if omf.lnames[i] in RESERVED_SEGMENTS else ""
-        print(f"    [{i}] '{omf.lnames[i]}'{marker}")
+
+    return ParsedLNames(
+        record_name=rec_name,
+        start_index=start_idx,
+        end_index=end_idx,
+        names=names
+    )
 
 
 @omf_record(0x98, 0x99)
@@ -49,14 +61,13 @@ def handle_segdef(omf, record):
 
     acbp = sub.read_byte()
     if acbp is None:
-        return
+        return None
 
     align = (acbp >> 5) & 0x07
     combine = (acbp >> 2) & 0x07
     big = (acbp >> 1) & 0x01
     use32 = acbp & 0x01
 
-    # Get alignment name, checking variant-specific names first
     extra_align_names = omf.variant.segdef_extra_align_names()
     if align in extra_align_names:
         align_name = extra_align_names[align]
@@ -65,54 +76,55 @@ def handle_segdef(omf, record):
     else:
         align_name = f"Unknown({align})"
 
-    print(f"  ACBP: 0x{acbp:02X}")
-    print(f"    Alignment: {align_name}")
-    print(f"    Combine: {COMBINE_NAMES[combine]}")
-    print(f"    Big: {big} (segment is {'64K/4GB' if big else 'smaller'})")
-    print(f"    Use32: {use32} ({'Use32' if use32 else 'Use16'})")
+    result = ParsedSegDef(
+        acbp=acbp,
+        alignment=align_name,
+        align_value=align,
+        combine=COMBINE_NAMES[combine],
+        big=big,
+        use32=use32
+    )
 
     if align == 0:
-        frame_num = sub.parse_numeric(2)
-        frame_offset = sub.read_byte()
-        print(f"    Absolute Frame: 0x{frame_num:04X}, Offset: 0x{frame_offset:02X}")
+        result.absolute_frame = sub.parse_numeric(2)
+        result.absolute_offset = sub.read_byte()
 
     size_bytes = sub.get_offset_field_size(is_32bit)
     length = sub.parse_numeric(size_bytes)
 
     if big and length == 0:
         if is_32bit:
-            print(f"    Length: 4GB (0x100000000)")
+            result.length = 0x100000000
+            result.length_display = "4GB (0x100000000)"
         else:
-            print(f"    Length: 64K (0x10000)")
+            result.length = 0x10000
+            result.length_display = "64K (0x10000)"
     else:
-        print(f"    Length: {length} (0x{length:X})")
+        result.length = length
+        result.length_display = f"{length} (0x{length:X})"
 
     seg_name_idx = sub.parse_index()
     cls_name_idx = sub.parse_index()
     ovl_name_idx = sub.parse_index()
 
-    seg_name = omf.get_lname(seg_name_idx)
-    cls_name = omf.get_lname(cls_name_idx)
-    ovl_name = omf.get_lname(ovl_name_idx)
+    result.segment_name = omf.get_lname(seg_name_idx)
+    result.class_name = omf.get_lname(cls_name_idx)
+    result.overlay_name = omf.get_lname(ovl_name_idx)
 
-    print(f"    Segment Name: {seg_name}")
-    print(f"    Class Name: {cls_name}")
-    print(f"    Overlay Name: {ovl_name}")
-
-    # Check for PharLap access byte
     if sub.bytes_remaining() >= 1:
         if omf.variant.segdef_has_access_byte():
             access_byte = sub.read_byte()
             access_type = access_byte & 0x03
             access_names = omf.variant.segdef_access_byte_names()
-            access_name = access_names.get(access_type, f"Unknown({access_type})")
-            print(f"    Access: 0x{access_byte:02X} ({access_name})")
+            result.access_byte = access_byte
+            result.access_name = access_names.get(access_type, f"Unknown({access_type})")
         else:
-            extra_byte = sub.read_byte()
-            print(f"    [Unknown] Extra byte: 0x{extra_byte:02X}")
+            result.extra_byte = sub.read_byte()
 
     raw_name = omf.lnames[seg_name_idx] if seg_name_idx < len(omf.lnames) else f"Seg#{len(omf.segdefs)}"
     omf.segdefs.append(raw_name)
+
+    return result
 
 
 @omf_record(0x9A)
@@ -122,13 +134,14 @@ def handle_grpdef(omf, record):
     name_idx = sub.parse_index()
     name = omf.get_lname(name_idx)
 
-    print(f"  Group Name: {name}")
-
     raw_name = omf.lnames[name_idx] if name_idx < len(omf.lnames) else ""
-    if raw_name == "FLAT":
-        print("    [Special] FLAT pseudo-group - Virtual Zero Address")
 
-    components = []
+    result = ParsedGrpDef(
+        name=name,
+        name_index=name_idx,
+        is_flat=(raw_name == "FLAT")
+    )
+
     while sub.bytes_remaining() > 0:
         comp_type = sub.read_byte()
         if comp_type is None:
@@ -137,52 +150,51 @@ def handle_grpdef(omf, record):
         if comp_type == 0xFF:
             if sub.bytes_remaining() > 0:
                 seg_idx = sub.parse_index()
-                components.append(f"Seg:{omf.get_segdef(seg_idx)}")
+                result.components.append(f"Seg:{omf.get_segdef(seg_idx)}")
             else:
-                components.append("Seg:TRUNCATED")
+                result.components.append("Seg:TRUNCATED")
                 break
         elif comp_type == 0xFE:
             if sub.bytes_remaining() > 0:
                 ext_idx = sub.parse_index()
-                components.append(f"Ext:{omf.get_extdef(ext_idx)}")
+                result.components.append(f"Ext:{omf.get_extdef(ext_idx)}")
             else:
-                components.append("Ext:TRUNCATED")
+                result.components.append("Ext:TRUNCATED")
                 break
         elif comp_type == 0xFD:
             if sub.bytes_remaining() >= 3:
                 seg_name = sub.parse_index()
                 cls_name = sub.parse_index()
                 ovl_name = sub.parse_index()
-                components.append(f"SegDef({seg_name},{cls_name},{ovl_name})")
+                result.components.append(f"SegDef({seg_name},{cls_name},{ovl_name})")
             else:
-                components.append("SegDef:TRUNCATED")
+                result.components.append("SegDef:TRUNCATED")
                 break
         elif comp_type == 0xFB:
             if sub.bytes_remaining() >= 5:
                 ltl_data = sub.read_byte()
                 max_len = sub.parse_numeric(2)
                 grp_len = sub.parse_numeric(2)
-                components.append(f"LTL(data=0x{ltl_data:02X},max={max_len},len={grp_len})")
+                result.components.append(f"LTL(data=0x{ltl_data:02X},max={max_len},len={grp_len})")
             else:
-                components.append("LTL:TRUNCATED")
+                result.components.append("LTL:TRUNCATED")
                 break
         elif comp_type == 0xFA:
             if sub.bytes_remaining() >= 3:
                 frame = sub.parse_numeric(2)
                 offset = sub.read_byte()
-                components.append(f"Abs({frame:04X}:{offset:02X})")
+                result.components.append(f"Abs({frame:04X}:{offset:02X})")
             else:
-                components.append("Abs:TRUNCATED")
+                result.components.append("Abs:TRUNCATED")
                 break
         else:
-            components.append(f"Unknown({comp_type:02X})")
-            omf.add_warning(f"    [!] WARNING: Unknown GRPDEF component type 0x{comp_type:02X}")
+            result.components.append(f"Unknown({comp_type:02X})")
+            result.warnings.append(f"Unknown GRPDEF component type 0x{comp_type:02X}")
             break
 
-    for comp in components:
-        print(f"    Component: {comp}")
-
     omf.grpdefs.append(raw_name)
+
+    return result
 
 
 @omf_record(0x90, 0x91, 0xB6, 0xB7)
@@ -192,19 +204,20 @@ def handle_pubdef(omf, record):
     is_32bit = record.type in [0x91, 0xB7]
     is_local = record.type in [0xB6, 0xB7]
 
-    print(f"  {'Local ' if is_local else ''}Public Definitions ({'32-bit' if is_32bit else '16-bit'}):")
-
     base_grp = sub.parse_index()
     base_seg = sub.parse_index()
 
-    print(f"    Base Group: {omf.get_grpdef(base_grp)}")
-    print(f"    Base Segment: {omf.get_segdef(base_seg)}")
+    result = ParsedPubDef(
+        is_32bit=is_32bit,
+        is_local=is_local,
+        base_group=omf.get_grpdef(base_grp),
+        base_segment=omf.get_segdef(base_seg)
+    )
 
     if base_seg == 0:
-        frame = sub.parse_numeric(2)
-        print(f"    Absolute Frame: 0x{frame:04X}")
+        result.absolute_frame = sub.parse_numeric(2)
         if base_grp != 0:
-            print(f"    [Note] Frame ignored by linker when Base Group != 0")
+            result.frame_note = "Frame ignored by linker when Base Group != 0"
 
     while sub.bytes_remaining() > 0:
         name = sub.parse_name()
@@ -215,7 +228,13 @@ def handle_pubdef(omf, record):
         offset = sub.parse_numeric(offset_size)
         type_idx = sub.parse_index()
 
-        print(f"    Symbol: '{name}' Offset=0x{offset:X} Type={type_idx}")
+        result.symbols.append({
+            'name': name,
+            'offset': offset,
+            'type_index': type_idx
+        })
+
+    return result
 
 
 @omf_record(0x8C, 0xB4, 0xB5)
@@ -224,7 +243,7 @@ def handle_extdef(omf, record):
     sub = omf.make_parser(record)
     is_local = record.type in [0xB4, 0xB5]
 
-    print(f"  {'Local ' if is_local else ''}External Definitions:")
+    result = ParsedExtDef(is_local=is_local)
 
     while sub.bytes_remaining() > 0:
         name = sub.parse_name()
@@ -232,14 +251,21 @@ def handle_extdef(omf, record):
 
         idx = len(omf.extdefs)
         omf.extdefs.append(name)
-        print(f"    [{idx}] '{name}' Type={type_idx}")
+        result.externals.append({
+            'index': idx,
+            'name': name,
+            'type_index': type_idx
+        })
+
+    return result
 
 
 @omf_record(0xBC)
 def handle_cextdef(omf, record):
     """Handle CEXTDEF (BCH)."""
     sub = omf.make_parser(record)
-    print("  COMDAT External Definitions:")
+
+    result = ParsedCExtDef()
 
     while sub.bytes_remaining() > 0:
         name_idx = sub.parse_index()
@@ -248,7 +274,13 @@ def handle_cextdef(omf, record):
         name = omf.lnames[name_idx] if name_idx < len(omf.lnames) else f"LName#{name_idx}"
         idx = len(omf.extdefs)
         omf.extdefs.append(name)
-        print(f"    [{idx}] {omf.get_lname(name_idx)} Type={type_idx}")
+        result.externals.append({
+            'index': idx,
+            'name': omf.get_lname(name_idx),
+            'type_index': type_idx
+        })
+
+    return result
 
 
 @omf_record(0x8A, 0x8B)
@@ -259,41 +291,47 @@ def handle_modend(omf, record):
 
     mod_type = sub.read_byte()
     if mod_type is None:
-        return
+        return None
 
     is_main = (mod_type & 0x80) != 0
     has_start = (mod_type & 0x40) != 0
     is_relocatable = (mod_type & 0x01) != 0
 
-    print(f"  Module Type: 0x{mod_type:02X}")
-    print(f"    Main Module: {is_main}")
-    print(f"    Has Start Address: {has_start}")
-    print(f"    Relocatable Start: {is_relocatable}")
+    result = ParsedModEnd(
+        mod_type=mod_type,
+        is_main=is_main,
+        has_start=has_start,
+        is_relocatable=is_relocatable
+    )
 
     if has_start:
-        print("  Start Address:")
         end_data = sub.read_byte()
         if end_data is not None:
             frame_method = (end_data >> 4) & 0x07
             p_bit = (end_data >> 2) & 0x01
             target_method = end_data & 0x03
 
+            start_addr = {
+                'frame_method': frame_method,
+                'p_bit': p_bit,
+                'target_method': target_method
+            }
+
             if p_bit != 0:
-                omf.add_warning(f"    [!] WARNING: MODEND P-bit is {p_bit}, must be 0 per spec")
+                result.warnings.append(f"MODEND P-bit is {p_bit}, must be 0 per spec")
 
             if frame_method < 3:
-                frame_datum = sub.parse_index()
-                print(f"    Frame Method: {frame_method}, Datum: {frame_datum}")
-            else:
-                print(f"    Frame Method: {frame_method}")
+                start_addr['frame_datum'] = sub.parse_index()
 
-            target_datum = sub.parse_index()
-            print(f"    Target Method: {target_method}, Datum: {target_datum}")
+            start_addr['target_datum'] = sub.parse_index()
 
             if p_bit == 0:
                 disp_size = sub.get_offset_field_size(is_32bit)
-                disp = sub.parse_numeric(disp_size)
-                print(f"    Target Displacement: 0x{disp:X}")
+                start_addr['target_displacement'] = sub.parse_numeric(disp_size)
+
+            result.start_address = start_addr
+
+    return result
 
 
 @omf_record(0x94, 0x95)
@@ -305,19 +343,24 @@ def handle_linnum(omf, record):
     base_grp = sub.parse_index()
     base_seg = sub.parse_index()
 
-    print(f"  Base Group: {omf.get_grpdef(base_grp)}")
-    print(f"  Base Segment: {omf.get_segdef(base_seg)}")
-    print("  Line Number Entries:")
+    result = ParsedLinNum(
+        is_32bit=is_32bit,
+        base_group=omf.get_grpdef(base_grp),
+        base_segment=omf.get_segdef(base_seg)
+    )
 
     while sub.bytes_remaining() > 0:
         line_num = sub.parse_numeric(2)
         offset_size = sub.get_offset_field_size(is_32bit)
         offset = sub.parse_numeric(offset_size)
 
-        if line_num == 0:
-            print(f"    Line 0 (end of function): Offset=0x{offset:X}")
-        else:
-            print(f"    Line {line_num}: Offset=0x{offset:X}")
+        result.entries.append({
+            'line': line_num,
+            'offset': offset,
+            'is_end_of_function': (line_num == 0)
+        })
+
+    return result
 
 
 @omf_record(0xCC)
@@ -325,25 +368,25 @@ def handle_vernum(omf, record):
     """Handle VERNUM (CCH)."""
     sub = omf.make_parser(record)
     version = sub.parse_name()
-    print(f"  OMF Version: {version}")
+
+    result = ParsedVerNum(version=version)
 
     parts = version.split('.')
     if len(parts) >= 3:
-        tis_base = parts[0]
-        vendor_num = parts[1]
-        vendor_ver = parts[2]
-
-        print(f"    TIS Base Version: {tis_base}")
-        print(f"    Vendor Number: {vendor_num}")
-        print(f"    Vendor Version: {vendor_ver}")
+        result.tis_base = parts[0]
+        result.vendor_num = parts[1]
+        result.vendor_ver = parts[2]
 
         try:
-            vendor_int = int(vendor_num)
+            vendor_int = int(parts[1])
             if vendor_int != 0:
                 vendor_name = KNOWN_VENDORS.get(vendor_int, "Unknown")
-                omf.add_warning(f"    [!] WARNING: Non-TIS vendor extensions present (vendor {vendor_int}: {vendor_name})")
+                result.vendor_name = vendor_name
+                result.warnings.append(f"Non-TIS vendor extensions present (vendor {vendor_int}: {vendor_name})")
         except ValueError:
             pass
+
+    return result
 
 
 @omf_record(0xCE)
@@ -352,39 +395,47 @@ def handle_vendext(omf, record):
     sub = omf.make_parser(record)
     vendor_num = sub.parse_numeric(2)
 
-    vendor_name = KNOWN_VENDORS.get(vendor_num)
-    if vendor_name:
-        print(f"  Vendor Number: {vendor_num} ({vendor_name})")
-    else:
-        print(f"  Vendor Number: {vendor_num}")
-        omf.add_warning(f"  [!] WARNING: Unrecognized vendor number")
+    result = ParsedVendExt(vendor_num=vendor_num)
+    result.vendor_name = KNOWN_VENDORS.get(vendor_num)
+
+    if result.vendor_name is None:
+        result.warnings.append("Unrecognized vendor number")
 
     if sub.bytes_remaining() > 0:
-        print(f"  Extension Data: {format_hex_with_ascii(sub.data[sub.offset:])}")
+        result.extension_data = sub.data[sub.offset:]
+
+    return result
 
 
 @omf_record(0x92)
 def handle_locsym(omf, record):
     """Handle LOCSYM (92H) - Local Symbols."""
     sub = omf.make_parser(record)
-    print("  [Obsolete] Local Symbols (same format as PUBDEF)")
 
     base_grp = sub.parse_index()
     base_seg = sub.parse_index()
-    print(f"    Base Group: {omf.get_grpdef(base_grp)}")
-    print(f"    Base Segment: {omf.get_segdef(base_seg)}")
+
+    result = ParsedLocSym(
+        base_group=omf.get_grpdef(base_grp),
+        base_segment=omf.get_segdef(base_seg)
+    )
 
     if base_seg == 0:
-        frame = sub.parse_numeric(2)
-        print(f"    Absolute Frame: 0x{frame:04X}")
+        result.absolute_frame = sub.parse_numeric(2)
         if base_grp != 0:
-            print(f"    [Note] Frame ignored by linker when Base Group != 0")
+            result.frame_note = "Frame ignored by linker when Base Group != 0"
 
     while sub.bytes_remaining() > 0:
         name = sub.parse_name()
         offset = sub.parse_numeric(2)
         type_idx = sub.parse_index()
-        print(f"    '{name}' Offset=0x{offset:X} Type={type_idx}")
+        result.symbols.append({
+            'name': name,
+            'offset': offset,
+            'type_index': type_idx
+        })
+
+    return result
 
 
 @omf_record(0x8E)
@@ -395,68 +446,91 @@ def handle_typdef(omf, record):
     name = sub.parse_name()
     en_byte = sub.read_byte()
 
-    print(f"  [Obsolete TYPDEF]")
-    if name:
-        print(f"  Name (ignored): '{name}'")
-
-    print(f"  EN Byte: {en_byte}")
+    result = ParsedTypDef(name=name if name else None, en_byte=en_byte)
 
     if en_byte == 0:
-        print(f"  Format: Microsoft (stripped)")
+        result.format = "Microsoft"
         if sub.bytes_remaining() == 0:
             omf.typdefs.append(f"TYPDEF#{len(omf.typdefs)}")
-            return
+            return result
 
         leaf_type = sub.read_byte()
 
         if leaf_type == 0x62:
             var_type = sub.read_byte()
             size_bits = sub.parse_variable_length_int()
-            print(f"  NEAR Variable")
-            print(f"    Type: {VAR_TYPE_NAMES.get(var_type, f'0x{var_type:02X}')}")
-            print(f"    Size: {size_bits} bits ({size_bits // 8} bytes)")
+            result.leaves.append({
+                'type': 'NEAR',
+                'leaf_type': leaf_type,
+                'var_type': VAR_TYPE_NAMES.get(var_type, f'0x{var_type:02X}'),
+                'var_type_raw': var_type,
+                'size_bits': size_bits,
+                'size_bytes': size_bits // 8
+            })
 
         elif leaf_type == 0x61:
             var_type = sub.read_byte()
             num_elements = sub.parse_variable_length_int()
             element_type_idx = sub.parse_index()
-            print(f"  FAR Variable (Array)")
-            print(f"    Num Elements: {num_elements}")
-            print(f"    Element Type: {omf.get_typdef(element_type_idx)}")
+            result.leaves.append({
+                'type': 'FAR',
+                'leaf_type': leaf_type,
+                'num_elements': num_elements,
+                'element_type': omf.get_typdef(element_type_idx),
+                'element_type_index': element_type_idx
+            })
 
         else:
-            print(f"  Unknown Leaf Type: 0x{leaf_type:02X}")
-            print(f"  Remaining: {format_hex_with_ascii(sub.data[sub.offset:])}")
+            result.leaves.append({
+                'type': 'Unknown',
+                'leaf_type': leaf_type,
+                'remaining': sub.data[sub.offset:]
+            })
 
     else:
-        print(f"  Format: Intel (Eight-Leaf Descriptor)")
-        print(f"  Number of leaf descriptors: {en_byte}")
+        result.format = "Intel"
 
         for leaf_idx in range(en_byte):
             if sub.bytes_remaining() == 0:
                 break
 
-            print(f"  Leaf {leaf_idx + 1}:")
             leaf_type = sub.read_byte()
 
             if leaf_type == 0x62:
                 var_type = sub.read_byte()
                 size_bits = sub.parse_variable_length_int()
-                print(f"    NEAR Variable")
-                print(f"      Type: {VAR_TYPE_NAMES.get(var_type, f'0x{var_type:02X}')}")
-                print(f"      Size: {size_bits} bits ({size_bits // 8} bytes)")
+                result.leaves.append({
+                    'type': 'NEAR',
+                    'leaf_index': leaf_idx + 1,
+                    'leaf_type': leaf_type,
+                    'var_type': VAR_TYPE_NAMES.get(var_type, f'0x{var_type:02X}'),
+                    'var_type_raw': var_type,
+                    'size_bits': size_bits,
+                    'size_bytes': size_bits // 8
+                })
 
             elif leaf_type == 0x61:
                 var_type = sub.read_byte()
                 num_elements = sub.parse_variable_length_int()
                 element_type_idx = sub.parse_index()
-                print(f"    FAR Variable (Array)")
-                print(f"      Num Elements: {num_elements}")
-                print(f"      Element Type: {omf.get_typdef(element_type_idx)}")
+                result.leaves.append({
+                    'type': 'FAR',
+                    'leaf_index': leaf_idx + 1,
+                    'leaf_type': leaf_type,
+                    'num_elements': num_elements,
+                    'element_type': omf.get_typdef(element_type_idx),
+                    'element_type_index': element_type_idx
+                })
 
             else:
-                print(f"    Unknown Leaf Type: 0x{leaf_type:02X}")
                 remaining = sub.data[sub.offset:sub.offset + 16]
-                print(f"    Remaining: {format_hex_with_ascii(remaining)}")
+                result.leaves.append({
+                    'type': 'Unknown',
+                    'leaf_index': leaf_idx + 1,
+                    'leaf_type': leaf_type,
+                    'remaining': remaining
+                })
 
     omf.typdefs.append(f"TYPDEF#{len(omf.typdefs)}")
+
+    return result

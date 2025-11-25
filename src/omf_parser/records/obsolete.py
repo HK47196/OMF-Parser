@@ -1,33 +1,45 @@
 """Obsolete Intel 8086 record handlers."""
 
 from . import omf_record
-from ..parsing import format_hex_with_ascii
 from ..constants import REGISTER_NAMES
+from ..models import (
+    ParsedRheadr, ParsedRegInt, ParsedReDataPeData, ParsedRiDataPiData,
+    ParsedOvlDef, ParsedEndRec, ParsedBlkDef, ParsedBlkEnd,
+    ParsedDebSym, ParsedObsoleteLib
+)
 
 
 @omf_record(0x6E)
 def handle_rheadr(omf, record):
     """Handle RHEADR (6EH) - R-Module Header."""
     sub = omf.make_parser(record)
-    print("  [Obsolete] R-Module Header")
-    print("    Identifies a module processed by LINK-86/LOCATE-86")
     name = sub.parse_name()
-    if name:
-        print(f"    Name: {name}")
+
+    result = ParsedRheadr(name=name if name else None)
+
     if sub.bytes_remaining() > 0:
-        print(f"    Attributes: {format_hex_with_ascii(sub.data[sub.offset:])}")
+        result.attributes = sub.data[sub.offset:]
+
+    return result
 
 
 @omf_record(0x70)
 def handle_regint(omf, record):
     """Handle REGINT (70H) - Register Initialization."""
     sub = omf.make_parser(record)
-    print("  [Obsolete] Register Initialization")
-    print("    Provides initial values for 8086 registers")
+
+    result = ParsedRegInt()
+
     while sub.bytes_remaining() >= 3:
         reg_type = sub.read_byte()
         value = sub.parse_numeric(2)
-        print(f"    {REGISTER_NAMES.get(reg_type, f'Reg{reg_type}')}: 0x{value:04X}")
+        result.registers.append({
+            'register': REGISTER_NAMES.get(reg_type, f'Reg{reg_type}'),
+            'register_type': reg_type,
+            'value': value
+        })
+
+    return result
 
 
 @omf_record(0x72, 0x84)
@@ -36,24 +48,35 @@ def handle_redata_pedata(omf, record):
     sub = omf.make_parser(record)
 
     if record.type == 0x72:
-        print(f"  [Obsolete] REDATA (Relocatable) Enumerated Data")
+        rec_type = "REDATA"
         seg_idx = sub.parse_index()
-        print(f"    Segment: {omf.get_segdef(seg_idx)}")
         offset = sub.parse_numeric(2)
-        print(f"    Offset: 0x{offset:04X}")
+
+        result = ParsedReDataPeData(
+            record_type=rec_type,
+            segment=omf.get_segdef(seg_idx),
+            segment_index=seg_idx,
+            offset=offset
+        )
     else:
-        print(f"  [Obsolete] PEDATA (Physical) Enumerated Data")
+        rec_type = "PEDATA"
         frame = sub.parse_numeric(2)
-        print(f"    Frame Number: 0x{frame:04X}")
         offset = sub.parse_numeric(2)
-        print(f"    Offset: 0x{offset:04X}")
-        print(f"    Physical Address: 0x{(frame << 4) + offset:06X}")
+
+        result = ParsedReDataPeData(
+            record_type=rec_type,
+            frame=frame,
+            offset=offset,
+            physical_address=(frame << 4) + offset
+        )
 
     data_len = sub.bytes_remaining()
-    print(f"    Data Length: {data_len} bytes")
+    result.data_length = data_len
+
     if data_len > 0:
-        preview = sub.data[sub.offset:sub.offset + min(16, data_len)]
-        print(f"    Data Preview: {format_hex_with_ascii(preview)}")
+        result.data_preview = sub.data[sub.offset:sub.offset + min(16, data_len)]
+
+    return result
 
 
 @omf_record(0x74, 0x86)
@@ -62,138 +85,160 @@ def handle_ridata_pidata(omf, record):
     sub = omf.make_parser(record)
 
     if record.type == 0x74:
-        print(f"  [Obsolete] RIDATA (Relocatable) Iterated Data")
+        rec_type = "RIDATA"
         seg_idx = sub.parse_index()
-        print(f"    Segment: {omf.get_segdef(seg_idx)}")
         offset = sub.parse_numeric(2)
-        print(f"    Offset: 0x{offset:04X}")
-    else:
-        print(f"  [Obsolete] PIDATA (Physical) Iterated Data")
-        frame = sub.parse_numeric(2)
-        print(f"    Frame Number: 0x{frame:04X}")
-        offset = sub.parse_numeric(2)
-        print(f"    Offset: 0x{offset:04X}")
-        print(f"    Physical Address: 0x{(frame << 4) + offset:06X}")
 
-    print("    (Iterated data follows)")
-    if sub.bytes_remaining() > 0:
-        print(f"    Remaining Data: {sub.bytes_remaining()} bytes")
+        result = ParsedRiDataPiData(
+            record_type=rec_type,
+            segment=omf.get_segdef(seg_idx),
+            segment_index=seg_idx,
+            offset=offset
+        )
+    else:
+        rec_type = "PIDATA"
+        frame = sub.parse_numeric(2)
+        offset = sub.parse_numeric(2)
+
+        result = ParsedRiDataPiData(
+            record_type=rec_type,
+            frame=frame,
+            offset=offset,
+            physical_address=(frame << 4) + offset
+        )
+
+    result.remaining_bytes = sub.bytes_remaining()
+
+    return result
 
 
 @omf_record(0x76)
 def handle_ovldef(omf, record):
     """Handle OVLDEF (76H) - Overlay Definition."""
     sub = omf.make_parser(record)
-    print("  [Obsolete] Overlay Definition")
     name = sub.parse_name()
-    print(f"    Overlay Name: '{name}'")
+
+    result = ParsedOvlDef(overlay_name=name)
 
     if sub.bytes_remaining() >= 2:
-        attrib = sub.parse_numeric(2)
-        print(f"    Overlay Attribute: 0x{attrib:04X}")
+        result.attribute = sub.parse_numeric(2)
 
     if sub.bytes_remaining() >= 4:
-        file_location = sub.parse_numeric(4)
-        print(f"    File Location: 0x{file_location:08X}")
+        result.file_location = sub.parse_numeric(4)
 
     if sub.bytes_remaining() > 0:
-        print(f"    Additional Data: {format_hex_with_ascii(sub.data[sub.offset:])}")
+        result.additional_data = sub.data[sub.offset:]
+
+    return result
 
 
 @omf_record(0x78)
 def handle_endrec(omf, record):
     """Handle ENDREC (78H) - End Record."""
-    print("  [Obsolete] End Record")
-    print("    Denotes end of a set of records (block or overlay)")
+    return ParsedEndRec()
 
 
 @omf_record(0x7A)
 def handle_blkdef(omf, record):
     """Handle BLKDEF (7AH) - Block Definition."""
     sub = omf.make_parser(record)
-    print("  [Obsolete] Block Definition")
-    print("    Debug info for procedure/block scope")
 
     base_grp = sub.parse_index()
     base_seg = sub.parse_index()
 
-    print(f"    Base Group: {omf.get_grpdef(base_grp)}")
-    print(f"    Base Segment: {omf.get_segdef(base_seg)}")
+    result = ParsedBlkDef(
+        base_group=omf.get_grpdef(base_grp),
+        base_segment=omf.get_segdef(base_seg)
+    )
 
     if base_seg == 0:
-        frame = sub.parse_numeric(2)
-        print(f"    Frame Number: 0x{frame:04X}")
+        result.frame = sub.parse_numeric(2)
 
-    name = sub.parse_name()
-    print(f"    Block Name: '{name}'")
-
-    offset = sub.parse_numeric(2)
-    print(f"    Offset: 0x{offset:04X}")
+    result.block_name = sub.parse_name()
+    result.offset = sub.parse_numeric(2)
 
     if sub.bytes_remaining() > 0:
-        debug_len = sub.parse_numeric(2)
-        print(f"    Debug Info Length: {debug_len} bytes")
-        if debug_len > 0 and sub.bytes_remaining() > 0:
-            debug_data = sub.read_bytes(min(debug_len, sub.bytes_remaining()))
-            print(f"    Debug Data: {format_hex_with_ascii(debug_data)}")
+        result.debug_length = sub.parse_numeric(2)
+        if result.debug_length > 0 and sub.bytes_remaining() > 0:
+            result.debug_data = sub.read_bytes(min(result.debug_length, sub.bytes_remaining()))
+
+    return result
 
 
 @omf_record(0x7C)
 def handle_blkend(omf, record):
     """Handle BLKEND (7CH) - Block End."""
-    print("  [Obsolete] Block End")
-    print("    Closes a BLKDEF scope")
+    return ParsedBlkEnd()
 
 
 @omf_record(0x7E)
 def handle_debsym(omf, record):
     """Handle DEBSYM (7EH) - Debug Symbols."""
     sub = omf.make_parser(record)
-    print("  [Obsolete] Debug Symbols")
-    print("    Local symbols including stack and based symbols")
+
+    result = ParsedDebSym()
+
     if sub.bytes_remaining() > 0:
-        print(f"    Data: {format_hex_with_ascii(sub.data[sub.offset:])}")
+        result.data = sub.data[sub.offset:]
+
+    return result
 
 
 @omf_record(0xA4)
 def handle_libhed_obsolete(omf, record):
     """Handle LIBHED (A4H) - Obsolete Intel Library Header."""
     sub = omf.make_parser(record)
-    print("  [Obsolete Intel] Library Header")
-    print("    Note: Conflicts with MS EXESTR comment class")
+
+    result = ParsedObsoleteLib(record_type="LIBHED")
+
     if sub.bytes_remaining() > 0:
-        print(f"    Data: {format_hex_with_ascii(sub.data[sub.offset:])}")
+        result.data = sub.data[sub.offset:]
+
+    return result
 
 
 @omf_record(0xA6)
 def handle_libnam_obsolete(omf, record):
     """Handle LIBNAM (A6H) - Obsolete Intel Library Names."""
     sub = omf.make_parser(record)
-    print("  [Obsolete Intel] Library Module Names")
-    print("    Lists module names in sequence of appearance")
+
+    result = ParsedObsoleteLib(record_type="LIBNAM")
+
     while sub.bytes_remaining() > 0:
         name = sub.parse_name()
         if name:
-            print(f"    Module: {name}")
+            result.modules.append(name)
+
+    return result
 
 
 @omf_record(0xA8)
 def handle_libloc_obsolete(omf, record):
     """Handle LIBLOC (A8H) - Obsolete Intel Library Locations."""
     sub = omf.make_parser(record)
-    print("  [Obsolete Intel] Library Module Locations")
+
+    result = ParsedObsoleteLib(record_type="LIBLOC")
+
     count = 0
     while sub.bytes_remaining() >= 4:
         location = sub.parse_numeric(4)
-        print(f"    Module {count}: Offset 0x{location:08X}")
+        result.locations.append({
+            'module': count,
+            'offset': location
+        })
         count += 1
+
+    return result
 
 
 @omf_record(0xAA)
 def handle_libdic_obsolete(omf, record):
     """Handle LIBDIC (AAH) - Obsolete Intel Library Dictionary."""
     sub = omf.make_parser(record)
-    print("  [Obsolete Intel] Library Dictionary")
-    print("    Public symbols grouped by defining module")
+
+    result = ParsedObsoleteLib(record_type="LIBDIC")
+
     if sub.bytes_remaining() > 0:
-        print(f"    Data: {format_hex_with_ascii(sub.data[sub.offset:])}")
+        result.data = sub.data[sub.offset:]
+
+    return result

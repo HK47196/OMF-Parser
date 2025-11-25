@@ -109,14 +109,22 @@ COMMENT_CLASSES = {
 
 
 # A0 Comment Subtypes (OMF Extensions)
+A0_IMPDEF = 0x01
+A0_EXPDEF = 0x02
+A0_INCDEF = 0x03
+A0_PROTECTED_MEMORY = 0x04
+A0_LNKDIR = 0x05
+A0_BIG_ENDIAN = 0x06
+A0_PRECOMP = 0x07
+
 A0_SUBTYPES = {
-    0x01: "IMPDEF",
-    0x02: "EXPDEF",
-    0x03: "INCDEF",
-    0x04: "Protected Memory Library",
-    0x05: "LNKDIR",
-    0x06: "Big-endian",
-    0x07: "PRECOMP",
+    A0_IMPDEF: "IMPDEF",
+    A0_EXPDEF: "EXPDEF",
+    A0_INCDEF: "INCDEF",
+    A0_PROTECTED_MEMORY: "Protected Memory Library",
+    A0_LNKDIR: "LNKDIR",
+    A0_BIG_ENDIAN: "Big-endian",
+    A0_PRECOMP: "PRECOMP",
 }
 
 

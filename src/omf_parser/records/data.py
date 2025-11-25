@@ -1,7 +1,10 @@
 """Data record handlers (LEDATA, LIDATA, FIXUPP)."""
 
 from . import omf_record
-from ..parsing import format_hex_with_ascii
+from ..models import (
+    ParsedLEData, ParsedLIData, ParsedLIDataBlock,
+    ParsedFixupp, ParsedThread, ParsedFixup
+)
 
 
 @omf_record(0xA0, 0xA1)
@@ -15,15 +18,20 @@ def handle_ledata(omf, record):
     offset = sub.parse_numeric(offset_size)
     data_len = sub.bytes_remaining()
 
-    print(f"  Segment: {omf.get_segdef(seg_idx)}")
-    print(f"  Offset: 0x{offset:X}")
-    print(f"  Data Length: {data_len} bytes")
+    result = ParsedLEData(
+        is_32bit=is_32bit,
+        segment=omf.get_segdef(seg_idx),
+        segment_index=seg_idx,
+        offset=offset,
+        data_length=data_len
+    )
 
     if data_len > 0:
-        preview = sub.data[sub.offset:sub.offset + min(16, data_len)]
-        print(f"  Data Preview: {format_hex_with_ascii(preview)}")
+        result.data_preview = sub.data[sub.offset:sub.offset + min(16, data_len)]
 
     omf.last_data_record = ('LEDATA', seg_idx, offset)
+
+    return result
 
 
 @omf_record(0xA2, 0xA3)
@@ -36,36 +44,48 @@ def handle_lidata(omf, record):
     offset_size = sub.get_offset_field_size(is_32bit)
     offset = sub.parse_numeric(offset_size)
 
-    print(f"  Segment: {omf.get_segdef(seg_idx)}")
-    print(f"  Offset: 0x{offset:X}")
-    print("  Iterated Data Blocks:")
+    result = ParsedLIData(
+        is_32bit=is_32bit,
+        segment=omf.get_segdef(seg_idx),
+        segment_index=seg_idx,
+        offset=offset
+    )
 
-    def parse_data_block(indent=4):
-        if sub.bytes_remaining() < 4:
-            return
-
+    def parse_data_block():
         repeat_size = sub.get_lidata_repeat_count_size(is_32bit)
+        if sub.bytes_remaining() < repeat_size + 2:
+            return None
+
         repeat_count = sub.parse_numeric(repeat_size)
         block_count = sub.parse_numeric(2)
 
-        prefix = " " * indent
+        block = ParsedLIDataBlock(
+            repeat_count=repeat_count,
+            block_count=block_count
+        )
 
         if block_count == 0:
             content_len = sub.read_byte()
             if content_len is None:
-                return
+                return block
             content = sub.read_bytes(content_len)
-            if content:
-                print(f"{prefix}Repeat {repeat_count}x: {format_hex_with_ascii(content)}")
+            block.content = content
         else:
-            print(f"{prefix}Repeat {repeat_count}x ({block_count} nested blocks):")
             for _ in range(block_count):
-                parse_data_block(indent + 2)
+                nested = parse_data_block()
+                if nested:
+                    block.nested_blocks.append(nested)
+
+        return block
 
     while sub.bytes_remaining() > 0:
-        parse_data_block()
+        block = parse_data_block()
+        if block:
+            result.blocks.append(block)
 
     omf.last_data_record = ('LIDATA', seg_idx, offset)
+
+    return result
 
 
 @omf_record(0x9C, 0x9D)
@@ -77,7 +97,12 @@ def handle_fixupp(omf, record):
     frame_threads = [None] * 4
     target_threads = [None] * 4
 
-    print("  Fixup Subrecords:")
+    result = ParsedFixupp(is_32bit=is_32bit)
+
+    method_names_frame = ["F0:SEGDEF", "F1:GRPDEF", "F2:EXTDEF", "F3:FrameNum",
+                          "F4:Location", "F5:Target", "F6:Invalid", "F7:?"]
+    method_names_target = ["T0:SEGDEF", "T1:GRPDEF", "T2:EXTDEF", "T3:FrameNum",
+                           "T4:SEGDEF(0)", "T5:GRPDEF(0)", "T6:EXTDEF(0)", "T7:?"]
 
     while sub.bytes_remaining() > 0:
         peek = sub.peek_byte()
@@ -85,7 +110,6 @@ def handle_fixupp(omf, record):
             break
 
         if (peek & 0x80) == 0:
-            # THREAD subrecord
             b = sub.read_byte()
             is_frame = (b & 0x40) != 0
             method = (b >> 2) & 0x07
@@ -99,34 +123,35 @@ def handle_fixupp(omf, record):
 
             kind = "FRAME" if is_frame else "TARGET"
 
-            method_names_frame = ["F0:SEGDEF", "F1:GRPDEF", "F2:EXTDEF", "F3:FrameNum",
-                                  "F4:Location", "F5:Target", "F6:Invalid", "F7:?"]
-            method_names_target = ["T0:SEGDEF", "T1:GRPDEF", "T2:EXTDEF", "T3:FrameNum",
-                                   "T4:SEGDEF(0)", "T5:GRPDEF(0)", "T6:EXTDEF(0)", "T7:?"]
-
             if is_frame:
                 method_name = method_names_frame[method]
-                if method == 3:
-                    omf.add_warning(f"    [!] WARNING: FRAME method F3 is Invalid per spec")
-                elif method == 6:
-                    omf.add_warning(f"    [!] WARNING: FRAME method F6 is Invalid per spec")
-                elif method == 7:
-                    omf.add_warning(f"    [!] WARNING: FRAME method F7 is undefined")
                 frame_threads[thred] = (method, idx)
             else:
                 method_name = method_names_target[method]
-                if method == 7:
-                    omf.add_warning(f"    [!] WARNING: TARGET method T7 is undefined")
                 target_threads[thred] = (method, idx)
 
-            out = f"    THREAD {kind}#{thred} Method={method_name}"
-            if idx is not None:
-                label = "FrameNum" if method == 3 else "Index"
-                out += f" {label}={idx}"
-            print(out)
+            thread = ParsedThread(
+                kind=kind,
+                thread_num=thred,
+                method=method,
+                method_name=method_name,
+                index=idx
+            )
+
+            if is_frame:
+                if method == 3:
+                    thread.warnings.append("FRAME method F3 is Invalid per spec")
+                elif method == 6:
+                    thread.warnings.append("FRAME method F6 is Invalid per spec")
+                elif method == 7:
+                    thread.warnings.append("FRAME method F7 is undefined")
+            else:
+                if method == 7:
+                    thread.warnings.append("TARGET method T7 is undefined")
+
+            result.subrecords.append(thread)
 
         else:
-            # FIXUP subrecord
             b1 = sub.read_byte()
             b2 = sub.read_byte()
 
@@ -178,15 +203,19 @@ def handle_fixupp(omf, record):
                 disp_size = sub.get_offset_field_size(is_32bit)
                 disp = sub.parse_numeric(disp_size)
 
-            print(f"    FIXUP @{data_offset:03X}")
-            print(f"      Location: {loc_str}, Mode: {mode_str}")
-            print(f"      Frame: Method={frame_method} ({frame_src})", end="")
-            if frame_datum is not None:
-                print(f" Datum={frame_datum}", end="")
-            print()
-            print(f"      Target: Method={target_method} ({target_src})", end="")
-            if target_datum is not None:
-                print(f" Datum={target_datum}", end="")
-            print()
-            if disp is not None:
-                print(f"      Displacement: 0x{disp:X}")
+            fixup = ParsedFixup(
+                data_offset=data_offset,
+                location=loc_str,
+                mode=mode_str,
+                frame_method=frame_method,
+                frame_source=frame_src,
+                frame_datum=frame_datum,
+                target_method=target_method,
+                target_source=target_src,
+                target_datum=target_datum,
+                displacement=disp
+            )
+
+            result.subrecords.append(fixup)
+
+    return result

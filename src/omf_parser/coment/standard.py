@@ -1,8 +1,8 @@
 """Standard COMENT record handler."""
 
 from ..records import omf_record
-from ..parsing import format_hex_with_ascii
 from ..constants import COMMENT_CLASSES
+from ..models import ParsedComent
 from . import get_coment_handler
 
 
@@ -15,24 +15,33 @@ def handle_coment(omf, record):
     cls = sub.read_byte()
 
     if flags is None or cls is None:
-        return
+        return None
 
     np = (flags & 0x80) >> 7
     nl = (flags & 0x40) >> 6
 
-    cls_name = COMMENT_CLASSES.get(cls, f"Unknown")
-    print(f"  Comment Class: {cls_name} (0x{cls:02X})")
-    print(f"  Flags: NoPurge={np}, NoList={nl}")
+    cls_name = COMMENT_CLASSES.get(cls, "Unknown")
+
+    result = ParsedComent(
+        comment_class=cls,
+        class_name=cls_name,
+        no_purge=bool(np),
+        no_list=bool(nl)
+    )
 
     text = sub.data[sub.offset:]
 
     handler = get_coment_handler(cls, omf.features)
     if handler:
-        handler(omf, sub, flags, text)
+        content = handler(omf, sub, flags, text)
+        result.content = content
     else:
         if cls not in COMMENT_CLASSES:
-            omf.add_warning(f"  [!] WARNING: Unknown comment class 0x{cls:02X}")
+            warning = f"Unknown comment class 0x{cls:02X}"
         else:
-            omf.add_warning(f"  [?] No handler for comment class 0x{cls:02X} ({cls_name})")
+            warning = f"No handler for comment class 0x{cls:02X} ({cls_name})"
+        result.warnings.append(warning)
         if text:
-            print(f"  Data: {format_hex_with_ascii(text)}")
+            result.raw_data = text
+
+    return result
