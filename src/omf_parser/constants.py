@@ -91,7 +91,7 @@ class RecordType(IntEnum):
     LIBLOC = 0xA8
     LIBDIC = 0xAA
 
-    # Microsoft Extensions
+    # TIS OMF 1.1 Extension Records
     COMDEF = 0xB0
     BAKPAT = 0xB2
     BAKPAT32 = 0xB3
@@ -552,7 +552,7 @@ RECORD_NAMES: dict[int, str] = {
     RecordType.LIBLOC: "LIBLOC",
     RecordType.LIBDIC: "LIBDIC",
 
-    # Microsoft Extensions
+    # TIS OMF 1.1 Extension Records
     RecordType.COMDEF: "COMDEF",
     RecordType.BAKPAT: "BAKPAT",
     RecordType.BAKPAT32: "BAKPAT32",

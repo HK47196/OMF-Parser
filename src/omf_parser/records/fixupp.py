@@ -1,73 +1,12 @@
-"""Data record handlers (LEDATA, LIDATA, FIXUPP)."""
+"""FIXUPP record handler."""
 
 from . import omf_record
-from .microsoft import parse_lidata_blocks
 from ..constants import (
-    RecordType, FixuppFlags,
-    FrameMethod, TargetMethod, FixupLocation
+    RecordType, FixuppFlags, FrameMethod, TargetMethod, FixupLocation
 )
 from ..models import (
-    ParsedLEData, ParsedLIData,
-    ParsedFixupp, ParsedThread, ParsedFixup,
-    ThreadKind, FixupMode
+    ParsedFixupp, ParsedThread, ParsedFixup, ThreadKind, FixupMode
 )
-
-
-@omf_record(RecordType.LEDATA, RecordType.LEDATA32)
-def handle_ledata(omf, record):
-    """Handle LEDATA (A0H/A1H)."""
-    sub = omf.make_parser(record)
-    is_32bit = (record.type == RecordType.LEDATA32)
-
-    seg_idx = sub.parse_index()
-    offset_size = sub.get_offset_field_size(is_32bit)
-    offset = sub.parse_numeric(offset_size)
-    data_len = sub.bytes_remaining()
-
-    result = ParsedLEData(
-        is_32bit=is_32bit,
-        segment=omf.get_segdef(seg_idx),
-        segment_index=seg_idx,
-        offset=offset,
-        data_length=data_len
-    )
-
-    if data_len > 0:
-        result.data_preview = sub.data[sub.offset:sub.offset + min(16, data_len)]
-
-    omf.last_data_record = ('LEDATA', seg_idx, offset)
-
-    return result
-
-
-@omf_record(RecordType.LIDATA, RecordType.LIDATA32)
-def handle_lidata(omf, record):
-    """Handle LIDATA (A2H/A3H)."""
-    sub = omf.make_parser(record)
-    is_32bit = (record.type == RecordType.LIDATA32)
-
-    seg_idx = sub.parse_index()
-    offset_size = sub.get_offset_field_size(is_32bit)
-    offset = sub.parse_numeric(offset_size)
-
-    result = ParsedLIData(
-        is_32bit=is_32bit,
-        segment=omf.get_segdef(seg_idx),
-        segment_index=seg_idx,
-        offset=offset
-    )
-
-    if seg_idx == 0:
-        result.warnings.append("Segment index is zero (invalid per spec)")
-
-    blocks, warnings = parse_lidata_blocks(sub, is_32bit)
-    result.blocks = blocks
-    result.warnings.extend(warnings)
-    result.total_expanded_size = sum(b.expanded_size for b in result.blocks)
-
-    omf.last_data_record = ('LIDATA', seg_idx, offset)
-
-    return result
 
 
 @omf_record(RecordType.FIXUPP, RecordType.FIXUPP32)

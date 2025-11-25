@@ -62,9 +62,33 @@ def get_record_handler(rec_type, active_features):
     return matching[0]['handler']
 
 
-from . import standard
-from . import data
-from . import microsoft
+# Standard TIS OMF 1.1 Records
+from . import theadr
+from . import lnames
+from . import segdef
+from . import grpdef
+from . import pubdef
+from . import extdef
+from . import modend
+from . import linnum
+from . import typdef
+from . import locsym
+from . import ledata
+from . import lidata
+from . import fixupp
+from . import comdef
+from . import comdat
+from . import bakpat
+from . import linsym
+from . import alias
+from . import vernum
+from . import vendext
+
+# Library Records
 from . import library
+
+# Obsolete Intel 8086 Records
 from . import obsolete
-from .. import coment  # Register COMENT handlers
+
+# Register COMENT handlers
+from .. import coment
