@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from .variant import Variant, TIS_STANDARD, PHARLAP, IBM_LINK386
+from .constants import RecordType, CommentClass
 
 
 @dataclass
@@ -52,7 +53,7 @@ class Scanner:
         if not self.data:
             return records
 
-        if self.data[0] == 0xF0:
+        if self.data[0] == RecordType.LIBHDR:
             self.is_library = True
 
         while self.offset < len(self.data):
@@ -68,7 +69,7 @@ class Scanner:
             self._detect_features(record)
             self._track_module_boundaries(record)
 
-            if record.type == 0xF1:
+            if record.type == RecordType.LIBEND:
                 break
 
         if self._module_variant != TIS_STANDARD:
@@ -81,11 +82,11 @@ class Scanner:
 
     def _track_module_boundaries(self, record: RecordInfo):
         """Track module boundaries to detect mixed variants in libraries."""
-        if record.type in (0x80, 0x82):
+        if record.type in (RecordType.THEADR, RecordType.LHEADR):
             if self._module_variant != TIS_STANDARD:
                 self._seen_variants.add(self._module_variant.name)
             self._module_variant = TIS_STANDARD
-        elif record.type in (0x8A, 0x8B):
+        elif record.type in (RecordType.MODEND, RecordType.MODEND32):
             if self._module_variant != TIS_STANDARD:
                 self._seen_variants.add(self._module_variant.name)
 
@@ -107,7 +108,7 @@ class Scanner:
         raw_content = self.data[self.offset:self.offset + rec_len]
         self.offset += rec_len
 
-        is_lib_record = rec_type in (0xF0, 0xF1)
+        is_lib_record = rec_type in (RecordType.LIBHDR, RecordType.LIBEND)
         if is_lib_record:
             return RecordInfo(
                 type=rec_type,
@@ -141,9 +142,9 @@ class Scanner:
 
     def _detect_features(self, record: RecordInfo):
         """Detect features from record content."""
-        if record.type == 0x88:
+        if record.type == RecordType.COMENT:
             self._detect_coment_features(record)
-        elif record.type == 0xCE:
+        elif record.type == RecordType.VENDEXT:
             self._detect_vendext_features(record)
 
     def _detect_coment_features(self, record: RecordInfo):
@@ -153,7 +154,7 @@ class Scanner:
 
         comment_class = record.content[1]
 
-        if comment_class == 0xAA:  # Easy OMF-386 (PharLap)
+        if comment_class == CommentClass.EASY_OMF:
             self.variant = PHARLAP
             self._module_variant = PHARLAP
             self.features.add('easy_omf')

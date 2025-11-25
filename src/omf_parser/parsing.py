@@ -3,6 +3,8 @@
 import struct
 from typing import TYPE_CHECKING
 
+from .constants import IndexFlags, VarlenMarkers, AsciiRange
+
 if TYPE_CHECKING:
     from .variant import Variant
 
@@ -54,11 +56,11 @@ class RecordParser:
         b1 = self.read_byte()
         if b1 is None:
             return 0
-        if b1 & 0x80:
+        if b1 & IndexFlags.TWO_BYTE_FLAG:
             b2 = self.read_byte()
             if b2 is None:
                 return 0
-            return ((b1 & 0x7F) << 8) + b2
+            return ((b1 & IndexFlags.HIGH_MASK) << 8) + b2
         return b1
 
     def parse_name(self):
@@ -114,13 +116,13 @@ class RecordParser:
         b = self.read_byte()
         if b is None:
             return 0
-        if b <= 0x80:
+        if b <= VarlenMarkers.MAX_1BYTE:
             return b
-        if b == 0x81:
+        if b == VarlenMarkers.MARKER_2BYTE:
             return self.parse_numeric(2)
-        if b == 0x84:
+        if b == VarlenMarkers.MARKER_3BYTE:
             return self.parse_numeric(3)
-        if b == 0x88:
+        if b == VarlenMarkers.MARKER_4BYTE:
             return self.parse_numeric(4)
         return b
 
@@ -135,5 +137,8 @@ def format_hex_with_ascii(data: bytes) -> str:
     if not data:
         return ""
     hex_str = data.hex().upper()
-    ascii_str = ''.join(chr(b) if 32 <= b < 127 else '.' for b in data)
+    ascii_str = ''.join(
+        chr(b) if AsciiRange.PRINTABLE_MIN <= b < AsciiRange.PRINTABLE_MAX else '.'
+        for b in data
+    )
     return f"{hex_str} (\"{ascii_str}\")"

@@ -1,17 +1,18 @@
 """Data record handlers (LEDATA, LIDATA, FIXUPP)."""
 
 from . import omf_record
+from ..constants import RecordType, FixuppFlags
 from ..models import (
     ParsedLEData, ParsedLIData, ParsedLIDataBlock,
     ParsedFixupp, ParsedThread, ParsedFixup
 )
 
 
-@omf_record(0xA0, 0xA1)
+@omf_record(RecordType.LEDATA, RecordType.LEDATA32)
 def handle_ledata(omf, record):
     """Handle LEDATA (A0H/A1H)."""
     sub = omf.make_parser(record)
-    is_32bit = (record.type == 0xA1)
+    is_32bit = (record.type == RecordType.LEDATA32)
 
     seg_idx = sub.parse_index()
     offset_size = sub.get_offset_field_size(is_32bit)
@@ -34,11 +35,11 @@ def handle_ledata(omf, record):
     return result
 
 
-@omf_record(0xA2, 0xA3)
+@omf_record(RecordType.LIDATA, RecordType.LIDATA32)
 def handle_lidata(omf, record):
     """Handle LIDATA (A2H/A3H)."""
     sub = omf.make_parser(record)
-    is_32bit = (record.type == 0xA3)
+    is_32bit = (record.type == RecordType.LIDATA32)
 
     seg_idx = sub.parse_index()
     offset_size = sub.get_offset_field_size(is_32bit)
@@ -88,11 +89,11 @@ def handle_lidata(omf, record):
     return result
 
 
-@omf_record(0x9C, 0x9D)
+@omf_record(RecordType.FIXUPP, RecordType.FIXUPP32)
 def handle_fixupp(omf, record):
     """Handle FIXUPP (9CH/9DH)."""
     sub = omf.make_parser(record)
-    is_32bit = (record.type == 0x9D)
+    is_32bit = (record.type == RecordType.FIXUPP32)
 
     frame_threads = [None] * 4
     target_threads = [None] * 4
@@ -109,11 +110,11 @@ def handle_fixupp(omf, record):
         if peek is None:
             break
 
-        if (peek & 0x80) == 0:
+        if (peek & FixuppFlags.IS_FIXUP) == 0:
             b = sub.read_byte()
-            is_frame = (b & 0x40) != 0
-            method = (b >> 2) & 0x07
-            thred = b & 0x03
+            is_frame = (b & FixuppFlags.THREAD_IS_FRAME) != 0
+            method = (b >> FixuppFlags.THREAD_METHOD_SHIFT) & FixuppFlags.THREAD_METHOD_MASK
+            thred = b & FixuppFlags.THREAD_NUM_MASK
 
             idx = None
             if method == 3:
@@ -158,9 +159,9 @@ def handle_fixupp(omf, record):
             if b1 is None or b2 is None:
                 break
 
-            mode = (b1 >> 6) & 0x01
-            loc_type = (b1 >> 2) & 0x0F
-            data_offset = ((b1 & 0x03) << 8) | b2
+            mode = (b1 >> FixuppFlags.MODE_SHIFT) & 0x01
+            loc_type = (b1 >> FixuppFlags.LOC_TYPE_SHIFT) & FixuppFlags.LOC_TYPE_MASK
+            data_offset = ((b1 & FixuppFlags.OFFSET_HIGH_MASK) << 8) | b2
 
             mode_str = "Segment-relative" if mode else "Self-relative"
 
@@ -171,14 +172,14 @@ def handle_fixupp(omf, record):
             if fix_dat is None:
                 break
 
-            f_bit = (fix_dat >> 7) & 0x01
-            frame_field = (fix_dat >> 4) & 0x07
-            t_bit = (fix_dat >> 3) & 0x01
-            p_bit = (fix_dat >> 2) & 0x01
-            targt_field = fix_dat & 0x03
+            f_bit = (fix_dat & FixuppFlags.F_BIT) != 0
+            frame_field = (fix_dat >> FixuppFlags.FRAME_SHIFT) & FixuppFlags.FRAME_MASK
+            t_bit = (fix_dat & FixuppFlags.T_BIT) != 0
+            p_bit = (fix_dat & FixuppFlags.P_BIT) != 0
+            targt_field = fix_dat & FixuppFlags.TARGET_MASK
 
             if f_bit:
-                thread_num = frame_field & 0x03
+                thread_num = frame_field & FixuppFlags.THREAD_NUM_MASK
                 frame_method, frame_datum = frame_threads[thread_num] or (0, None)
                 frame_src = f"Thread#{thread_num}"
             else:
@@ -191,10 +192,10 @@ def handle_fixupp(omf, record):
             if t_bit:
                 thread_num = targt_field
                 target_method, target_datum = target_threads[thread_num] or (0, None)
-                target_method = (target_method & 0x03) | (p_bit << 2)
+                target_method = (target_method & FixuppFlags.TARGET_MASK) | (p_bit << FixuppFlags.P_BIT_SHIFT)
                 target_src = f"Thread#{thread_num}"
             else:
-                target_method = targt_field | (p_bit << 2)
+                target_method = targt_field | (p_bit << FixuppFlags.P_BIT_SHIFT)
                 target_datum = sub.parse_index()
                 target_src = "Explicit"
 

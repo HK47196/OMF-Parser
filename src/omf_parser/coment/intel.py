@@ -2,8 +2,8 @@
 
 from . import coment_class
 from ..constants import (
-    A0_SUBTYPES, A0_IMPDEF, A0_EXPDEF, A0_INCDEF,
-    A0_PROTECTED_MEMORY, A0_LNKDIR, A0_BIG_ENDIAN, A0_PRECOMP
+    CommentClass, A0Subtype, ExpdefFlags, LnkdirFlags, SignedConversion,
+    A0_SUBTYPES
 )
 from ..models import (
     ComentTranslator, ComentCopyright, ComentLibSpec, ComentDosseg,
@@ -25,73 +25,73 @@ def _decode_text(text):
     return None
 
 
-@coment_class(0x00)
+@coment_class(CommentClass.TRANSLATOR)
 def handle_translator(omf, sub, flags, text):
     """Translator - identifies compiler/assembler."""
     decoded = _decode_text(text)
     return ComentTranslator(translator=decoded or text.hex() if text else "")
 
 
-@coment_class(0x01)
+@coment_class(CommentClass.COPYRIGHT)
 def handle_copyright(omf, sub, flags, text):
     """Intel Copyright."""
     decoded = _decode_text(text)
     return ComentCopyright(copyright=decoded or text.hex() if text else "")
 
 
-@coment_class(0x81)
+@coment_class(CommentClass.LIBSPEC)
 def handle_libspec(omf, sub, flags, text):
     """Library Specifier (obsolete)."""
     decoded = _decode_text(text)
     return ComentLibSpec(library=decoded or text.hex() if text else "")
 
 
-@coment_class(0x9E)
+@coment_class(CommentClass.DOSSEG)
 def handle_dosseg(omf, sub, flags, text):
     """DOSSEG - DOS segment ordering."""
     return ComentDosseg()
 
 
-@coment_class(0xA1)
+@coment_class(CommentClass.NEW_OMF)
 def handle_new_omf(omf, sub, flags, text):
     """New OMF Extension."""
     return ComentNewOmf(data=text if text else None)
 
 
-@coment_class(0xA2)
+@coment_class(CommentClass.LINK_PASS)
 def handle_link_pass(omf, sub, flags, text):
     """Link Pass Separator."""
     pass_num = text[0] if text and len(text) >= 1 else None
     return ComentLinkPass(pass_num=pass_num)
 
 
-@coment_class(0xA3)
+@coment_class(CommentClass.LIBMOD)
 def handle_libmod(omf, sub, flags, text):
     """LIBMOD - Library Module Name."""
     decoded = _decode_text(text)
     return ComentLibMod(module_name=decoded or text.hex() if text else "")
 
 
-@coment_class(0xA4)
+@coment_class(CommentClass.EXESTR)
 def handle_exestr(omf, sub, flags, text):
     """EXESTR - Executable String."""
     decoded = _decode_text(text)
     return ComentExeStr(exe_string=decoded or text.hex() if text else "")
 
 
-@coment_class(0xA6)
+@coment_class(CommentClass.INCERR)
 def handle_incerr(omf, sub, flags, text):
     """INCERR - Incremental Compilation Error."""
     return ComentIncErr()
 
 
-@coment_class(0xA7)
+@coment_class(CommentClass.NOPAD)
 def handle_nopad(omf, sub, flags, text):
     """NOPAD - No Segment Padding."""
     return ComentNoPad()
 
 
-@coment_class(0xA8)
+@coment_class(CommentClass.WKEXT)
 def handle_wkext(omf, sub, flags, text):
     """WKEXT - Weak Extern."""
     result = ComentWkExt()
@@ -107,7 +107,7 @@ def handle_wkext(omf, sub, flags, text):
     return result
 
 
-@coment_class(0xA9)
+@coment_class(CommentClass.LZEXT)
 def handle_lzext(omf, sub, flags, text):
     """LZEXT - Lazy Extern."""
     result = ComentLzExt()
@@ -123,7 +123,7 @@ def handle_lzext(omf, sub, flags, text):
     return result
 
 
-@coment_class(0xAA)
+@coment_class(CommentClass.EASY_OMF)
 def handle_easy_omf(omf, sub, flags, text):
     """Easy OMF-386 marker (PharLap)."""
     omf.features.add('easy_omf')
@@ -133,7 +133,7 @@ def handle_easy_omf(omf, sub, flags, text):
     return ComentEasyOmf(marker=decoded)
 
 
-@coment_class(0xA0)
+@coment_class(CommentClass.OMF_EXTENSIONS)
 def handle_omf_extensions(omf, sub, flags, text):
     """OMF Extensions (A0 subtypes)."""
     if not text:
@@ -146,20 +146,20 @@ def handle_omf_extensions(omf, sub, flags, text):
 
     remaining = text[1:]
 
-    if subtype == A0_IMPDEF:
+    if subtype == A0Subtype.IMPDEF:
         result.content = _parse_impdef(omf, remaining)
-    elif subtype == A0_EXPDEF:
+    elif subtype == A0Subtype.EXPDEF:
         result.content = _parse_expdef(omf, remaining)
-    elif subtype == A0_INCDEF:
+    elif subtype == A0Subtype.INCDEF:
         result.content = _parse_incdef(omf, remaining)
-    elif subtype == A0_PROTECTED_MEMORY:
+    elif subtype == A0Subtype.PROTECTED_MEMORY:
         result.content = A0ProtectedMemory()
-    elif subtype == A0_LNKDIR:
+    elif subtype == A0Subtype.LNKDIR:
         result.content = _parse_lnkdir(omf, remaining)
-    elif subtype == A0_BIG_ENDIAN:
+    elif subtype == A0Subtype.BIG_ENDIAN:
         omf.features.add('big_endian')
         result.content = A0BigEndian()
-    elif subtype == A0_PRECOMP:
+    elif subtype == A0Subtype.PRECOMP:
         result.content = A0PreComp()
     else:
         result.warnings.append(f"Unknown A0 subtype 0x{subtype:02X}")
@@ -213,10 +213,10 @@ def _parse_expdef(omf, data):
     exp_flag = data[0]
     pos = 1
 
-    by_ordinal = (exp_flag & 0x80) != 0
-    resident = (exp_flag & 0x40) != 0
-    no_data = (exp_flag & 0x20) != 0
-    parm_count = exp_flag & 0x1F
+    by_ordinal = (exp_flag & ExpdefFlags.ORDINAL) != 0
+    resident = (exp_flag & ExpdefFlags.RESIDENT) != 0
+    no_data = (exp_flag & ExpdefFlags.NODATA) != 0
+    parm_count = exp_flag & ExpdefFlags.PARM_COUNT_MASK
 
     exp_name_len = data[pos]
     exp_name = data[pos + 1:pos + 1 + exp_name_len].decode('ascii', errors='replace')
@@ -251,10 +251,10 @@ def _parse_incdef(omf, data):
     extdef_delta = data[0] | (data[1] << 8)
     linnum_delta = data[2] | (data[3] << 8)
 
-    if extdef_delta >= 0x8000:
-        extdef_delta -= 0x10000
-    if linnum_delta >= 0x8000:
-        linnum_delta -= 0x10000
+    if extdef_delta >= SignedConversion.THRESHOLD_16BIT:
+        extdef_delta -= SignedConversion.OFFSET_16BIT
+    if linnum_delta >= SignedConversion.THRESHOLD_16BIT:
+        linnum_delta -= SignedConversion.OFFSET_16BIT
 
     return A0IncDef(extdef_delta=extdef_delta, linnum_delta=linnum_delta)
 
@@ -274,11 +274,11 @@ def _parse_lnkdir(omf, data):
         cv_version=cv_ver
     )
 
-    if bit_flags & 0x01:
+    if bit_flags & LnkdirFlags.NEW_EXE:
         result.flags_meanings.append("Output new .EXE format")
-    if bit_flags & 0x02:
+    if bit_flags & LnkdirFlags.OMIT_PUBLICS:
         result.flags_meanings.append("Omit CodeView $PUBLICS")
-    if bit_flags & 0x04:
+    if bit_flags & LnkdirFlags.RUN_MPC:
         result.flags_meanings.append("Run MPC utility")
 
     return result

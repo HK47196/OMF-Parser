@@ -1,162 +1,456 @@
 """OMF constants and record type definitions."""
 
+from enum import IntEnum, unique
 
-# OMF Record Type Definitions
-RECORD_NAMES = {
+
+# =============================================================================
+# Record Type Enum
+# =============================================================================
+
+@unique
+class RecordType(IntEnum):
+    """OMF record type identifiers."""
+
     # Obsolete Intel 8086 Records (Appendix 3)
-    0x6E: "RHEADR",      # R-Module Header Record
-    0x70: "REGINT",      # Register Initialization Record
-    0x72: "REDATA",      # Relocatable Enumerated Data Record
-    0x74: "RIDATA",      # Relocatable Iterated Data Record
-    0x76: "OVLDEF",      # Overlay Definition Record
-    0x78: "ENDREC",      # End Record
-    0x7A: "BLKDEF",      # Block Definition Record
-    0x7C: "BLKEND",      # Block End Record
-    0x7E: "DEBSYM",      # Debug Symbols Record
+    RHEADR = 0x6E
+    REGINT = 0x70
+    REDATA = 0x72
+    RIDATA = 0x74
+    OVLDEF = 0x76
+    ENDREC = 0x78
+    BLKDEF = 0x7A
+    BLKEND = 0x7C
+    DEBSYM = 0x7E
 
     # Standard OMF Records
-    0x80: "THEADR",      # Translator Header Record
-    0x82: "LHEADR",      # Library Module Header Record
-    0x84: "PEDATA",      # Physical Enumerated Data (obsolete)
-    0x86: "PIDATA",      # Physical Iterated Data (obsolete)
-    0x88: "COMENT",      # Comment Record
-    0x8A: "MODEND",      # Module End Record (16-bit)
-    0x8B: "MODEND32",    # Module End Record (32-bit)
-    0x8C: "EXTDEF",      # External Names Definition Record
-    0x8E: "TYPDEF",      # Type Definition Record (obsolete)
+    THEADR = 0x80
+    LHEADR = 0x82
+    PEDATA = 0x84
+    PIDATA = 0x86
+    COMENT = 0x88
+    MODEND = 0x8A
+    MODEND32 = 0x8B
+    EXTDEF = 0x8C
+    TYPDEF = 0x8E
+    PUBDEF = 0x90
+    PUBDEF32 = 0x91
+    LOCSYM = 0x92
+    LINNUM = 0x94
+    LINNUM32 = 0x95
+    LNAMES = 0x96
+    SEGDEF = 0x98
+    SEGDEF32 = 0x99
+    GRPDEF = 0x9A
+    FIXUPP = 0x9C
+    FIXUPP32 = 0x9D
+    LEDATA = 0xA0
+    LEDATA32 = 0xA1
+    LIDATA = 0xA2
+    LIDATA32 = 0xA3
 
-    0x90: "PUBDEF",      # Public Names Definition Record (16-bit)
-    0x91: "PUBDEF32",    # Public Names Definition Record (32-bit)
-    0x92: "LOCSYM",      # Local Symbols Record (obsolete)
-    0x94: "LINNUM",      # Line Numbers Record (16-bit)
-    0x95: "LINNUM32",    # Line Numbers Record (32-bit)
-    0x96: "LNAMES",      # List of Names Record
-    0x98: "SEGDEF",      # Segment Definition Record (16-bit)
-    0x99: "SEGDEF32",    # Segment Definition Record (32-bit)
-    0x9A: "GRPDEF",      # Group Definition Record
-    0x9C: "FIXUPP",      # Fixup Record (16-bit)
-    0x9D: "FIXUPP32",    # Fixup Record (32-bit)
-    0x9E: "UNNAMED",     # Unnamed record (never defined)
-
-    0xA0: "LEDATA",      # Logical Enumerated Data Record (16-bit)
-    0xA1: "LEDATA32",    # Logical Enumerated Data Record (32-bit)
-    0xA2: "LIDATA",      # Logical Iterated Data Record (16-bit)
-    0xA3: "LIDATA32",    # Logical Iterated Data Record (32-bit)
-
-    # Obsolete Intel Library Records (conflict with MS usage)
-    0xA4: "LIBHED",      # Library Header Record (obsolete Intel)
-    0xA6: "LIBNAM",      # Library Module Names Record (obsolete Intel)
-    0xA8: "LIBLOC",      # Library Module Locations Record (obsolete Intel)
-    0xAA: "LIBDIC",      # Library Dictionary Record (obsolete Intel)
+    # Obsolete Intel Library Records
+    LIBHED = 0xA4
+    LIBNAM = 0xA6
+    LIBLOC = 0xA8
+    LIBDIC = 0xAA
 
     # Microsoft Extensions
-    0xB0: "COMDEF",      # Communal Names Definition Record
-    0xB2: "BAKPAT",      # Backpatch Record (16-bit)
-    0xB3: "BAKPAT32",    # Backpatch Record (32-bit)
-    0xB4: "LEXTDEF",     # Local External Names Definition Record
-    0xB5: "LEXTDEF2",    # Local External Names Definition Record (alt)
-    0xB6: "LPUBDEF",     # Local Public Names Definition Record (16-bit)
-    0xB7: "LPUBDEF32",   # Local Public Names Definition Record (32-bit)
-    0xB8: "LCOMDEF",     # Local Communal Names Definition Record
-    0xBC: "CEXTDEF",     # COMDAT External Names Definition Record
-
-    0xC2: "COMDAT",      # Initialized Communal Data Record (16-bit)
-    0xC3: "COMDAT32",    # Initialized Communal Data Record (32-bit)
-    0xC4: "LINSYM",      # Symbol Line Numbers Record (16-bit)
-    0xC5: "LINSYM32",    # Symbol Line Numbers Record (32-bit)
-    0xC6: "ALIAS",       # Alias Definition Record
-    0xC8: "NBKPAT",      # Named Backpatch Record (16-bit)
-    0xC9: "NBKPAT32",    # Named Backpatch Record (32-bit)
-    0xCA: "LLNAMES",     # Local Logical Names Definition Record
-    0xCC: "VERNUM",      # OMF Version Number Record
-    0xCE: "VENDEXT",     # Vendor-specific OMF Extension Record
+    COMDEF = 0xB0
+    BAKPAT = 0xB2
+    BAKPAT32 = 0xB3
+    LEXTDEF = 0xB4
+    LEXTDEF2 = 0xB5
+    LPUBDEF = 0xB6
+    LPUBDEF32 = 0xB7
+    LCOMDEF = 0xB8
+    CEXTDEF = 0xBC
+    COMDAT = 0xC2
+    COMDAT32 = 0xC3
+    LINSYM = 0xC4
+    LINSYM32 = 0xC5
+    ALIAS = 0xC6
+    NBKPAT = 0xC8
+    NBKPAT32 = 0xC9
+    LLNAMES = 0xCA
+    VERNUM = 0xCC
+    VENDEXT = 0xCE
 
     # Library Records (Microsoft format)
-    0xF0: "LIBHDR",      # Library Header Record
-    0xF1: "LIBEND",      # Library End Record
+    LIBHDR = 0xF0
+    LIBEND = 0xF1
+
+    # Extended Dictionary marker
+    EXTDICT = 0xF2
+
+    @property
+    def is_32bit(self) -> bool:
+        """Check if this is a 32-bit variant."""
+        return self.name.endswith("32")
+
+    @property
+    def base_type(self) -> "RecordType":
+        """Get the 16-bit base type (e.g., MODEND32 → MODEND)."""
+        if self.is_32bit:
+            return RecordType(self.value - 1)
+        return self
+
+
+# =============================================================================
+# Comment Class Enum
+# =============================================================================
+
+@unique
+class CommentClass(IntEnum):
+    """COMENT record class types."""
+    TRANSLATOR = 0x00
+    COPYRIGHT = 0x01
+    LIBSPEC = 0x81
+    MSDOS_VERSION = 0x9C
+    MEMORY_MODEL = 0x9D
+    DOSSEG = 0x9E
+    DEFAULT_LIBRARY = 0x9F
+    OMF_EXTENSIONS = 0xA0
+    NEW_OMF = 0xA1
+    LINK_PASS = 0xA2
+    LIBMOD = 0xA3
+    EXESTR = 0xA4
+    INCERR = 0xA6
+    NOPAD = 0xA7
+    WKEXT = 0xA8
+    LZEXT = 0xA9
+    EASY_OMF = 0xAA
+    COMMENT = 0xDA
+    COMPILER = 0xDB
+    DATE = 0xDC
+    TIMESTAMP = 0xDD
+    USER = 0xDF
+    DEPENDENCY = 0xE9
+    COMMANDLINE = 0xFF
+
+
+# =============================================================================
+# OMF Extensions (A0) Subtypes
+# =============================================================================
+
+@unique
+class A0Subtype(IntEnum):
+    """OMF Extensions (A0) comment subtypes."""
+    IMPDEF = 0x01
+    EXPDEF = 0x02
+    INCDEF = 0x03
+    PROTECTED_MEMORY = 0x04
+    LNKDIR = 0x05
+    BIG_ENDIAN = 0x06
+    PRECOMP = 0x07
+
+
+# =============================================================================
+# GRPDEF Component Types
+# =============================================================================
+
+@unique
+class GrpdefComponent(IntEnum):
+    """GRPDEF component type markers."""
+    SEGMENT_INDEX = 0xFF
+    EXTERNAL_INDEX = 0xFE
+    SEGDEF_INDICES = 0xFD
+    LTL = 0xFB
+    ABSOLUTE = 0xFA
+
+
+# =============================================================================
+# COMDEF Data Types
+# =============================================================================
+
+@unique
+class ComdefType(IntEnum):
+    """COMDEF data type codes."""
+    FAR = 0x61
+    NEAR = 0x62
+
+
+# =============================================================================
+# TYPDEF Leaf Types
+# =============================================================================
+
+@unique
+class TypdefLeaf(IntEnum):
+    """TYPDEF leaf type codes."""
+    FAR = 0x61
+    NEAR = 0x62
+
+
+# =============================================================================
+# Bit Manipulation Constants (plain classes)
+# =============================================================================
+
+class SegdefFlags:
+    """SEGDEF ACBP field bit positions and masks."""
+    ALIGN_SHIFT = 5
+    COMBINE_SHIFT = 2
+    ALIGN_MASK = 0x07
+    COMBINE_MASK = 0x07
+    BIG_MASK = 0x01
+    USE32_MASK = 0x01
+    ACCESS_TYPE_MASK = 0x03
+
+
+class ComentFlags:
+    """COMENT flag byte bit positions."""
+    NP = 0x80  # No Purge
+    NL = 0x40  # No List
+
+
+class ModendFlags:
+    """MODEND flag byte bit positions and masks."""
+    MAIN = 0x80
+    START = 0x40
+    RELOCATABLE = 0x01
+    FRAME_SHIFT = 4
+    FRAME_MASK = 0x07
+    P_BIT_MASK = 0x04
+    P_BIT_SHIFT = 2
+    TARGET_MASK = 0x03
+
+
+class FixuppFlags:
+    """FIXUPP field bit positions and masks."""
+    # LOCAT byte
+    IS_FIXUP = 0x80
+    MODE_MASK = 0x40
+    MODE_SHIFT = 6
+    LOC_TYPE_MASK = 0x0F
+    LOC_TYPE_SHIFT = 2
+    OFFSET_HIGH_MASK = 0x03
+
+    # THREAD byte
+    THREAD_IS_FRAME = 0x40
+    THREAD_METHOD_SHIFT = 2
+    THREAD_METHOD_MASK = 0x07
+    THREAD_NUM_MASK = 0x03
+
+    # FIXDAT byte
+    F_BIT = 0x80
+    FRAME_SHIFT = 4
+    FRAME_MASK = 0x07
+    T_BIT = 0x08
+    P_BIT = 0x04
+    P_BIT_SHIFT = 2
+    TARGET_MASK = 0x03
+
+
+class ComdatFlags:
+    """COMDAT flag byte bit positions and masks."""
+    CONTINUATION = 0x01
+    ITERATED = 0x02
+    LOCAL = 0x04
+    DATA_IN_CODE = 0x08
+    SELECTION_SHIFT = 4
+    SELECTION_MASK = 0x0F
+    ALLOCATION_MASK = 0x0F
+
+
+class ExpdefFlags:
+    """EXPDEF flag byte bit positions and masks."""
+    ORDINAL = 0x80
+    RESIDENT = 0x40
+    NODATA = 0x20
+    PARM_COUNT_MASK = 0x1F
+
+
+class LnkdirFlags:
+    """LNKDIR flag byte bit positions."""
+    NEW_EXE = 0x01
+    OMIT_PUBLICS = 0x02
+    RUN_MPC = 0x04
+
+
+class IndexFlags:
+    """OMF index field bit positions."""
+    TWO_BYTE_FLAG = 0x80
+    HIGH_MASK = 0x7F
+
+
+class VarlenMarkers:
+    """Variable-length integer markers (COMDEF/TYPDEF)."""
+    MAX_1BYTE = 0x80
+    MARKER_2BYTE = 0x81
+    MARKER_3BYTE = 0x84
+    MARKER_4BYTE = 0x88
+
+
+class LibraryConsts:
+    """Library format constants."""
+    DICT_BLOCK_SIZE = 512
+    DICT_BUCKET_COUNT = 37
+    FLAG_CASE_SENSITIVE = 0x01
+
+
+class SegmentSize:
+    """Segment size limits."""
+    SIZE_64K = 0x10000
+    SIZE_4GB = 0x100000000
+
+
+class SignedConversion:
+    """Signed integer conversion constants."""
+    THRESHOLD_16BIT = 0x8000
+    OFFSET_16BIT = 0x10000
+
+
+class AsciiRange:
+    """ASCII range constants for hex display."""
+    PRINTABLE_MIN = 32
+    PRINTABLE_MAX = 127
+
+
+# Borland COMDEF maximum segment index
+COMDEF_BORLAND_MAX = 0x5F
+
+
+# =============================================================================
+# Human-Readable Descriptions
+# =============================================================================
+
+RECORD_NAMES: dict[int, str] = {
+    # Obsolete Intel 8086 Records (Appendix 3)
+    RecordType.RHEADR: "RHEADR",
+    RecordType.REGINT: "REGINT",
+    RecordType.REDATA: "REDATA",
+    RecordType.RIDATA: "RIDATA",
+    RecordType.OVLDEF: "OVLDEF",
+    RecordType.ENDREC: "ENDREC",
+    RecordType.BLKDEF: "BLKDEF",
+    RecordType.BLKEND: "BLKEND",
+    RecordType.DEBSYM: "DEBSYM",
+
+    # Standard OMF Records
+    RecordType.THEADR: "THEADR",
+    RecordType.LHEADR: "LHEADR",
+    RecordType.PEDATA: "PEDATA",
+    RecordType.PIDATA: "PIDATA",
+    RecordType.COMENT: "COMENT",
+    RecordType.MODEND: "MODEND",
+    RecordType.MODEND32: "MODEND32",
+    RecordType.EXTDEF: "EXTDEF",
+    RecordType.TYPDEF: "TYPDEF",
+    RecordType.PUBDEF: "PUBDEF",
+    RecordType.PUBDEF32: "PUBDEF32",
+    RecordType.LOCSYM: "LOCSYM",
+    RecordType.LINNUM: "LINNUM",
+    RecordType.LINNUM32: "LINNUM32",
+    RecordType.LNAMES: "LNAMES",
+    RecordType.SEGDEF: "SEGDEF",
+    RecordType.SEGDEF32: "SEGDEF32",
+    RecordType.GRPDEF: "GRPDEF",
+    RecordType.FIXUPP: "FIXUPP",
+    RecordType.FIXUPP32: "FIXUPP32",
+    RecordType.LEDATA: "LEDATA",
+    RecordType.LEDATA32: "LEDATA32",
+    RecordType.LIDATA: "LIDATA",
+    RecordType.LIDATA32: "LIDATA32",
+
+    # Obsolete Intel Library Records
+    RecordType.LIBHED: "LIBHED",
+    RecordType.LIBNAM: "LIBNAM",
+    RecordType.LIBLOC: "LIBLOC",
+    RecordType.LIBDIC: "LIBDIC",
+
+    # Microsoft Extensions
+    RecordType.COMDEF: "COMDEF",
+    RecordType.BAKPAT: "BAKPAT",
+    RecordType.BAKPAT32: "BAKPAT32",
+    RecordType.LEXTDEF: "LEXTDEF",
+    RecordType.LEXTDEF2: "LEXTDEF2",
+    RecordType.LPUBDEF: "LPUBDEF",
+    RecordType.LPUBDEF32: "LPUBDEF32",
+    RecordType.LCOMDEF: "LCOMDEF",
+    RecordType.CEXTDEF: "CEXTDEF",
+    RecordType.COMDAT: "COMDAT",
+    RecordType.COMDAT32: "COMDAT32",
+    RecordType.LINSYM: "LINSYM",
+    RecordType.LINSYM32: "LINSYM32",
+    RecordType.ALIAS: "ALIAS",
+    RecordType.NBKPAT: "NBKPAT",
+    RecordType.NBKPAT32: "NBKPAT32",
+    RecordType.LLNAMES: "LLNAMES",
+    RecordType.VERNUM: "VERNUM",
+    RecordType.VENDEXT: "VENDEXT",
+
+    # Library Records
+    RecordType.LIBHDR: "LIBHDR",
+    RecordType.LIBEND: "LIBEND",
 }
 
-
-# Comment Class Definitions
-COMMENT_CLASSES = {
-    0x00: "Translator",
-    0x01: "Intel Copyright",
-    0x81: "Library Specifier (obsolete)",
-    0x9C: "MS-DOS Version (obsolete)",
-    0x9D: "Memory Model",
-    0x9E: "DOSSEG",
-    0x9F: "Default Library Search",
-    0xA0: "OMF Extensions",
-    0xA1: "New OMF Extension",
-    0xA2: "Link Pass Separator",
-    0xA3: "LIBMOD",
-    0xA4: "EXESTR",
-    0xA6: "INCERR",
-    0xA7: "NOPAD",
-    0xA8: "WKEXT",
-    0xA9: "LZEXT",
-    0xAA: "Easy OMF",
+COMMENT_CLASSES: dict[int, str] = {
+    CommentClass.TRANSLATOR: "Translator",
+    CommentClass.COPYRIGHT: "Intel Copyright",
+    CommentClass.LIBSPEC: "Library Specifier (obsolete)",
+    CommentClass.MSDOS_VERSION: "MS-DOS Version (obsolete)",
+    CommentClass.MEMORY_MODEL: "Memory Model",
+    CommentClass.DOSSEG: "DOSSEG",
+    CommentClass.DEFAULT_LIBRARY: "Default Library Search",
+    CommentClass.OMF_EXTENSIONS: "OMF Extensions",
+    CommentClass.NEW_OMF: "New OMF Extension",
+    CommentClass.LINK_PASS: "Link Pass Separator",
+    CommentClass.LIBMOD: "LIBMOD",
+    CommentClass.EXESTR: "EXESTR",
+    CommentClass.INCERR: "INCERR",
+    CommentClass.NOPAD: "NOPAD",
+    CommentClass.WKEXT: "WKEXT",
+    CommentClass.LZEXT: "LZEXT",
+    CommentClass.EASY_OMF: "Easy OMF",
     0xB0: "Unknown (32-bit linker extension)",
     0xB1: "Unknown (32-bit linker extension)",
-    0xDA: "Comment",
-    0xDB: "Compiler",
-    0xDC: "Date",
-    0xDD: "Timestamp",
-    0xDF: "User",
-    0xE9: "Dependency File (Borland)",
-    0xFF: "Command Line (QuickC)",
+    CommentClass.COMMENT: "Comment",
+    CommentClass.COMPILER: "Compiler",
+    CommentClass.DATE: "Date",
+    CommentClass.TIMESTAMP: "Timestamp",
+    CommentClass.USER: "User",
+    CommentClass.DEPENDENCY: "Dependency File (Borland)",
+    CommentClass.COMMANDLINE: "Command Line (QuickC)",
+}
+
+A0_SUBTYPES: dict[int, str] = {
+    A0Subtype.IMPDEF: "IMPDEF",
+    A0Subtype.EXPDEF: "EXPDEF",
+    A0Subtype.INCDEF: "INCDEF",
+    A0Subtype.PROTECTED_MEMORY: "Protected Memory Library",
+    A0Subtype.LNKDIR: "LNKDIR",
+    A0Subtype.BIG_ENDIAN: "Big-endian",
+    A0Subtype.PRECOMP: "PRECOMP",
 }
 
 
-# A0 Comment Subtypes (OMF Extensions)
-A0_IMPDEF = 0x01
-A0_EXPDEF = 0x02
-A0_INCDEF = 0x03
-A0_PROTECTED_MEMORY = 0x04
-A0_LNKDIR = 0x05
-A0_BIG_ENDIAN = 0x06
-A0_PRECOMP = 0x07
+# =============================================================================
+# Segment/Combine/Alignment Names
+# =============================================================================
 
-A0_SUBTYPES = {
-    A0_IMPDEF: "IMPDEF",
-    A0_EXPDEF: "EXPDEF",
-    A0_INCDEF: "INCDEF",
-    A0_PROTECTED_MEMORY: "Protected Memory Library",
-    A0_LNKDIR: "LNKDIR",
-    A0_BIG_ENDIAN: "Big-endian",
-    A0_PRECOMP: "PRECOMP",
-}
-
-
-# Reserved segment names (Appendix 1)
 RESERVED_SEGMENTS = {"$$TYPES", "$$SYMBOLS", "$$IMPORT"}
 
-
-# Segment alignment types
 ALIGN_NAMES = [
     "Absolute", "Byte", "Word", "Paragraph",
     "Page (256-byte Intel / 4K IBM)", "DWord", "LTL(6)", "Undefined(7)"
 ]
 
-
-# Segment combine types
 COMBINE_NAMES = [
     "Private", "Reserved(1) [Intel: Common]", "Public", "Reserved(3)",
     "Public(4)", "Stack", "Common", "Public(7)"
 ]
 
 
-# COMDAT Selection types
-COMDAT_SELECTION_NAMES = {
+# =============================================================================
+# COMDAT Names
+# =============================================================================
+
+COMDAT_SELECTION_NAMES: dict[int, str] = {
     0x00: "No Match",
     0x01: "Pick Any",
     0x02: "Same Size",
     0x03: "Exact Match",
 }
 
-
-# COMDAT Allocation types
-COMDAT_ALLOCATION_NAMES = {
+COMDAT_ALLOCATION_NAMES: dict[int, str] = {
     0x00: "Explicit",
     0x01: "Far Code (CODE16)",
     0x02: "Far Data (DATA16)",
@@ -164,50 +458,57 @@ COMDAT_ALLOCATION_NAMES = {
     0x04: "Data32",
 }
 
-
-# COMDAT Alignment types
-COMDAT_ALIGN_NAMES = {
+COMDAT_ALIGN_NAMES: dict[int, str] = {
     0: "FromSEGDEF", 1: "Byte", 2: "Word", 3: "Para",
     4: "Page", 5: "DWord"
 }
 
 
-# FIXUPP Frame methods
+# =============================================================================
+# FIXUPP Names
+# =============================================================================
+
 FRAME_METHOD_NAMES = [
     "F0:SEGDEF", "F1:GRPDEF", "F2:EXTDEF", "F3:FrameNum",
     "F4:Location", "F5:Target", "F6:Invalid", "F7:?"
 ]
 
-
-# FIXUPP Target methods
 TARGET_METHOD_NAMES = [
     "T0:SEGDEF", "T1:GRPDEF", "T2:EXTDEF", "T3:FrameNum",
     "T4:SEGDEF(0)", "T5:GRPDEF(0)", "T6:EXTDEF(0)", "T7:?"
 ]
 
 
-# BAKPAT Location types
-BAKPAT_LOCATION_NAMES = {
+# =============================================================================
+# BAKPAT Names
+# =============================================================================
+
+BAKPAT_LOCATION_NAMES: dict[int, str] = {
     0: "Byte(8)",
     1: "Word(16)",
     2: "DWord(32)",
 }
 
 
-# Intel 8086 OMF register constants
-REGISTER_NAMES = {
+# =============================================================================
+# Intel 8086 OMF Names
+# =============================================================================
+
+REGISTER_NAMES: dict[int, str] = {
     0: "CS", 1: "DS", 2: "SS", 3: "ES", 4: "IP", 5: "SP"
 }
 
-
-# Variable type names for TYPDEF
-VAR_TYPE_NAMES = {
+VAR_TYPE_NAMES: dict[int, str] = {
     0x77: "Array",
     0x79: "Structure",
     0x7B: "Scalar"
 }
 
 
-KNOWN_VENDORS = {
+# =============================================================================
+# Vendor Names
+# =============================================================================
+
+KNOWN_VENDORS: dict[int, str] = {
     0: "TIS (reserved)",
 }

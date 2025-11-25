@@ -2,6 +2,8 @@
 
 from . import omf_record
 from ..constants import (
+    RecordType, GrpdefComponent, TypdefLeaf,
+    SegdefFlags, ModendFlags, SegmentSize,
     RESERVED_SEGMENTS, ALIGN_NAMES, COMBINE_NAMES,
     KNOWN_VENDORS, VAR_TYPE_NAMES
 )
@@ -12,7 +14,7 @@ from ..models import (
 )
 
 
-@omf_record(0x80, 0x82)
+@omf_record(RecordType.THEADR, RecordType.LHEADR)
 def handle_theadr(omf, record):
     """Handle THEADR (80H) and LHEADR (82H)."""
     omf.lnames = ["<null>"]
@@ -23,16 +25,16 @@ def handle_theadr(omf, record):
 
     sub = omf.make_parser(record)
     name = sub.parse_name()
-    rec_name = "THEADR" if record.type == 0x80 else "LHEADR"
+    rec_name = "THEADR" if record.type == RecordType.THEADR else "LHEADR"
 
     return ParsedTheadr(record_name=rec_name, module_name=name)
 
 
-@omf_record(0x96, 0xCA)
+@omf_record(RecordType.LNAMES, RecordType.LLNAMES)
 def handle_lnames(omf, record):
     """Handle LNAMES (96H) and LLNAMES (CAH)."""
     sub = omf.make_parser(record)
-    rec_name = "LNAMES" if record.type == 0x96 else "LLNAMES (Local)"
+    rec_name = "LNAMES" if record.type == RecordType.LNAMES else "LLNAMES (Local)"
     start_idx = len(omf.lnames)
 
     names = []
@@ -53,20 +55,20 @@ def handle_lnames(omf, record):
     )
 
 
-@omf_record(0x98, 0x99)
+@omf_record(RecordType.SEGDEF, RecordType.SEGDEF32)
 def handle_segdef(omf, record):
     """Handle SEGDEF (98H/99H)."""
     sub = omf.make_parser(record)
-    is_32bit = (record.type == 0x99)
+    is_32bit = (record.type == RecordType.SEGDEF32)
 
     acbp = sub.read_byte()
     if acbp is None:
         return None
 
-    align = (acbp >> 5) & 0x07
-    combine = (acbp >> 2) & 0x07
-    big = (acbp >> 1) & 0x01
-    use32 = acbp & 0x01
+    align = (acbp >> SegdefFlags.ALIGN_SHIFT) & SegdefFlags.ALIGN_MASK
+    combine = (acbp >> SegdefFlags.COMBINE_SHIFT) & SegdefFlags.COMBINE_MASK
+    big = (acbp >> 1) & SegdefFlags.BIG_MASK
+    use32 = acbp & SegdefFlags.USE32_MASK
 
     extra_align_names = omf.variant.segdef_extra_align_names()
     if align in extra_align_names:
@@ -94,10 +96,10 @@ def handle_segdef(omf, record):
 
     if big and length == 0:
         if is_32bit:
-            result.length = 0x100000000
+            result.length = SegmentSize.SIZE_4GB
             result.length_display = "4GB (0x100000000)"
         else:
-            result.length = 0x10000
+            result.length = SegmentSize.SIZE_64K
             result.length_display = "64K (0x10000)"
     else:
         result.length = length
@@ -114,7 +116,7 @@ def handle_segdef(omf, record):
     if sub.bytes_remaining() >= 1:
         if omf.variant.segdef_has_access_byte():
             access_byte = sub.read_byte()
-            access_type = access_byte & 0x03
+            access_type = access_byte & SegdefFlags.ACCESS_TYPE_MASK
             access_names = omf.variant.segdef_access_byte_names()
             result.access_byte = access_byte
             result.access_name = access_names.get(access_type, f"Unknown({access_type})")
@@ -127,7 +129,7 @@ def handle_segdef(omf, record):
     return result
 
 
-@omf_record(0x9A)
+@omf_record(RecordType.GRPDEF)
 def handle_grpdef(omf, record):
     """Handle GRPDEF (9AH)."""
     sub = omf.make_parser(record)
@@ -147,21 +149,21 @@ def handle_grpdef(omf, record):
         if comp_type is None:
             break
 
-        if comp_type == 0xFF:
+        if comp_type == GrpdefComponent.SEGMENT_INDEX:
             if sub.bytes_remaining() > 0:
                 seg_idx = sub.parse_index()
                 result.components.append(f"Seg:{omf.get_segdef(seg_idx)}")
             else:
                 result.components.append("Seg:TRUNCATED")
                 break
-        elif comp_type == 0xFE:
+        elif comp_type == GrpdefComponent.EXTERNAL_INDEX:
             if sub.bytes_remaining() > 0:
                 ext_idx = sub.parse_index()
                 result.components.append(f"Ext:{omf.get_extdef(ext_idx)}")
             else:
                 result.components.append("Ext:TRUNCATED")
                 break
-        elif comp_type == 0xFD:
+        elif comp_type == GrpdefComponent.SEGDEF_INDICES:
             if sub.bytes_remaining() >= 3:
                 seg_name = sub.parse_index()
                 cls_name = sub.parse_index()
@@ -170,7 +172,7 @@ def handle_grpdef(omf, record):
             else:
                 result.components.append("SegDef:TRUNCATED")
                 break
-        elif comp_type == 0xFB:
+        elif comp_type == GrpdefComponent.LTL:
             if sub.bytes_remaining() >= 5:
                 ltl_data = sub.read_byte()
                 max_len = sub.parse_numeric(2)
@@ -179,7 +181,7 @@ def handle_grpdef(omf, record):
             else:
                 result.components.append("LTL:TRUNCATED")
                 break
-        elif comp_type == 0xFA:
+        elif comp_type == GrpdefComponent.ABSOLUTE:
             if sub.bytes_remaining() >= 3:
                 frame = sub.parse_numeric(2)
                 offset = sub.read_byte()
@@ -197,12 +199,12 @@ def handle_grpdef(omf, record):
     return result
 
 
-@omf_record(0x90, 0x91, 0xB6, 0xB7)
+@omf_record(RecordType.PUBDEF, RecordType.PUBDEF32, RecordType.LPUBDEF, RecordType.LPUBDEF32)
 def handle_pubdef(omf, record):
     """Handle PUBDEF/LPUBDEF (90H/91H/B6H/B7H)."""
     sub = omf.make_parser(record)
-    is_32bit = record.type in [0x91, 0xB7]
-    is_local = record.type in [0xB6, 0xB7]
+    is_32bit = record.type in (RecordType.PUBDEF32, RecordType.LPUBDEF32)
+    is_local = record.type in (RecordType.LPUBDEF, RecordType.LPUBDEF32)
 
     base_grp = sub.parse_index()
     base_seg = sub.parse_index()
@@ -237,11 +239,11 @@ def handle_pubdef(omf, record):
     return result
 
 
-@omf_record(0x8C, 0xB4, 0xB5)
+@omf_record(RecordType.EXTDEF, RecordType.LEXTDEF, RecordType.LEXTDEF2)
 def handle_extdef(omf, record):
     """Handle EXTDEF/LEXTDEF (8CH/B4H/B5H)."""
     sub = omf.make_parser(record)
-    is_local = record.type in [0xB4, 0xB5]
+    is_local = record.type in (RecordType.LEXTDEF, RecordType.LEXTDEF2)
 
     result = ParsedExtDef(is_local=is_local)
 
@@ -260,7 +262,7 @@ def handle_extdef(omf, record):
     return result
 
 
-@omf_record(0xBC)
+@omf_record(RecordType.CEXTDEF)
 def handle_cextdef(omf, record):
     """Handle CEXTDEF (BCH)."""
     sub = omf.make_parser(record)
@@ -283,19 +285,19 @@ def handle_cextdef(omf, record):
     return result
 
 
-@omf_record(0x8A, 0x8B)
+@omf_record(RecordType.MODEND, RecordType.MODEND32)
 def handle_modend(omf, record):
     """Handle MODEND (8AH/8BH)."""
     sub = omf.make_parser(record)
-    is_32bit = (record.type == 0x8B)
+    is_32bit = (record.type == RecordType.MODEND32)
 
     mod_type = sub.read_byte()
     if mod_type is None:
         return None
 
-    is_main = (mod_type & 0x80) != 0
-    has_start = (mod_type & 0x40) != 0
-    is_relocatable = (mod_type & 0x01) != 0
+    is_main = (mod_type & ModendFlags.MAIN) != 0
+    has_start = (mod_type & ModendFlags.START) != 0
+    is_relocatable = (mod_type & ModendFlags.RELOCATABLE) != 0
 
     result = ParsedModEnd(
         mod_type=mod_type,
@@ -307,9 +309,9 @@ def handle_modend(omf, record):
     if has_start:
         end_data = sub.read_byte()
         if end_data is not None:
-            frame_method = (end_data >> 4) & 0x07
-            p_bit = (end_data >> 2) & 0x01
-            target_method = end_data & 0x03
+            frame_method = (end_data >> ModendFlags.FRAME_SHIFT) & ModendFlags.FRAME_MASK
+            p_bit = (end_data >> ModendFlags.P_BIT_SHIFT) & 0x01
+            target_method = end_data & ModendFlags.TARGET_MASK
 
             start_addr = {
                 'frame_method': frame_method,
@@ -334,11 +336,11 @@ def handle_modend(omf, record):
     return result
 
 
-@omf_record(0x94, 0x95)
+@omf_record(RecordType.LINNUM, RecordType.LINNUM32)
 def handle_linnum(omf, record):
     """Handle LINNUM (94H/95H)."""
     sub = omf.make_parser(record)
-    is_32bit = (record.type == 0x95)
+    is_32bit = (record.type == RecordType.LINNUM32)
 
     base_grp = sub.parse_index()
     base_seg = sub.parse_index()
@@ -363,7 +365,7 @@ def handle_linnum(omf, record):
     return result
 
 
-@omf_record(0xCC)
+@omf_record(RecordType.VERNUM)
 def handle_vernum(omf, record):
     """Handle VERNUM (CCH)."""
     sub = omf.make_parser(record)
@@ -389,7 +391,7 @@ def handle_vernum(omf, record):
     return result
 
 
-@omf_record(0xCE)
+@omf_record(RecordType.VENDEXT)
 def handle_vendext(omf, record):
     """Handle VENDEXT (CEH)."""
     sub = omf.make_parser(record)
@@ -407,7 +409,7 @@ def handle_vendext(omf, record):
     return result
 
 
-@omf_record(0x92)
+@omf_record(RecordType.LOCSYM)
 def handle_locsym(omf, record):
     """Handle LOCSYM (92H) - Local Symbols."""
     sub = omf.make_parser(record)
@@ -438,7 +440,7 @@ def handle_locsym(omf, record):
     return result
 
 
-@omf_record(0x8E)
+@omf_record(RecordType.TYPDEF)
 def handle_typdef(omf, record):
     """Handle TYPDEF (8EH)."""
     sub = omf.make_parser(record)
@@ -456,7 +458,7 @@ def handle_typdef(omf, record):
 
         leaf_type = sub.read_byte()
 
-        if leaf_type == 0x62:
+        if leaf_type == TypdefLeaf.NEAR:
             var_type = sub.read_byte()
             size_bits = sub.parse_variable_length_int()
             result.leaves.append({
@@ -468,7 +470,7 @@ def handle_typdef(omf, record):
                 'size_bytes': size_bits // 8
             })
 
-        elif leaf_type == 0x61:
+        elif leaf_type == TypdefLeaf.FAR:
             var_type = sub.read_byte()
             num_elements = sub.parse_variable_length_int()
             element_type_idx = sub.parse_index()
@@ -496,7 +498,7 @@ def handle_typdef(omf, record):
 
             leaf_type = sub.read_byte()
 
-            if leaf_type == 0x62:
+            if leaf_type == TypdefLeaf.NEAR:
                 var_type = sub.read_byte()
                 size_bits = sub.parse_variable_length_int()
                 result.leaves.append({
@@ -509,7 +511,7 @@ def handle_typdef(omf, record):
                     'size_bytes': size_bits // 8
                 })
 
-            elif leaf_type == 0x61:
+            elif leaf_type == TypdefLeaf.FAR:
                 var_type = sub.read_byte()
                 num_elements = sub.parse_variable_length_int()
                 element_type_idx = sub.parse_index()

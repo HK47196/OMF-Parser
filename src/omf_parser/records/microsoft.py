@@ -2,10 +2,12 @@
 
 from . import omf_record
 from ..constants import (
+    RecordType, ComdefType, ComdatFlags,
     COMDAT_SELECTION_NAMES,
     COMDAT_ALLOCATION_NAMES,
     COMDAT_ALIGN_NAMES,
-    BAKPAT_LOCATION_NAMES
+    BAKPAT_LOCATION_NAMES,
+    COMDEF_BORLAND_MAX
 )
 from ..models import (
     ParsedComDef, ParsedComDat, ParsedBakPat, ParsedNBkPat,
@@ -13,11 +15,11 @@ from ..models import (
 )
 
 
-@omf_record(0xB0, 0xB8)
+@omf_record(RecordType.COMDEF, RecordType.LCOMDEF)
 def handle_comdef(omf, record):
     """Handle COMDEF/LCOMDEF (B0H/B8H)."""
     sub = omf.make_parser(record)
-    is_local = (record.type == 0xB8)
+    is_local = (record.type == RecordType.LCOMDEF)
 
     result = ParsedComDef(is_local=is_local)
 
@@ -35,7 +37,7 @@ def handle_comdef(omf, record):
             'data_type': data_type
         }
 
-        if data_type == 0x61:
+        if data_type == ComdefType.FAR:
             num_elements = sub.parse_variable_length_int()
             element_size = sub.parse_variable_length_int()
             total = num_elements * element_size
@@ -43,11 +45,11 @@ def handle_comdef(omf, record):
             defn['num_elements'] = num_elements
             defn['element_size'] = element_size
             defn['total_size'] = total
-        elif data_type == 0x62:
+        elif data_type == ComdefType.NEAR:
             size = sub.parse_variable_length_int()
             defn['kind'] = 'NEAR'
             defn['size'] = size
-        elif 0x01 <= data_type <= 0x5F:
+        elif 0x01 <= data_type <= COMDEF_BORLAND_MAX:
             length = sub.parse_variable_length_int()
             defn['kind'] = 'Borland'
             defn['seg_index'] = data_type
@@ -63,11 +65,11 @@ def handle_comdef(omf, record):
     return result
 
 
-@omf_record(0xC2, 0xC3)
+@omf_record(RecordType.COMDAT, RecordType.COMDAT32)
 def handle_comdat(omf, record):
     """Handle COMDAT (C2H/C3H)."""
     sub = omf.make_parser(record)
-    is_32bit = (record.type == 0xC3)
+    is_32bit = (record.type == RecordType.COMDAT32)
 
     flags = sub.read_byte()
     attrib = sub.read_byte()
@@ -76,13 +78,13 @@ def handle_comdat(omf, record):
     if flags is None or attrib is None or align is None:
         return None
 
-    continuation = (flags & 0x01) != 0
-    iterated = (flags & 0x02) != 0
-    local = (flags & 0x04) != 0
-    data_in_code = (flags & 0x08) != 0
+    continuation = (flags & ComdatFlags.CONTINUATION) != 0
+    iterated = (flags & ComdatFlags.ITERATED) != 0
+    local = (flags & ComdatFlags.LOCAL) != 0
+    data_in_code = (flags & ComdatFlags.DATA_IN_CODE) != 0
 
-    selection = (attrib >> 4) & 0x0F
-    allocation = attrib & 0x0F
+    selection = (attrib >> ComdatFlags.SELECTION_SHIFT) & ComdatFlags.SELECTION_MASK
+    allocation = attrib & ComdatFlags.ALLOCATION_MASK
 
     result = ParsedComDat(
         is_32bit=is_32bit,
@@ -120,11 +122,11 @@ def handle_comdat(omf, record):
     return result
 
 
-@omf_record(0xB2, 0xB3)
+@omf_record(RecordType.BAKPAT, RecordType.BAKPAT32)
 def handle_bakpat(omf, record):
     """Handle BAKPAT (B2H/B3H)."""
     sub = omf.make_parser(record)
-    is_32bit = (record.type == 0xB3)
+    is_32bit = (record.type == RecordType.BAKPAT32)
 
     result = ParsedBakPat(is_32bit=is_32bit)
 
@@ -141,7 +143,7 @@ def handle_bakpat(omf, record):
             'location_name': loc_str
         }
 
-        if loc_type == 2 and record.type == 0xB2:
+        if loc_type == 2 and record.type == RecordType.BAKPAT:
             result.warnings.append("Location type 2 (DWord) only valid for B3H records")
 
         val_size = sub.get_offset_field_size(is_32bit)
@@ -153,12 +155,12 @@ def handle_bakpat(omf, record):
     return result
 
 
-@omf_record(0xC8, 0xC9)
+@omf_record(RecordType.NBKPAT, RecordType.NBKPAT32)
 def handle_nbkpat(omf, record):
     """Handle NBKPAT (C8H/C9H)."""
     sub = omf.make_parser(record)
     # NBKPAT has INVERTED bit order: C8H = 32-bit, C9H = 16-bit
-    is_32bit = (record.type == 0xC8)
+    is_32bit = (record.type == RecordType.NBKPAT)
 
     result = ParsedNBkPat(is_32bit=is_32bit)
 
@@ -186,14 +188,14 @@ def handle_nbkpat(omf, record):
     return result
 
 
-@omf_record(0xC4, 0xC5)
+@omf_record(RecordType.LINSYM, RecordType.LINSYM32)
 def handle_linsym(omf, record):
     """Handle LINSYM (C4H/C5H)."""
     sub = omf.make_parser(record)
-    is_32bit = (record.type == 0xC5)
+    is_32bit = (record.type == RecordType.LINSYM32)
 
     flags = sub.read_byte()
-    continuation = (flags & 0x01) != 0
+    continuation = (flags & ComdatFlags.CONTINUATION) != 0
 
     if omf.variant.linsym_uses_inline_name():
         symbol = sub.parse_name()
@@ -221,7 +223,7 @@ def handle_linsym(omf, record):
     return result
 
 
-@omf_record(0xC6)
+@omf_record(RecordType.ALIAS)
 def handle_alias(omf, record):
     """Handle ALIAS (C6H)."""
     sub = omf.make_parser(record)

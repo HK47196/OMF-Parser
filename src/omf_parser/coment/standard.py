@@ -1,12 +1,12 @@
 """Standard COMENT record handler."""
 
 from ..records import omf_record
-from ..constants import COMMENT_CLASSES
+from ..constants import RecordType, ComentFlags, COMMENT_CLASSES
 from ..models import ParsedComent
 from . import get_coment_handler
 
 
-@omf_record(0x88)
+@omf_record(RecordType.COMENT)
 def handle_coment(omf, record):
     """Handle COMENT (88H)."""
     sub = omf.make_parser(record)
@@ -17,16 +17,16 @@ def handle_coment(omf, record):
     if flags is None or cls is None:
         return None
 
-    np = (flags & 0x80) >> 7
-    nl = (flags & 0x40) >> 6
+    np = (flags & ComentFlags.NP) != 0
+    nl = (flags & ComentFlags.NL) != 0
 
     cls_name = COMMENT_CLASSES.get(cls, "Unknown")
 
     result = ParsedComent(
         comment_class=cls,
         class_name=cls_name,
-        no_purge=bool(np),
-        no_list=bool(nl)
+        no_purge=np,
+        no_list=nl
     )
 
     text = sub.data[sub.offset:]

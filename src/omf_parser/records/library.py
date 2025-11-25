@@ -2,10 +2,11 @@
 
 import struct
 from . import omf_record
+from ..constants import RecordType, LibraryConsts
 from ..models import ParsedLibHdr, ParsedLibEnd, ParsedLibDict, ParsedExtDict
 
 
-@omf_record(0xF0)
+@omf_record(RecordType.LIBHDR)
 def handle_libhdr(omf, record):
     """Handle Library Header (F0H)."""
     sub = omf.make_parser(record)
@@ -21,11 +22,11 @@ def handle_libhdr(omf, record):
         dict_offset=omf.lib_dict_offset,
         dict_blocks=omf.lib_dict_blocks,
         flags=lib_flags,
-        case_sensitive=(lib_flags & 0x01) != 0
+        case_sensitive=(lib_flags & LibraryConsts.FLAG_CASE_SENSITIVE) != 0
     )
 
 
-@omf_record(0xF1)
+@omf_record(RecordType.LIBEND)
 def handle_libend(omf, record):
     """Handle Library End (F1H)."""
     return ParsedLibEnd()
@@ -48,24 +49,24 @@ def parse_library_dictionary(omf):
     result = ParsedLibDict()
 
     for block_num in range(omf.lib_dict_blocks):
-        block_offset = dict_start + (block_num * 512)
-        if block_offset + 512 > len(omf.data):
+        block_offset = dict_start + (block_num * LibraryConsts.DICT_BLOCK_SIZE)
+        if block_offset + LibraryConsts.DICT_BLOCK_SIZE > len(omf.data):
             break
 
-        block = omf.data[block_offset:block_offset + 512]
-        buckets = block[:37]
+        block = omf.data[block_offset:block_offset + LibraryConsts.DICT_BLOCK_SIZE]
+        buckets = block[:LibraryConsts.DICT_BUCKET_COUNT]
 
         for bucket_idx, bucket_val in enumerate(buckets):
             if bucket_val == 0:
                 continue
 
             entry_offset = bucket_val * 2
-            if entry_offset >= 512:
+            if entry_offset >= LibraryConsts.DICT_BLOCK_SIZE:
                 continue
 
             try:
                 s_len = block[entry_offset]
-                if s_len == 0 or entry_offset + 1 + s_len + 2 > 512:
+                if s_len == 0 or entry_offset + 1 + s_len + 2 > LibraryConsts.DICT_BLOCK_SIZE:
                     continue
 
                 s_str = block[entry_offset + 1:entry_offset + 1 + s_len].decode('ascii', errors='replace')
@@ -82,9 +83,9 @@ def parse_library_dictionary(omf):
             except Exception:
                 pass
 
-    ext_dict_offset = dict_start + (omf.lib_dict_blocks * 512)
+    ext_dict_offset = dict_start + (omf.lib_dict_blocks * LibraryConsts.DICT_BLOCK_SIZE)
     ext_dict = None
-    if ext_dict_offset < len(omf.data) and omf.data[ext_dict_offset] == 0xF2:
+    if ext_dict_offset < len(omf.data) and omf.data[ext_dict_offset] == RecordType.EXTDICT:
         ext_dict = parse_extended_dictionary(omf, ext_dict_offset)
 
     return result, ext_dict
@@ -100,7 +101,7 @@ def parse_extended_dictionary(omf, offset):
         return None
 
     header = omf.data[offset]
-    if header != 0xF2:
+    if header != RecordType.EXTDICT:
         return None
 
     length = struct.unpack('<H', omf.data[offset + 1:offset + 3])[0]
