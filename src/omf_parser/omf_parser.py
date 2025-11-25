@@ -58,6 +58,16 @@ class OMFCompleteParser(
         self.warnings = []
         self.errors = []
 
+        # Track vendor extensions encountered
+        self.extensions_used = {
+            'coment': {},        # {class_hex: [(vendor, description, count), ...]}
+            'vendext': {},       # {vendor_num: [(vendor, description, count), ...]}
+            'a0_subtype': {},    # {subtype_hex: [(vendor, description, count), ...]}
+            'segdef_ext': {},    # {feature: [(vendor, description, count), ...]}
+            'fixupp_loc': {},    # {loc_type_hex: [(vendor, description, count), ...]}
+            'lidata': {},        # {feature: [(vendor, description, count), ...]}
+        }
+
     def get_lname(self, index):
         if index is None:
             return "?"
@@ -101,6 +111,92 @@ class OMFCompleteParser(
         """Add an error message and print it immediately."""
         print(message)
         self.errors.append(message)
+
+    def track_extension(self, category, key, vendor, description):
+        """Track usage of a vendor extension.
+
+        Args:
+            category: Extension category ('coment', 'vendext', etc.)
+            key: Specific extension identifier (e.g., '0xAA', 'repeat_count')
+            vendor: Vendor name
+            description: Human-readable description
+        """
+        if category not in self.extensions_used:
+            return
+
+        cat_dict = self.extensions_used[category]
+        if key not in cat_dict:
+            cat_dict[key] = []
+
+        # Find existing entry for this vendor
+        for entry in cat_dict[key]:
+            if entry[0] == vendor and entry[1] == description:
+                # Increment count
+                entry[2] += 1
+                return
+
+        # New entry: [vendor, description, count]
+        cat_dict[key].append([vendor, description, 1])
+
+    def call_extension_hook(self, hook_name, *args, **kwargs):
+        """Call a hook on all active extensions, return first non-None result.
+
+        Args:
+            hook_name: Name of the hook method to call
+            *args, **kwargs: Arguments to pass to the hook
+
+        Returns:
+            First non-None/non-False result from any extension, or None
+        """
+        from .handlers import extensions
+
+        # Lazy initialize registry
+        extensions._initialize_registry()
+
+        for ext in extensions.EXTENSION_REGISTRY:
+            if ext.is_active(self):
+                method = getattr(ext, hook_name, None)
+                if method:
+                    result = method(self, *args, **kwargs)
+                    if result is not None and result is not False:
+                        return result
+        return None
+
+    def print_extension_summary(self):
+        """Print summary of all vendor extensions encountered."""
+        if not any(self.extensions_used[cat] for cat in
+                  ['coment', 'vendext', 'a0_subtype', 'segdef_ext', 'fixupp_loc', 'lidata']):
+            return
+
+        print(f"{'='*60}")
+        print("VENDOR EXTENSIONS:")
+
+        # Collect vendors that actually handled something
+        active_vendors = set()
+        for cat in ['coment', 'vendext', 'a0_subtype', 'segdef_ext', 'fixupp_loc', 'lidata']:
+            for entries_list in self.extensions_used[cat].values():
+                for vendor, _, _ in entries_list:
+                    active_vendors.add(vendor)
+
+        if active_vendors:
+            print(f"\nActive Vendors: {', '.join(sorted(active_vendors))}")
+
+        for category_name, category_label in [
+            ('coment', 'Comment Classes'),
+            ('a0_subtype', 'A0 Subtypes'),
+            ('vendext', 'VENDEXT Records'),
+            ('segdef_ext', 'SEGDEF Extensions'),
+            ('fixupp_loc', 'FIXUPP Location Types'),
+            ('lidata', 'LIDATA Extensions'),
+        ]:
+            cat_dict = self.extensions_used[category_name]
+            if cat_dict:
+                print(f"\n{category_label}:")
+                for key in sorted(cat_dict.keys()):
+                    entries = cat_dict[key]
+                    for vendor, description, count in entries:
+                        count_str = f" (×{count})" if count > 1 else ""
+                        print(f"  {key}: [{vendor}] {description}{count_str}")
 
     def detect_mode(self):
         if self.file_size == 0:
@@ -326,6 +422,9 @@ class OMFCompleteParser(
                 print(f"\nWarnings ({len(self.warnings)}):")
                 for warning in self.warnings:
                     print(warning)
+
+        # Print vendor extension summary
+        self.print_extension_summary()
 
         print(f"{'='*60}")
 

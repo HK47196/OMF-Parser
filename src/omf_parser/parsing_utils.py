@@ -104,8 +104,13 @@ class ParsingMixin:
         Returns:
             4 if 32-bit fields should be used, 2 otherwise
         """
-        from .constants import MODE_PHARLAP
-        return 4 if (is_32bit or self.target_mode == MODE_PHARLAP) else 2
+        # Try vendor extensions first
+        result = self.call_extension_hook('get_offset_field_size', is_32bit)
+        if result is not None:
+            return result
+
+        # Default TIS behavior
+        return 4 if is_32bit else 2
 
     def parse_variable_length_int(self):
         """Parse variable-length numeric for COMDEF/TYPDEF. Spec Page 55."""

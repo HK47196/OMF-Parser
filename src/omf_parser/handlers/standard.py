@@ -449,144 +449,17 @@ class StandardHandlersMixin:
         print(f"  Comment Class: {cls_name}")
         print(f"  Flags: NoPurge={np}, NoList={nl}")
 
-        if cls == 0x00:  # Translator
-            text = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  Translator: {text}")
+        # Read remaining text for extensions
+        text = sub.data[sub.offset:]
 
-        elif cls == 0x01:
-            print("  Intel Copyright (ignored)")
+        # Delegate to vendor extensions
+        handled = self.call_extension_hook('handle_coment', sub, cls, flags, text)
 
-        elif 0x02 <= cls <= 0x9B and cls not in COMMENT_CLASSES:
-            self.add_warning(f"  [!] WARNING: Comment class 0x{cls:02X} is Intel-reserved but unrecognized (may be Intel product extension)")
-            if sub.bytes_remaining() > 0:
-                print(f"  Data: {sub.format_hex_with_ascii(sub.data[sub.offset:])}")
-
-        elif cls == 0x81:
-            lib_name = sub.parse_name()
-            print(f"  Library (obsolete): {lib_name}")
-
-        elif cls == 0x9C:
-            if sub.bytes_remaining() >= 2:
-                ver = sub.parse_numeric(2)
-                print(f"  MS-DOS Version: {ver >> 8}.{ver & 0xFF}")
-
-        elif cls == 0x9D:
-            text = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  Memory Model: {text}")
-            for c in text:
-                if c in '0123':
-                    cpu = ['8086', '80186', '80286', '80386'][int(c)]
-                    print(f"    CPU: {cpu}")
-                elif c == 'O':
-                    print("    Optimization: Yes")
-                elif c in 'smclh':
-                    models = {'s': 'Small', 'm': 'Medium', 'c': 'Compact', 'l': 'Large', 'h': 'Huge'}
-                    print(f"    Model: {models[c]}")
-                elif c in 'ABCD':
-                    cpu68k = {'A': '68000', 'B': '68010', 'C': '68020', 'D': '68030'}
-                    print(f"    CPU: {cpu68k[c]}")
-
-        elif cls == 0x9E:
-            print("  DOSSEG: Use standardized segment ordering")
-
-        elif cls == 0x9F:
-            lib_name = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  Default Library: {lib_name}")
-
-        elif cls == 0xA0:
-            self.handle_coment_a0(sub)
-
-        elif cls == 0xA1:
-            if sub.bytes_remaining() > 0:
-                ver = sub.read_byte()
-                style = sub.data[sub.offset:].decode('ascii', errors='replace')
-                print(f"  Debug Info Version: {ver}")
-                print(f"  Debug Style: {style}")
-            else:
-                print("  New OMF Extension (no data)")
-
-        elif cls == 0xA2:
-            subtype = sub.read_byte()
-            print(f"  Link Pass Separator, Subtype: {subtype}")
-            if subtype == 0x01:
-                print("    Indicates start of Pass 2 records")
-
-        elif cls == 0xA3:
-            mod_name = sub.parse_name()
-            print(f"  Library Module Name: {mod_name}")
-
-        elif cls == 0xA4:
-            text = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  Executable String: {text}")
-
-        elif cls == 0xA6:
-            self.add_error("  Incremental Compilation Error")
-            print("    Linker should terminate with fatal error")
-
-        elif cls == 0xA7:
-            print("  No Segment Padding for segments:")
-            while sub.bytes_remaining() > 0:
-                seg_idx = sub.parse_index()
-                print(f"    Segment: {self.get_segdef(seg_idx)}")
-
-        elif cls == 0xA8:
-            print("  Weak Externs:")
-            while sub.bytes_remaining() > 1:
-                weak_idx = sub.parse_index()
-                def_idx = sub.parse_index()
-                print(f"    {self.get_extdef(weak_idx)} -> Default: {self.get_extdef(def_idx)}")
-
-        elif cls == 0xA9:
-            print("  Lazy Externs:")
-            while sub.bytes_remaining() > 1:
-                lazy_idx = sub.parse_index()
-                def_idx = sub.parse_index()
-                print(f"    {self.get_extdef(lazy_idx)} -> Default: {self.get_extdef(def_idx)}")
-
-        elif cls == 0xDA:
-            text = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  Comment: {text}")
-
-        elif cls == 0xDB:
-            text = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  Compiler Version: {text}")
-
-        elif cls == 0xDC:
-            text = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  Date Stamp: {text}")
-
-        elif cls == 0xDD:
-            text = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  Timestamp: {text}")
-
-        elif cls == 0xDF:
-            text = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  User Comment: {text}")
-
-        elif cls == 0xE9:
-            text = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  Dependency File: {text}")
-
-        elif cls == 0xFF:
-            text = sub.data[sub.offset:].decode('ascii', errors='replace')
-            print(f"  Command Line: {text}")
-
-        elif 0xC0 <= cls <= 0xFF and cls not in COMMENT_CLASSES:
-            self.add_warning(f"  [!] WARNING: User-defined comment class 0x{cls:02X} (vendor-specific, modern OMF should use VENDEXT)")
-            if sub.bytes_remaining() > 0:
-                text = sub.data[sub.offset:]
-                try:
-                    print(f"  Data: {text.decode('ascii')}")
-                except Exception:
-                    print(f"  Data: {sub.format_hex_with_ascii(text)}")
-
-        else:
-            if sub.bytes_remaining() > 0:
-                text = sub.data[sub.offset:]
-                try:
-                    print(f"  Data: {text.decode('ascii')}")
-                except Exception:
-                    print(f"  Data: {sub.format_hex_with_ascii(text)}")
+        if not handled:
+            # Unknown comment class
+            self.add_warning(f"  [!] WARNING: Unhandled comment class: 0x{cls:02X}")
+            if text:
+                print(f"  Data: {sub.format_hex_with_ascii(text)}")
 
     def handle_coment_a0(self, sub):
         """Handle Comment Class A0 - OMF Extensions. Spec Page 12."""

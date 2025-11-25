@@ -40,13 +40,14 @@ class DataHandlersMixin:
             if sub.bytes_remaining() < 4:
                 return
 
-            # COMPATIBILITY NOTE: PharLap uses 16-bit repeat count even in 32-bit records
-            # Standard TIS/Microsoft/IBM uses 32-bit repeat count for A3H records
-            # Per Spec Page 81
-            if is_32bit and self.target_mode != MODE_PHARLAP:
+            # Check vendor override for repeat count size
+            override_size = self.call_extension_hook('handle_lidata_repeat_count_size', is_32bit)
+            if override_size:
+                repeat_count = sub.parse_numeric(override_size)
+            elif is_32bit:
                 repeat_count = sub.parse_numeric(4)  # Standard 32-bit
             else:
-                repeat_count = sub.parse_numeric(2)  # 16-bit OR PharLap 32-bit
+                repeat_count = sub.parse_numeric(2)  # 16-bit
 
             block_count = sub.parse_numeric(2)
 
@@ -146,26 +147,12 @@ class DataHandlersMixin:
 
                 mode_str = "Segment-relative" if mode else "Self-relative"
 
-                # Per Spec: PharLap and IBM/MS have conflicting location type definitions
-                if self.target_mode == MODE_PHARLAP:
-                    loc_names = {
-                        0: "Low Byte(8)",
-                        1: "Offset(16)",
-                        2: "Segment(16)",
-                        3: "Ptr(16:16)",
-                        4: "High Byte(8)",
-                        5: "Offset(32)",           # PharLap
-                        6: "Ptr(16:32)",           # PharLap
-                        7: "Reserved(7)",
-                        8: "Reserved(8)",
-                        9: "Reserved(9)",
-                        10: "Reserved(10)",
-                        11: "Reserved(11)",
-                        12: "Reserved(12)",
-                        13: "Reserved(13)",
-                    }
+                # Try vendor extension for location type first
+                vendor_result = self.call_extension_hook('handle_fixupp_location_type', loc_type)
+                if vendor_result:
+                    loc_str, _ = vendor_result
                 else:
-                    # IBM/Microsoft format
+                    # Standard TIS/IBM/Microsoft location types
                     loc_names = {
                         0: "Low Byte(8)",
                         1: "Offset(16)",
@@ -182,7 +169,7 @@ class DataHandlersMixin:
                         12: "Reserved(12)",
                         13: "Ldr-Offset(32)",
                     }
-                loc_str = loc_names.get(loc_type, f"Unknown({loc_type})")
+                    loc_str = loc_names.get(loc_type, f"Unknown({loc_type})")
 
                 fix_dat = sub.read_byte()
                 if fix_dat is None:
