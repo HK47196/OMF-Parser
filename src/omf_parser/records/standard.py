@@ -4,8 +4,8 @@ from . import omf_record
 from ..constants import (
     RecordType, GrpdefComponent, TypdefLeaf,
     SegdefFlags, ModendFlags, SegmentSize,
-    RESERVED_SEGMENTS, ALIGN_NAMES, COMBINE_NAMES,
-    KNOWN_VENDORS, VAR_TYPE_NAMES
+    SegAlignment, SegCombine,
+    RESERVED_SEGMENTS, KNOWN_VENDORS, VAR_TYPE_NAMES
 )
 from ..models import (
     ParsedTheadr, ParsedLNames, ParsedSegDef, ParsedGrpDef,
@@ -67,29 +67,20 @@ def handle_segdef(omf, record):
     if acbp is None:
         return None
 
-    align = (acbp >> SegdefFlags.ALIGN_SHIFT) & SegdefFlags.ALIGN_MASK
-    combine = (acbp >> SegdefFlags.COMBINE_SHIFT) & SegdefFlags.COMBINE_MASK
+    align_val = (acbp >> SegdefFlags.ALIGN_SHIFT) & SegdefFlags.ALIGN_MASK
+    combine_val = (acbp >> SegdefFlags.COMBINE_SHIFT) & SegdefFlags.COMBINE_MASK
     big = (acbp >> 1) & SegdefFlags.BIG_MASK
     use32 = acbp & SegdefFlags.USE32_MASK
 
-    extra_align_names = omf.variant.segdef_extra_align_names()
-    if align in extra_align_names:
-        align_name = extra_align_names[align]
-    elif align < len(ALIGN_NAMES):
-        align_name = ALIGN_NAMES[align]
-    else:
-        align_name = f"Unknown({align})"
-
     result = ParsedSegDef(
         acbp=acbp,
-        alignment=align_name,
-        align_value=align,
-        combine=COMBINE_NAMES[combine],
+        alignment=SegAlignment(align_val),
+        combine=SegCombine(combine_val),
         big=bool(big),
         use32=bool(use32)
     )
 
-    if align == 0:
+    if align_val == 0:
         result.absolute_frame = sub.parse_numeric(2)
         result.absolute_offset = sub.read_byte()
 
@@ -99,13 +90,10 @@ def handle_segdef(omf, record):
     if big and length == 0:
         if is_32bit:
             result.length = SegmentSize.SIZE_4GB
-            result.length_display = "4GB (0x100000000)"
         else:
             result.length = SegmentSize.SIZE_64K
-            result.length_display = "64K (0x10000)"
     else:
         result.length = length
-        result.length_display = f"{length} (0x{length:X})"
 
     seg_name_idx = sub.parse_index()
     cls_name_idx = sub.parse_index()
@@ -119,11 +107,9 @@ def handle_segdef(omf, record):
         if omf.variant.segdef_has_access_byte():
             access_byte = sub.read_byte()
             access_type = access_byte & SegdefFlags.ACCESS_TYPE_MASK
-            access_names = omf.variant.segdef_access_byte_names()
             result.access_byte = access_byte
-            result.access_name = access_names.get(access_type, f"Unknown({access_type})")
-        else:
-            result.extra_byte = sub.read_byte()
+            access_map: dict[int, str] = {0: "RO", 1: "EO", 2: "ER", 3: "RW"}
+            result.access = access_map.get(access_type)
 
     raw_name = omf.lnames[seg_name_idx] if seg_name_idx < len(omf.lnames) else f"Seg#{len(omf.segdefs)}"
     omf.segdefs.append(raw_name)
@@ -316,7 +302,7 @@ def handle_modend(omf, record):
             target_method = end_data & ModendFlags.TARGET_MASK
 
             if p_bit != 0:
-                result.warnings.append(f"MODEND P-bit is {p_bit}, must be 0 per spec")
+                result.warnings.append("MODEND uses secondary target (P=1): valid per Intel OMF, not TIS OMF 1.1")
 
             frame_datum = None
             if frame_method < 3:

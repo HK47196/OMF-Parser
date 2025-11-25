@@ -7,7 +7,22 @@ They provide runtime type validation and are serializable to JSON.
 from enum import Enum
 from typing import List, Optional, Union, Literal, Tuple, Annotated
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, PlainSerializer
+
+from omf_parser.constants import (
+    SegAlignment,
+    SegCombine,
+    FixupLocation,
+    FrameMethod,
+    TargetMethod,
+    ComdatSelection,
+    ComdatAllocation,
+    ComdatAlign,
+    BackpatchLocation,
+)
+
+# Bytes serialize as hex string
+BytesField = Annotated[bytes, PlainSerializer(lambda x: x.hex(), return_type=str)]
 
 
 class ThreadKind(str, Enum):
@@ -140,8 +155,7 @@ class BackpatchRecord(BaseModel):
 
     segment: str
     segment_index: int
-    location_type: int
-    location_name: str
+    location: BackpatchLocation
     offset: int
     value: int
 
@@ -150,8 +164,7 @@ class NamedBackpatchRecord(BaseModel):
     """NBKPAT named backpatch record entry."""
     model_config = ConfigDict(strict=True)
 
-    location_type: int
-    location_name: str
+    location: BackpatchLocation
     symbol: str
     offset: int
     value: int
@@ -287,24 +300,24 @@ class ParsedLNames(ParsedRecord):
     names: List[LNameEntry]
 
 
+type SegAccess = Literal["RO", "EO", "ER", "RW"]
+
+
 class ParsedSegDef(ParsedRecord):
     """SEGDEF - Segment definition."""
     acbp: int
-    alignment: str
-    align_value: int
-    combine: str
+    alignment: SegAlignment
+    combine: SegCombine
     big: bool
     use32: bool
     absolute_frame: Optional[int] = None
     absolute_offset: Optional[int] = None
     length: int = 0
-    length_display: str = ""
     segment_name: str = ""
     class_name: str = ""
     overlay_name: str = ""
+    access: Optional[SegAccess] = None
     access_byte: Optional[int] = None
-    access_name: Optional[Literal["RO", "EO", "ER", "RW"]] = None
-    extra_byte: Optional[int] = None
 
 
 class ParsedGrpDef(ParsedRecord):
@@ -440,8 +453,7 @@ class ParsedThread(BaseModel):
 
     kind: ThreadKind
     thread_num: int
-    method: int
-    method_name: str
+    method: Union[FrameMethod, TargetMethod]
     index: Optional[int] = None
     warnings: List[str] = Field(default_factory=list)
 
@@ -451,12 +463,12 @@ class ParsedFixup(BaseModel):
     model_config = ConfigDict(strict=True)
 
     data_offset: int
-    location: str
+    location: FixupLocation
     mode: FixupMode
-    frame_method: int
-    frame_source: str
-    target_method: int
-    target_source: str
+    frame_method: FrameMethod
+    frame_source: str  # Resolved name (segment/group/external name)
+    target_method: TargetMethod
+    target_source: str  # Resolved name (segment/group/external name)
     frame_datum: Optional[int] = None
     target_datum: Optional[int] = None
     displacement: Optional[int] = None
@@ -482,10 +494,9 @@ class ParsedComDat(ParsedRecord):
     iterated: bool
     local: bool
     data_in_code: bool
-    attributes: int
-    selection: str
-    allocation: str
-    alignment: str
+    selection: ComdatSelection
+    allocation: ComdatAllocation
+    alignment: ComdatAlign
     enum_offset: int = 0
     type_index: int = 0
     base_group: Optional[str] = None
@@ -497,14 +508,14 @@ class ParsedComDat(ParsedRecord):
     iterated_expanded_size: int = 0
 
 
-class ParsedBakPat(ParsedRecord):
+class ParsedBackpatch(ParsedRecord):
     """BAKPAT - Backpatch record."""
     is_32bit: bool
     records: List[BackpatchRecord] = Field(default_factory=list)
     warnings: List[str] = Field(default_factory=list)
 
 
-class ParsedNBkPat(ParsedRecord):
+class ParsedNamedBackpatch(ParsedRecord):
     """NBKPAT - Named backpatch record."""
     is_32bit: bool
     records: List[NamedBackpatchRecord] = Field(default_factory=list)

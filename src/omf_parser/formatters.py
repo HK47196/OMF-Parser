@@ -13,7 +13,7 @@ from .models import (
     ParsedLinNum, ParsedVerNum, ParsedVendExt, ParsedLocSym, ParsedTypDef,
     ParsedLEData, ParsedLIData, ParsedLIDataBlock,
     ParsedFixupp, ParsedThread, ParsedFixup,
-    ParsedComDef, ParsedComDat, ParsedBakPat, ParsedNBkPat,
+    ParsedComDef, ParsedComDat, ParsedBackpatch, ParsedNamedBackpatch,
     ParsedLinSym, ParsedAlias,
     ParsedLibHdr, ParsedLibEnd, ParsedLibDict, ParsedExtDict,
     ParsedRheadr, ParsedRegInt, ParsedReDataPeData, ParsedRiDataPiData,
@@ -111,8 +111,8 @@ class HumanFormatter:
     def _format_ParsedSegDef(self, p: ParsedSegDef) -> str:
         lines = [
             f"  ACBP: 0x{p.acbp:02X}",
-            f"    Alignment: {p.alignment}",
-            f"    Combine: {p.combine}",
+            f"    Alignment: {p.alignment.label}",
+            f"    Combine: {p.combine.label}",
             f"    Big: {p.big} (segment is {'64K/4GB' if p.big else 'smaller'})",
             f"    Use32: {p.use32} ({'Use32' if p.use32 else 'Use16'})"
         ]
@@ -120,15 +120,13 @@ class HumanFormatter:
         if p.absolute_frame is not None:
             lines.append(f"    Absolute Frame: 0x{p.absolute_frame:04X}, Offset: 0x{p.absolute_offset:02X}")
 
-        lines.append(f"    Length: {p.length_display}")
+        lines.append(f"    Length: {p.length} (0x{p.length:X})")
         lines.append(f"    Segment Name: {p.segment_name}")
         lines.append(f"    Class Name: {p.class_name}")
         lines.append(f"    Overlay Name: {p.overlay_name}")
 
         if p.access_byte is not None:
-            lines.append(f"    Access: 0x{p.access_byte:02X} ({p.access_name})")
-        elif p.extra_byte is not None:
-            lines.append(f"    [Unknown] Extra byte: 0x{p.extra_byte:02X}")
+            lines.append(f"    Access: 0x{p.access_byte:02X} ({p.access})")
 
         return "\n".join(lines)
 
@@ -313,9 +311,9 @@ class HumanFormatter:
         for sub in p.subrecords:
             if isinstance(sub, ParsedThread):
                 kind_str = sub.kind.value if isinstance(sub.kind, Enum) else sub.kind
-                out = f"    THREAD {kind_str}#{sub.thread_num} Method={sub.method_name}"
+                out = f"    THREAD {kind_str}#{sub.thread_num} Method={sub.method.label}"
                 if sub.index is not None:
-                    label = "FrameNum" if sub.method == 3 else "Index"
+                    label = "FrameNum" if sub.method.int_val == 3 else "Index"
                     out += f" {label}={sub.index}"
                 lines.append(out)
                 for warn in sub.warnings:
@@ -323,12 +321,12 @@ class HumanFormatter:
             elif isinstance(sub, ParsedFixup):
                 lines.append(f"    FIXUP @{sub.data_offset:03X}")
                 mode_str = sub.mode.value if isinstance(sub.mode, Enum) else sub.mode
-                lines.append(f"      Location: {sub.location}, Mode: {mode_str}")
-                frame_line = f"      Frame: Method={sub.frame_method} ({sub.frame_source})"
+                lines.append(f"      Location: {sub.location.label}, Mode: {mode_str}")
+                frame_line = f"      Frame: Method={sub.frame_method.label} ({sub.frame_source})"
                 if sub.frame_datum is not None:
                     frame_line += f" Datum={sub.frame_datum}"
                 lines.append(frame_line)
-                target_line = f"      Target: Method={sub.target_method} ({sub.target_source})"
+                target_line = f"      Target: Method={sub.target_method.label} ({sub.target_source})"
                 if sub.target_datum is not None:
                     target_line += f" Datum={sub.target_datum}"
                 lines.append(target_line)
@@ -357,10 +355,9 @@ class HumanFormatter:
             f"    Iterated Data: {p.iterated}",
             f"    Local (LCOMDAT): {p.local}",
             f"    Data in Code Seg: {p.data_in_code}",
-            f"  Attributes: 0x{p.attributes:02X}",
-            f"    Selection: {p.selection}",
-            f"    Allocation: {p.allocation}",
-            f"  Alignment: {p.alignment}",
+            f"  Selection: {p.selection.label}",
+            f"  Allocation: {p.allocation.label}",
+            f"  Alignment: {p.alignment.label}",
             f"  Enum Offset: 0x{p.enum_offset:X}",
             f"  Type Index: {p.type_index}"
         ]
@@ -393,22 +390,22 @@ class HumanFormatter:
 
         return "\n".join(lines)
 
-    def _format_ParsedBakPat(self, p: ParsedBakPat) -> str:
+    def _format_ParsedBackpatch(self, p: ParsedBackpatch) -> str:
         lines = ["  Backpatch Records:"]
         for warn in p.warnings:
             lines.append(f"    [!] Warning: {warn}")
         for rec in p.records:
             lines.append(f"    Segment: {rec.segment}")
-            lines.append(f"    Location Type: {rec.location_name}")
+            lines.append(f"    Location Type: {rec.location.label}")
             lines.append(f"    Offset: 0x{rec.offset:X}")
             lines.append(f"    Value: 0x{rec.value:X}")
         return "\n".join(lines)
 
-    def _format_ParsedNBkPat(self, p: ParsedNBkPat) -> str:
+    def _format_ParsedNamedBackpatch(self, p: ParsedNamedBackpatch) -> str:
         lines = ["  Named Backpatch Records:"]
         for rec in p.records:
             lines.append(f"    Symbol: '{rec.symbol}'")
-            lines.append(f"    Location Type: {rec.location_name}")
+            lines.append(f"    Location Type: {rec.location.label}")
             lines.append(f"    Offset: 0x{rec.offset:X}")
             lines.append(f"    Value: 0x{rec.value:X}")
         return "\n".join(lines)
@@ -876,6 +873,9 @@ class JSONFormatter:
         if isinstance(obj, bytes):
             return obj.hex()
         if isinstance(obj, Enum):
+            # Use .label for enums that have it (our IntEnums), otherwise .value
+            if hasattr(obj, 'label'):
+                return obj.label
             return obj.value
         if isinstance(obj, BaseModel):
             result = {}

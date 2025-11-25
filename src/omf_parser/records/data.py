@@ -2,7 +2,10 @@
 
 from . import omf_record
 from .microsoft import parse_lidata_blocks
-from ..constants import RecordType, FixuppFlags
+from ..constants import (
+    RecordType, FixuppFlags,
+    FrameMethod, TargetMethod, FixupLocation
+)
 from ..models import (
     ParsedLEData, ParsedLIData,
     ParsedFixupp, ParsedThread, ParsedFixup,
@@ -73,15 +76,10 @@ def handle_fixupp(omf, record):
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.FIXUPP32)
 
-    frame_threads = [None] * 4
-    target_threads = [None] * 4
+    frame_threads: list[tuple[FrameMethod, int | None] | None] = [None] * 4
+    target_threads: list[tuple[TargetMethod, int | None] | None] = [None] * 4
 
     result = ParsedFixupp(is_32bit=is_32bit)
-
-    method_names_frame = ["F0:SEGDEF", "F1:GRPDEF", "F2:EXTDEF", "F3:FrameNum",
-                          "F4:Location", "F5:Target", "F6:Invalid", "F7:?"]
-    method_names_target = ["T0:SEGDEF", "T1:GRPDEF", "T2:EXTDEF", "T3:FrameNum",
-                           "T4:SEGDEF(0)", "T5:GRPDEF(0)", "T6:EXTDEF(0)", "T7:?"]
 
     while sub.bytes_remaining() > 0:
         peek = sub.peek_byte()
@@ -91,41 +89,40 @@ def handle_fixupp(omf, record):
         if (peek & FixuppFlags.IS_FIXUP) == 0:
             b = sub.read_byte()
             is_frame = (b & FixuppFlags.THREAD_IS_FRAME) != 0
-            method = (b >> FixuppFlags.THREAD_METHOD_SHIFT) & FixuppFlags.THREAD_METHOD_MASK
+            method_val = (b >> FixuppFlags.THREAD_METHOD_SHIFT) & FixuppFlags.THREAD_METHOD_MASK
             thred = b & FixuppFlags.THREAD_NUM_MASK
 
             idx = None
-            if method == 3:
+            if method_val == 3:
                 idx = sub.parse_numeric(2)
-            elif method < 3:
+            elif method_val < 3:
                 idx = sub.parse_index()
 
             kind = ThreadKind.FRAME if is_frame else ThreadKind.TARGET
 
             if is_frame:
-                method_name = method_names_frame[method]
+                method = FrameMethod(method_val)
                 frame_threads[thred] = (method, idx)
             else:
-                method_name = method_names_target[method]
+                method = TargetMethod(method_val)
                 target_threads[thred] = (method, idx)
 
             thread = ParsedThread(
                 kind=kind,
                 thread_num=thred,
                 method=method,
-                method_name=method_name,
                 index=idx
             )
 
             if is_frame:
-                if method == 3:
+                if method_val == 3:
                     thread.warnings.append("FRAME method F3 is Invalid per spec")
-                elif method == 6:
+                elif method_val == 6:
                     thread.warnings.append("FRAME method F6 is Invalid per spec")
-                elif method == 7:
+                elif method_val == 7:
                     thread.warnings.append("FRAME method F7 is undefined")
             else:
-                if method == 7:
+                if method_val == 7:
                     thread.warnings.append("TARGET method T7 is undefined")
 
             result.subrecords.append(thread)
@@ -138,13 +135,11 @@ def handle_fixupp(omf, record):
                 break
 
             mode = (b1 >> FixuppFlags.MODE_SHIFT) & 0x01
-            loc_type = (b1 >> FixuppFlags.LOC_TYPE_SHIFT) & FixuppFlags.LOC_TYPE_MASK
+            loc_type_val = (b1 >> FixuppFlags.LOC_TYPE_SHIFT) & FixuppFlags.LOC_TYPE_MASK
             data_offset = ((b1 & FixuppFlags.OFFSET_HIGH_MASK) << 8) | b2
 
             mode_enum = FixupMode.SEGMENT_RELATIVE if mode else FixupMode.SELF_RELATIVE
-
-            loc_names = omf.variant.fixupp_loc_names()
-            loc_str = loc_names.get(loc_type, f"Unknown({loc_type})")
+            location = FixupLocation(loc_type_val)
 
             fix_dat = sub.read_byte()
             if fix_dat is None:
@@ -158,33 +153,41 @@ def handle_fixupp(omf, record):
 
             if f_bit:
                 thread_num = frame_field & FixuppFlags.THREAD_NUM_MASK
-                frame_method, frame_datum = frame_threads[thread_num] or (0, None)
+                thread_data = frame_threads[thread_num]
+                frame_method, frame_datum = thread_data if thread_data else (FrameMethod.SEGDEF, None)
                 frame_src = f"Thread#{thread_num}"
             else:
-                frame_method = frame_field
+                frame_method = FrameMethod(frame_field)
                 frame_datum = None
-                if frame_method < 3:
+                if frame_field < 3:
                     frame_datum = sub.parse_index()
                 frame_src = "Explicit"
 
             if t_bit:
                 thread_num = targt_field
-                target_method, target_datum = target_threads[thread_num] or (0, None)
-                target_method = (target_method & FixuppFlags.TARGET_MASK) | (p_bit << FixuppFlags.P_BIT_SHIFT)
+                thread_data = target_threads[thread_num]
+                if thread_data:
+                    base_method, target_datum = thread_data
+                    target_method_val = (base_method.int_val & FixuppFlags.TARGET_MASK) | (p_bit << FixuppFlags.P_BIT_SHIFT)
+                else:
+                    target_method_val = p_bit << FixuppFlags.P_BIT_SHIFT
+                    target_datum = None
+                target_method = TargetMethod(target_method_val)
                 target_src = f"Thread#{thread_num}"
             else:
-                target_method = targt_field | (p_bit << FixuppFlags.P_BIT_SHIFT)
+                target_method_val = targt_field | (p_bit << FixuppFlags.P_BIT_SHIFT)
+                target_method = TargetMethod(target_method_val)
                 target_datum = sub.parse_index()
                 target_src = "Explicit"
 
             disp = None
-            if target_method < 4:
+            if target_method.int_val < 4:
                 disp_size = sub.get_offset_field_size(is_32bit)
                 disp = sub.parse_numeric(disp_size)
 
             fixup = ParsedFixup(
                 data_offset=data_offset,
-                location=loc_str,
+                location=location,
                 mode=mode_enum,
                 frame_method=frame_method,
                 frame_source=frame_src,

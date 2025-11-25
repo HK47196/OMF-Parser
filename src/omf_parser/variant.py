@@ -9,8 +9,7 @@ Variants:
 - IBM LINK386: OS/2 2.x+ format with inline names in some records
 """
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 
 @dataclass
@@ -40,30 +39,6 @@ class Variant:
         """Whether SEGDEF has an access byte after overlay name index."""
         return False
 
-    def segdef_access_byte_names(self) -> dict[int, str]:
-        """Access type names for SEGDEF access byte (bits 0-1)."""
-        return {}
-
-    def segdef_extra_align_names(self) -> dict[int, str]:
-        """Additional alignment names beyond TIS standard."""
-        return {}
-
-    # --- FIXUPP Variant Handling ---
-
-    def fixupp_loc_names(self) -> dict[int, str]:
-        """Location type names for FIXUPP records."""
-        return {
-            0: "Byte(8)",
-            1: "Offset(16)",
-            2: "Segment(16)",
-            3: "Ptr(16:16)",
-            4: "HiByte(8)",
-            5: "Loader-resolved Offset(16)",
-            9: "Offset(32)",
-            11: "Ptr(16:32)",
-            13: "Loader-resolved Offset(32)",
-        }
-
     # --- Symbol Reference Format ---
 
     def comdat_uses_inline_name(self) -> bool:
@@ -77,16 +52,6 @@ class Variant:
     def linsym_uses_inline_name(self) -> bool:
         """Whether LINSYM stores symbol as inline name vs LNAMES index."""
         return False
-
-    # --- NBKPAT Variant Handling ---
-
-    def nbkpat_loc_names(self) -> dict[int, str]:
-        """Location type names for NBKPAT records."""
-        return {
-            0: "Byte(8)",
-            1: "Word(16)",
-            2: "DWord(32)",
-        }
 
 
 @dataclass
@@ -106,35 +71,6 @@ class PharLapVariant(Variant):
         """PharLap adds an access byte after overlay name index."""
         return True
 
-    def segdef_access_byte_names(self) -> dict[int, str]:
-        """Access type values (bits 0-1 of access byte)."""
-        return {
-            0: "RO (Read Only)",
-            1: "EO (Execute Only)",
-            2: "ER (Execute/Read)",
-            3: "RW (Read/Write)",
-        }
-
-    def segdef_extra_align_names(self) -> dict[int, str]:
-        """PharLap adds align type 6 = 4K page."""
-        return {
-            6: "Page (4K)",
-        }
-
-    def fixupp_loc_names(self) -> dict[int, str]:
-        """PharLap redefines some location types for 32-bit."""
-        return {
-            0: "Byte(8)",
-            1: "Offset(16)",
-            2: "Segment(16)",
-            3: "Ptr(16:32)",      # Different from TIS
-            4: "HiByte(8)",
-            5: "Offset(32)",      # Different from TIS
-            9: "Offset(32)",
-            11: "Ptr(16:32)",
-            13: "Loader-resolved Offset(32)",
-        }
-
 
 @dataclass
 class IBMVariant(Variant):
@@ -152,15 +88,6 @@ class IBMVariant(Variant):
     def linsym_uses_inline_name(self) -> bool:
         """IBM stores LINSYM symbol as inline name."""
         return True
-
-    def nbkpat_loc_names(self) -> dict[int, str]:
-        """IBM adds location type 9."""
-        return {
-            0: "Byte(8)",
-            1: "Word(16)",
-            2: "DWord(32)",
-            9: "DWord(32-IBM)",
-        }
 
 
 # Singleton instances

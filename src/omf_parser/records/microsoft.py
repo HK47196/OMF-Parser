@@ -3,14 +3,11 @@
 from . import omf_record
 from ..constants import (
     RecordType, ComdefType, ComdatFlags,
-    COMDAT_SELECTION_NAMES,
-    COMDAT_ALLOCATION_NAMES,
-    COMDAT_ALIGN_NAMES,
-    BAKPAT_LOCATION_NAMES,
+    ComdatSelection, ComdatAllocation, ComdatAlign, BackpatchLocation,
     COMDEF_BORLAND_MAX
 )
 from ..models import (
-    ParsedComDef, ParsedComDat, ParsedBakPat, ParsedNBkPat,
+    ParsedComDef, ParsedComDat, ParsedBackpatch, ParsedNamedBackpatch,
     ParsedLinSym, ParsedAlias, ParsedLIDataBlock,
     ComDefFarDefinition, ComDefNearDefinition, ComDefBorlandDefinition, ComDefUnknownDefinition,
     BackpatchRecord, NamedBackpatchRecord, LineEntry, AliasEntry
@@ -158,9 +155,9 @@ def handle_comdat(omf, record):
 
     flags = sub.read_byte()
     attrib = sub.read_byte()
-    align = sub.read_byte()
+    align_val = sub.read_byte()
 
-    if flags is None or attrib is None or align is None:
+    if flags is None or attrib is None or align_val is None:
         return None
 
     continuation = (flags & ComdatFlags.CONTINUATION) != 0
@@ -168,8 +165,8 @@ def handle_comdat(omf, record):
     local = (flags & ComdatFlags.LOCAL) != 0
     data_in_code = (flags & ComdatFlags.DATA_IN_CODE) != 0
 
-    selection = (attrib >> ComdatFlags.SELECTION_SHIFT) & ComdatFlags.SELECTION_MASK
-    allocation = attrib & ComdatFlags.ALLOCATION_MASK
+    selection_val = (attrib >> ComdatFlags.SELECTION_SHIFT) & ComdatFlags.SELECTION_MASK
+    allocation_val = attrib & ComdatFlags.ALLOCATION_MASK
 
     result = ParsedComDat(
         is_32bit=is_32bit,
@@ -178,17 +175,16 @@ def handle_comdat(omf, record):
         iterated=iterated,
         local=local,
         data_in_code=data_in_code,
-        attributes=attrib,
-        selection=COMDAT_SELECTION_NAMES.get(selection, f'Reserved({selection})'),
-        allocation=COMDAT_ALLOCATION_NAMES.get(allocation, f'Reserved({allocation})'),
-        alignment=COMDAT_ALIGN_NAMES.get(align, f'Unknown({align})')
+        selection=ComdatSelection(selection_val),
+        allocation=ComdatAllocation(allocation_val),
+        alignment=ComdatAlign(align_val)
     )
 
     offset_size = sub.get_offset_field_size(is_32bit)
     result.enum_offset = sub.parse_numeric(offset_size)
     result.type_index = sub.parse_index()
 
-    if allocation == 0:
+    if allocation_val == 0:
         base_grp = sub.parse_index()
         base_seg = sub.parse_index()
         result.base_group = omf.get_grpdef(base_grp)
@@ -218,15 +214,15 @@ def handle_bakpat(omf, record):
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.BAKPAT32)
 
-    result = ParsedBakPat(is_32bit=is_32bit)
+    result = ParsedBackpatch(is_32bit=is_32bit)
 
     while sub.bytes_remaining() > 0:
         seg_idx = sub.parse_index()
-        loc_type = sub.read_byte()
+        loc_type_val = sub.read_byte()
 
-        loc_str = BAKPAT_LOCATION_NAMES.get(loc_type, f"Unknown({loc_type})")
+        location = BackpatchLocation(loc_type_val)
 
-        if loc_type == 2 and record.type == RecordType.BAKPAT:
+        if loc_type_val == 2 and record.type == RecordType.BAKPAT:
             result.warnings.append("Location type 2 (DWord) only valid for B3H records")
 
         val_size = sub.get_offset_field_size(is_32bit)
@@ -236,8 +232,7 @@ def handle_bakpat(omf, record):
         result.records.append(BackpatchRecord(
             segment=omf.get_segdef(seg_idx),
             segment_index=seg_idx,
-            location_type=loc_type,
-            location_name=loc_str,
+            location=location,
             offset=offset,
             value=value
         ))
@@ -252,12 +247,10 @@ def handle_nbkpat(omf, record):
     # NBKPAT has INVERTED bit order: C8H = 32-bit, C9H = 16-bit
     is_32bit = (record.type == RecordType.NBKPAT)
 
-    result = ParsedNBkPat(is_32bit=is_32bit)
-
-    loc_names = omf.variant.nbkpat_loc_names()
+    result = ParsedNamedBackpatch(is_32bit=is_32bit)
 
     while sub.bytes_remaining() > 0:
-        loc_type = sub.read_byte()
+        loc_type_val = sub.read_byte()
 
         if omf.variant.nbkpat_uses_inline_name():
             symbol = sub.parse_name()
@@ -265,15 +258,14 @@ def handle_nbkpat(omf, record):
             name_idx = sub.parse_index()
             symbol = omf.get_lname(name_idx)
 
-        loc_name = loc_names.get(loc_type, f"Unknown({loc_type})")
+        location = BackpatchLocation(loc_type_val)
 
         val_size = sub.get_offset_field_size(is_32bit)
         offset = sub.parse_numeric(val_size)
         value = sub.parse_numeric(val_size)
 
         result.records.append(NamedBackpatchRecord(
-            location_type=loc_type,
-            location_name=loc_name,
+            location=location,
             symbol=symbol,
             offset=offset,
             value=value

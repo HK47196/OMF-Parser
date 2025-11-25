@@ -1,6 +1,47 @@
 """OMF constants and record type definitions."""
 
-from enum import IntEnum, unique
+from enum import Enum, IntEnum, IntFlag, unique
+from typing import NamedTuple
+
+
+class EnumValue(NamedTuple):
+    """Value for LabeledEnum members."""
+    int_val: int
+    label: str
+
+
+class LabeledEnum(Enum):
+    """Enum with both integer value and string label.
+
+    Allows construction from int (for parsing) while keeping unique tuple values
+    (avoiding Union collision in Pydantic).
+    """
+    def __new__(cls, int_val: int, label: str):
+        obj = object.__new__(cls)
+        obj._value_ = EnumValue(int_val, label)
+        obj.int_val = int_val
+        obj.label = label
+        return obj
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        int_vals = [m.int_val for m in cls]
+        if len(int_vals) != len(set(int_vals)):
+            dupes = [v for v in int_vals if int_vals.count(v) > 1]
+            raise ValueError(f"{cls.__name__} has duplicate int values: {set(dupes)}")
+
+    @classmethod
+    def _missing_(cls, value: object):
+        if isinstance(value, int):
+            if value < 0:
+                raise ValueError(f"Invalid {cls.__name__} value: {value}")
+            for member in cls:
+                if member.int_val == value:
+                    return member
+        return None
+
+    def __str__(self) -> str:
+        return self.label
 
 
 @unique
@@ -161,6 +202,188 @@ class TypdefLeaf(IntEnum):
     """TYPDEF leaf type codes."""
     FAR = 0x61
     NEAR = 0x62
+
+
+class SegAlignment(LabeledEnum):
+    """SEGDEF alignment values (A field in ACBP byte).
+
+    - Absolute: Absolute segment (frame number and offset follow)
+    - Byte: Relocatable, byte aligned
+    - Word: Relocatable, word (2-byte) aligned
+    - Paragraph: Relocatable, paragraph (16-byte) aligned
+    - Page: Relocatable, page aligned (256-byte Intel / 4K IBM)
+    - DWord: Relocatable, dword (4-byte) aligned
+    - LTL(6): Not supported (Intel: LTL paragraph aligned)
+    - Undefined(7): Not defined
+    """
+    ABSOLUTE = EnumValue(0, "Absolute")
+    BYTE = EnumValue(1, "Byte")
+    WORD = EnumValue(2, "Word")
+    PARAGRAPH = EnumValue(3, "Paragraph")
+    PAGE = EnumValue(4, "Page (256-byte Intel / 4K IBM)")
+    DWORD = EnumValue(5, "DWord")
+    LTL = EnumValue(6, "LTL(6)")
+    UNDEFINED = EnumValue(7, "Undefined(7)")
+
+
+class SegCombine(LabeledEnum):
+    """SEGDEF combine values (C field in ACBP byte).
+
+    - Private: Do not combine with any other segment
+    - Reserved(1) [Intel: Common]: Reserved (Intel 8086 used this for Common)
+    - Public: Combine by appending at alignment boundary
+    - Reserved(3): Reserved
+    - Public(4): Same as Public
+    - Stack: Combine as Public, forces byte alignment
+    - Common: Combine by overlay using maximum size
+    - Public(7): Same as Public
+    """
+    PRIVATE = EnumValue(0, "Private")
+    RESERVED_1 = EnumValue(1, "Reserved(1) [Intel: Common]")
+    PUBLIC = EnumValue(2, "Public")
+    RESERVED_3 = EnumValue(3, "Reserved(3)")
+    PUBLIC_4 = EnumValue(4, "Public(4)")
+    STACK = EnumValue(5, "Stack")
+    COMMON = EnumValue(6, "Common")
+    PUBLIC_7 = EnumValue(7, "Public(7)")
+
+
+class FixupLocation(LabeledEnum):
+    """FIXUPP location types. Some values differ between TIS and PharLap variants.
+
+    - Byte(8): Low-order byte (8-bit displacement or low byte of 16-bit offset)
+    - Offset(16): 16-bit offset
+    - Segment(16): 16-bit base/selector
+    - Ptr(16:16): 32-bit far pointer (16-bit segment:16-bit offset) [PharLap: 16:32]
+    - HiByte(8): High-order byte of 16-bit offset
+    - Loader-resolved Offset(16): 16-bit loader-resolved offset [PharLap: 32-bit offset]
+    - Ptr(16:32) [loc 6]: PharLap 48-bit pointer [TIS: reserved]
+    - Offset(32): 32-bit offset
+    - Ptr(16:32) [loc 11]: 48-bit far pointer (16-bit segment:32-bit offset)
+    - Loader-resolved Offset(32): 32-bit loader-resolved offset
+    """
+    BYTE = EnumValue(0, "Byte(8)")
+    OFFSET_16 = EnumValue(1, "Offset(16)")
+    SEGMENT_16 = EnumValue(2, "Segment(16)")
+    PTR_16_16 = EnumValue(3, "Ptr(16:16)")
+    HIBYTE = EnumValue(4, "HiByte(8)")
+    LOADER_OFFSET_16 = EnumValue(5, "Loader-resolved Offset(16)")
+    PHARLAP_PTR_16_32 = EnumValue(6, "Ptr(16:32) [loc 6]")
+    OFFSET_32 = EnumValue(9, "Offset(32)")
+    PTR_16_32 = EnumValue(11, "Ptr(16:32)")
+    LOADER_OFFSET_32 = EnumValue(13, "Loader-resolved Offset(32)")
+
+
+class FrameMethod(LabeledEnum):
+    """FIXUPP frame determination methods.
+
+    - F0:SEGDEF: Frame specified by SEGDEF index
+    - F1:GRPDEF: Frame specified by GRPDEF index
+    - F2:EXTDEF: Frame specified by EXTDEF index
+    - F3:FrameNum: Explicit frame number (not supported by linkers)
+    - F4:Location: Frame from previous LEDATA/LIDATA segment
+    - F5:Target: Frame determined by target
+    - F6:Invalid: Invalid/reserved
+    """
+    SEGDEF = EnumValue(0, "F0:SEGDEF")
+    GRPDEF = EnumValue(1, "F1:GRPDEF")
+    EXTDEF = EnumValue(2, "F2:EXTDEF")
+    FRAME_NUM = EnumValue(3, "F3:FrameNum")
+    LOCATION = EnumValue(4, "F4:Location")
+    TARGET = EnumValue(5, "F5:Target")
+    INVALID = EnumValue(6, "F6:Invalid")
+
+
+class TargetMethod(LabeledEnum):
+    """FIXUPP target determination methods.
+
+    - T0:SEGDEF: Target specified by SEGDEF index with displacement
+    - T1:GRPDEF: Target specified by GRPDEF index with displacement
+    - T2:EXTDEF: Target specified by EXTDEF index with displacement
+    - T3:FrameNum: Explicit frame number (not supported)
+    - T4:SEGDEF(0): Target specified by SEGDEF index, displacement assumed 0
+    - T5:GRPDEF(0): Target specified by GRPDEF index, displacement assumed 0
+    - T6:EXTDEF(0): Target specified by EXTDEF index, displacement assumed 0
+    """
+    SEGDEF = EnumValue(0, "T0:SEGDEF")
+    GRPDEF = EnumValue(1, "T1:GRPDEF")
+    EXTDEF = EnumValue(2, "T2:EXTDEF")
+    FRAME_NUM = EnumValue(3, "T3:FrameNum")
+    SEGDEF_NO_DISP = EnumValue(4, "T4:SEGDEF(0)")
+    GRPDEF_NO_DISP = EnumValue(5, "T5:GRPDEF(0)")
+    EXTDEF_NO_DISP = EnumValue(6, "T6:EXTDEF(0)")
+
+
+class ComdatSelection(LabeledEnum):
+    """COMDAT selection attribute (high-order 4 bits of attribute byte).
+
+    - No Match: Only one instance allowed; duplicate definitions are errors
+    - Pick Any: Pick any instance; all definitions assumed identical
+    - Same Size: Pick any, but all definitions must have same size
+    - Exact Match: Pick any, but all definitions must have matching checksums
+    """
+    NO_MATCH = EnumValue(0, "No Match")
+    PICK_ANY = EnumValue(1, "Pick Any")
+    SAME_SIZE = EnumValue(2, "Same Size")
+    EXACT_MATCH = EnumValue(3, "Exact Match")
+
+
+class ComdatAllocation(LabeledEnum):
+    """COMDAT allocation attribute (low-order 4 bits of attribute byte).
+
+    - Explicit: Allocate in segment specified by SEGDEF index
+    - Far Code (CODE16): Allocate in default 16-bit code segment
+    - Far Data (DATA16): Allocate in default 16-bit data segment
+    - Code32: Allocate in default 32-bit code segment
+    - Data32: Allocate in default 32-bit data segment
+    """
+    EXPLICIT = EnumValue(0, "Explicit")
+    FAR_CODE = EnumValue(1, "Far Code (CODE16)")
+    FAR_DATA = EnumValue(2, "Far Data (DATA16)")
+    CODE32 = EnumValue(3, "Code32")
+    DATA32 = EnumValue(4, "Data32")
+
+
+class ComdatAlign(LabeledEnum):
+    """COMDAT alignment values. Values 0-5 correspond to SEGDEF alignment.
+
+    - FromSEGDEF: Use alignment from associated SEGDEF record
+    - Byte: Byte aligned
+    - Word: Word (2-byte) aligned
+    - Para: Paragraph (16-byte) aligned
+    - Page: Page aligned
+    - DWord: DWord (4-byte) aligned
+    """
+    FROM_SEGDEF = EnumValue(0, "FromSEGDEF")
+    BYTE = EnumValue(1, "Byte")
+    WORD = EnumValue(2, "Word")
+    PARAGRAPH = EnumValue(3, "Para")
+    PAGE = EnumValue(4, "Page")
+    DWORD = EnumValue(5, "DWord")
+
+
+class BackpatchLocation(LabeledEnum):
+    """BAKPAT/NBKPAT location types.
+
+    - Byte(8): 8-bit value
+    - Word(16): 16-bit value
+    - DWord(32): 32-bit value
+    - DWord(32-IBM): 32-bit value (IBM LINK386 extension)
+    """
+    BYTE = EnumValue(0, "Byte(8)")
+    WORD = EnumValue(1, "Word(16)")
+    DWORD = EnumValue(2, "DWord(32)")
+    DWORD_IBM = EnumValue(9, "DWord(32-IBM)")
+
+
+class ModEndType(IntFlag):
+    """MODEND module type flags.
+
+    See docs/OMF_spec/02_OMF_Headers_Comments_and_Module_Meta.md lines 607-626.
+    """
+    RELOCATABLE = 0x01  # Start address is relocatable
+    HAS_START = 0x40    # Module contains a start address
+    IS_MAIN = 0x80      # Module is a main program module
 
 
 class SegdefFlags:
@@ -399,55 +622,6 @@ A0_SUBTYPES: dict[int, str] = {
 
 
 RESERVED_SEGMENTS = {"$$TYPES", "$$SYMBOLS", "$$IMPORT"}
-
-ALIGN_NAMES = [
-    "Absolute", "Byte", "Word", "Paragraph",
-    "Page (256-byte Intel / 4K IBM)", "DWord", "LTL(6)", "Undefined(7)"
-]
-
-COMBINE_NAMES = [
-    "Private", "Reserved(1) [Intel: Common]", "Public", "Reserved(3)",
-    "Public(4)", "Stack", "Common", "Public(7)"
-]
-
-
-COMDAT_SELECTION_NAMES: dict[int, str] = {
-    0x00: "No Match",
-    0x01: "Pick Any",
-    0x02: "Same Size",
-    0x03: "Exact Match",
-}
-
-COMDAT_ALLOCATION_NAMES: dict[int, str] = {
-    0x00: "Explicit",
-    0x01: "Far Code (CODE16)",
-    0x02: "Far Data (DATA16)",
-    0x03: "Code32",
-    0x04: "Data32",
-}
-
-COMDAT_ALIGN_NAMES: dict[int, str] = {
-    0: "FromSEGDEF", 1: "Byte", 2: "Word", 3: "Para",
-    4: "Page", 5: "DWord"
-}
-
-
-FRAME_METHOD_NAMES = [
-    "F0:SEGDEF", "F1:GRPDEF", "F2:EXTDEF", "F3:FrameNum",
-    "F4:Location", "F5:Target", "F6:Invalid", "F7:?"
-]
-
-TARGET_METHOD_NAMES = [
-    "T0:SEGDEF", "T1:GRPDEF", "T2:EXTDEF", "T3:FrameNum",
-    "T4:SEGDEF(0)", "T5:GRPDEF(0)", "T6:EXTDEF(0)", "T7:?"
-]
-
-
-BAKPAT_LOCATION_NAMES: dict[int, str] = {
-    0: "Byte(8)",
-    1: "Word(16)",
-    2: "DWord(32)",
-}
 
 
 REGISTER_NAMES: dict[int, str] = {
