@@ -1,0 +1,3 @@
+[submodule "tests"]
+	path = tests
+	url = git@github.com:HK47196/OMF-Parser-Tests.git
