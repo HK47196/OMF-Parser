@@ -724,7 +724,6 @@ class HumanFormatter:
         warnings = []
         if hasattr(parsed, 'warnings'):
             warnings.extend(parsed.warnings)
-        # Check nested content (e.g., ParsedComent.content, ParsedFixupp.subrecords)
         if hasattr(parsed, 'content') and parsed.content and hasattr(parsed.content, 'warnings'):
             warnings.extend(parsed.content.warnings)
         if hasattr(parsed, 'subrecords'):

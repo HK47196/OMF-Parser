@@ -10,10 +10,6 @@ from typing import List, Optional, Union, Literal, Tuple, Annotated
 from pydantic import BaseModel, Field, ConfigDict
 
 
-# =============================================================================
-# Enums for categorical values
-# =============================================================================
-
 class ThreadKind(str, Enum):
     """FIXUPP thread type."""
     FRAME = "FRAME"
@@ -39,10 +35,6 @@ class ComDefKind(str, Enum):
     BORLAND = "Borland"
     UNKNOWN = "Unknown"
 
-
-# =============================================================================
-# Pydantic model definitions for structured data
-# =============================================================================
 
 class PubDefSymbol(BaseModel):
     """Symbol entry in PUBDEF/LPUBDEF records."""
@@ -264,13 +256,7 @@ class LibLocEntry(BaseModel):
     byte_offset: int
 
 
-# Type alias for LNAMES entry (index, name, is_reserved)
 LNameEntry = Tuple[int, str, bool]
-
-
-# =============================================================================
-# Base classes for parsed records
-# =============================================================================
 
 class ParsedRecord(BaseModel):
     """Base class for all parsed record data."""
@@ -286,10 +272,6 @@ class ParsedA0Content(BaseModel):
     """Base for A0 subtype content."""
     model_config = ConfigDict(strict=True, arbitrary_types_allowed=True)
 
-
-# =============================================================================
-# Standard record models
-# =============================================================================
 
 class ParsedTheadr(ParsedRecord):
     """THEADR/LHEADR - Module header."""
@@ -409,10 +391,6 @@ class ParsedTypDef(ParsedRecord):
     leaves: List[TypDefLeaf] = Field(default_factory=list)
 
 
-# =============================================================================
-# Data record models
-# =============================================================================
-
 class ParsedLEData(ParsedRecord):
     """LEDATA - Logical enumerated data."""
     is_32bit: bool
@@ -476,10 +454,6 @@ class ParsedFixupp(ParsedRecord):
     subrecords: List[Union[ParsedThread, ParsedFixup]] = Field(default_factory=list)
 
 
-# =============================================================================
-# Microsoft extension models
-# =============================================================================
-
 class ParsedComDef(ParsedRecord):
     """COMDEF/LCOMDEF - Communal definitions."""
     is_local: bool
@@ -533,10 +507,6 @@ class ParsedAlias(ParsedRecord):
     aliases: List[AliasEntry] = Field(default_factory=list)
 
 
-# =============================================================================
-# Library record models
-# =============================================================================
-
 class ParsedLibHdr(ParsedRecord):
     """Library header (F0H)."""
     page_size: int
@@ -563,10 +533,6 @@ class ParsedExtDict(ParsedRecord):
     num_modules: int
     modules: List[ExtDictModule] = Field(default_factory=list)
 
-
-# =============================================================================
-# Obsolete record models
-# =============================================================================
 
 class ParsedRheadr(ParsedRecord):
     """RHEADR - R-Module header (obsolete)."""
@@ -643,10 +609,6 @@ class ParsedObsoleteLib(ParsedRecord):
     modules: List[str] = Field(default_factory=list)
     locations: List[LibLocEntry] = Field(default_factory=list)
 
-
-# =============================================================================
-# COMENT models
-# =============================================================================
 
 class ParsedComent(ParsedRecord):
     """COMENT - Comment record."""
@@ -732,10 +694,6 @@ class ComentOmfExtensions(ParsedComentContent):
     warnings: List[str] = Field(default_factory=list)
 
 
-# =============================================================================
-# A0 subtype content models
-# =============================================================================
-
 class A0ImpDef(ParsedA0Content):
     """IMPDEF - Import definition."""
     by_ordinal: bool
@@ -784,10 +742,6 @@ class A0PreComp(ParsedA0Content):
     """Precompiled types marker."""
     pass
 
-
-# =============================================================================
-# Microsoft COMENT content models
-# =============================================================================
 
 class ComentDosVersion(ParsedComentContent):
     """MS-DOS version (obsolete)."""
@@ -845,10 +799,6 @@ class Coment32BitLinker(ParsedComentContent):
     data: Optional[bytes] = None
 
 
-# =============================================================================
-# Result container
-# =============================================================================
-
 class ParseResult(BaseModel):
     """Container for a parsed record result."""
     model_config = ConfigDict(strict=True, arbitrary_types_allowed=True)
@@ -864,7 +814,6 @@ class ParseResult(BaseModel):
     raw_content: Optional[bytes] = None
 
 
-# Rebuild models to resolve forward references
 ParsedLIDataBlock.model_rebuild()
 ParsedComent.model_rebuild()
 ComentOmfExtensions.model_rebuild()

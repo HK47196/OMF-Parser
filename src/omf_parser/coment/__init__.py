@@ -5,22 +5,42 @@ from collections import defaultdict
 COMENT_CLASS_HANDLERS = defaultdict(list)
 
 
+class DuplicateHandlerError(Exception):
+    """Raised when multiple handlers are registered at the same priority level."""
+    pass
+
+
 def coment_class(*classes, features=None):
     """Register a handler for one or more COMENT classes.
 
     Args:
         *classes: Comment class bytes (e.g., 0x00, 0xA0)
-        features: Optional set of feature strings required
+        features: Optional set of feature strings required for this handler
+
+    Handlers with more specific features take priority. If two handlers
+    have the same feature specificity, a DuplicateHandlerError is raised.
 
     Usage:
         @coment_class(0x00)
         def handle_translator(omf, sub, flags):
             ...
+
+        @coment_class(0x00, features={'vendor_x'})
+        def handle_translator_vendor_x(omf, sub, flags):
+            # Takes priority when 'vendor_x' feature is active
+            ...
     """
-    required_features = features or set()
+    required_features = frozenset(features) if features else frozenset()
 
     def decorator(fn):
         for cls in classes:
+            for existing in COMENT_CLASS_HANDLERS[cls]:
+                if existing['features'] == required_features:
+                    raise DuplicateHandlerError(
+                        f"Duplicate COMENT handler for class 0x{cls:02X} "
+                        f"with features {required_features or '(none)'}: "
+                        f"{existing['handler'].__name__} and {fn.__name__}"
+                    )
             COMENT_CLASS_HANDLERS[cls].append({
                 'handler': fn,
                 'features': required_features,
@@ -30,7 +50,11 @@ def coment_class(*classes, features=None):
 
 
 def get_coment_handler(cls, active_features):
-    """Get the best matching handler for a comment class."""
+    """Get the best matching handler for a comment class.
+
+    Selects the handler whose required features are all present in
+    active_features, preferring handlers with more specific requirements.
+    """
     handlers = COMENT_CLASS_HANDLERS.get(cls, [])
 
     matching = [

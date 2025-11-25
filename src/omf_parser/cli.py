@@ -45,7 +45,6 @@ def main():
             for result in omf.parsed_records:
                 print(formatter.format_result(result))
 
-            # Handle library dictionary separately
             if omf.is_library and omf.lib_dict_offset > 0:
                 lib_dict, ext_dict = parse_library_dictionary(omf)
                 if lib_dict:

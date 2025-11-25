@@ -3,10 +3,6 @@
 from enum import IntEnum, unique
 
 
-# =============================================================================
-# Record Type Enum
-# =============================================================================
-
 @unique
 class RecordType(IntEnum):
     """OMF record type identifiers."""
@@ -95,13 +91,11 @@ class RecordType(IntEnum):
         return self
 
 
-# =============================================================================
-# Comment Class Enum
-# =============================================================================
-
-@unique
 class CommentClass(IntEnum):
-    """COMENT record class types."""
+    """COMENT record class types.
+
+    Note: No @unique - different vendors may use overlapping class numbers.
+    """
     TRANSLATOR = 0x00
     COPYRIGHT = 0x01
     LIBSPEC = 0x81
@@ -119,6 +113,8 @@ class CommentClass(IntEnum):
     WKEXT = 0xA8
     LZEXT = 0xA9
     EASY_OMF = 0xAA
+    LINKER_32BIT = 0xB0
+    LINKER_32BIT_ALT = 0xB1
     COMMENT = 0xDA
     COMPILER = 0xDB
     DATE = 0xDC
@@ -127,10 +123,6 @@ class CommentClass(IntEnum):
     DEPENDENCY = 0xE9
     COMMANDLINE = 0xFF
 
-
-# =============================================================================
-# OMF Extensions (A0) Subtypes
-# =============================================================================
 
 @unique
 class A0Subtype(IntEnum):
@@ -144,10 +136,6 @@ class A0Subtype(IntEnum):
     PRECOMP = 0x07
 
 
-# =============================================================================
-# GRPDEF Component Types
-# =============================================================================
-
 @unique
 class GrpdefComponent(IntEnum):
     """GRPDEF component type markers."""
@@ -158,10 +146,6 @@ class GrpdefComponent(IntEnum):
     ABSOLUTE = 0xFA
 
 
-# =============================================================================
-# COMDEF Data Types
-# =============================================================================
-
 @unique
 class ComdefType(IntEnum):
     """COMDEF data type codes."""
@@ -169,20 +153,12 @@ class ComdefType(IntEnum):
     NEAR = 0x62
 
 
-# =============================================================================
-# TYPDEF Leaf Types
-# =============================================================================
-
 @unique
 class TypdefLeaf(IntEnum):
     """TYPDEF leaf type codes."""
     FAR = 0x61
     NEAR = 0x62
 
-
-# =============================================================================
-# Bit Manipulation Constants (plain classes)
-# =============================================================================
 
 class SegdefFlags:
     """SEGDEF ACBP field bit positions and masks."""
@@ -304,13 +280,7 @@ class AsciiRange:
     PRINTABLE_MAX = 127
 
 
-# Borland COMDEF maximum segment index
 COMDEF_BORLAND_MAX = 0x5F
-
-
-# =============================================================================
-# Human-Readable Descriptions
-# =============================================================================
 
 RECORD_NAMES: dict[int, str] = {
     # Obsolete Intel 8086 Records (Appendix 3)
@@ -400,8 +370,8 @@ COMMENT_CLASSES: dict[int, str] = {
     CommentClass.WKEXT: "WKEXT",
     CommentClass.LZEXT: "LZEXT",
     CommentClass.EASY_OMF: "Easy OMF",
-    0xB0: "Unknown (32-bit linker extension)",
-    0xB1: "Unknown (32-bit linker extension)",
+    CommentClass.LINKER_32BIT: "32-bit Linker Extension",
+    CommentClass.LINKER_32BIT_ALT: "32-bit Linker Extension",
     CommentClass.COMMENT: "Comment",
     CommentClass.COMPILER: "Compiler",
     CommentClass.DATE: "Date",
@@ -422,10 +392,6 @@ A0_SUBTYPES: dict[int, str] = {
 }
 
 
-# =============================================================================
-# Segment/Combine/Alignment Names
-# =============================================================================
-
 RESERVED_SEGMENTS = {"$$TYPES", "$$SYMBOLS", "$$IMPORT"}
 
 ALIGN_NAMES = [
@@ -438,10 +404,6 @@ COMBINE_NAMES = [
     "Public(4)", "Stack", "Common", "Public(7)"
 ]
 
-
-# =============================================================================
-# COMDAT Names
-# =============================================================================
 
 COMDAT_SELECTION_NAMES: dict[int, str] = {
     0x00: "No Match",
@@ -464,10 +426,6 @@ COMDAT_ALIGN_NAMES: dict[int, str] = {
 }
 
 
-# =============================================================================
-# FIXUPP Names
-# =============================================================================
-
 FRAME_METHOD_NAMES = [
     "F0:SEGDEF", "F1:GRPDEF", "F2:EXTDEF", "F3:FrameNum",
     "F4:Location", "F5:Target", "F6:Invalid", "F7:?"
@@ -479,20 +437,12 @@ TARGET_METHOD_NAMES = [
 ]
 
 
-# =============================================================================
-# BAKPAT Names
-# =============================================================================
-
 BAKPAT_LOCATION_NAMES: dict[int, str] = {
     0: "Byte(8)",
     1: "Word(16)",
     2: "DWord(32)",
 }
 
-
-# =============================================================================
-# Intel 8086 OMF Names
-# =============================================================================
 
 REGISTER_NAMES: dict[int, str] = {
     0: "CS", 1: "DS", 2: "SS", 3: "ES", 4: "IP", 5: "SP"
@@ -504,10 +454,6 @@ VAR_TYPE_NAMES: dict[int, str] = {
     0x7B: "Scalar"
 }
 
-
-# =============================================================================
-# Vendor Names
-# =============================================================================
 
 KNOWN_VENDORS: dict[int, str] = {
     0: "TIS (reserved)",
