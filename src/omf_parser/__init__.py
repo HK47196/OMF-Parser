@@ -5,6 +5,14 @@ from .scanner import Scanner, RecordInfo
 from .parsing import RecordParser
 from .formatters import HumanFormatter, JSONFormatter
 from .models import ParseResult
+from .detect import (
+    is_omf,
+    detect_omf,
+    scan_for_omf,
+    scan_for_patterns,
+    OMFCandidate,
+    GREP_PATTERNS,
+)
 
 __version__ = "2.0.0"
 __all__ = [
@@ -14,5 +22,11 @@ __all__ = [
     'RecordParser',
     'HumanFormatter',
     'JSONFormatter',
-    'ParseResult'
+    'ParseResult',
+    'is_omf',
+    'detect_omf',
+    'scan_for_omf',
+    'scan_for_patterns',
+    'OMFCandidate',
+    'GREP_PATTERNS',
 ]

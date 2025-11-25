@@ -356,9 +356,11 @@ def handle_linnum(omf, record):
         base_segment=omf.get_segdef(base_seg)
     )
 
-    while sub.bytes_remaining() > 0:
+    offset_size = sub.get_offset_field_size(is_32bit)
+    entry_size = 2 + offset_size
+
+    while sub.bytes_remaining() >= entry_size:
         line_num = sub.parse_numeric(2)
-        offset_size = sub.get_offset_field_size(is_32bit)
         offset = sub.parse_numeric(offset_size)
 
         result.entries.append(LineEntry(
@@ -366,6 +368,9 @@ def handle_linnum(omf, record):
             offset=offset,
             is_end_of_function=(line_num == 0)
         ))
+
+    if sub.bytes_remaining() > 0:
+        result.warnings.append(f"Trailing {sub.bytes_remaining()} byte(s) in LINNUM record")
 
     return result
 

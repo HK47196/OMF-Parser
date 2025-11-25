@@ -6,6 +6,7 @@ import argparse
 from .file import OMFFile
 from .formatters import HumanFormatter, JSONFormatter
 from .records.library import parse_library_dictionary
+from .detect import detect_omf, scan_for_omf, scan_for_patterns, GREP_PATTERNS
 
 
 def generate_schema():
@@ -75,6 +76,14 @@ def main():
                         help='Include raw record bytes in JSON output')
     parser.add_argument('--schema', action='store_true',
                         help='Output JSON schema for the parser output format')
+    parser.add_argument('--detect', action='store_true',
+                        help='Detect if file is OMF format (returns confidence)')
+    parser.add_argument('--scan', action='store_true',
+                        help='Scan file for embedded OMF structures')
+    parser.add_argument('--scan-patterns', action='store_true',
+                        help='Scan using regex patterns (faster, less accurate)')
+    parser.add_argument('--min-confidence', type=float, default=0.5,
+                        help='Minimum confidence for --scan (0.0-1.0, default: 0.5)')
     parser.add_argument('--version', action='version', version='omf_parser 2.0')
 
     args = parser.parse_args()
@@ -86,6 +95,97 @@ def main():
 
     if not args.file:
         parser.error('file is required unless --schema is specified')
+
+    # Detection mode
+    if args.detect:
+        try:
+            with open(args.file, 'rb') as f:
+                data = f.read()
+            is_omf, confidence, description = detect_omf(data)
+            if args.json:
+                result = {
+                    'file': args.file,
+                    'is_omf': is_omf,
+                    'confidence': confidence,
+                    'description': description
+                }
+                print(json.dumps(result, indent=args.json_indent))
+            else:
+                status = "YES" if is_omf else "NO"
+                print(f"{args.file}: {status} ({confidence:.0%}) - {description}")
+            sys.exit(0 if is_omf else 1)
+        except FileNotFoundError:
+            print(f"Error: File not found: {args.file}", file=sys.stderr)
+            sys.exit(2)
+
+    # Scan mode for embedded OMF
+    if args.scan:
+        try:
+            with open(args.file, 'rb') as f:
+                data = f.read()
+            candidates = list(scan_for_omf(data, min_confidence=args.min_confidence))
+            if args.json:
+                result = {
+                    'file': args.file,
+                    'file_size': len(data),
+                    'candidates': [
+                        {
+                            'offset': c.offset,
+                            'offset_hex': f"0x{c.offset:X}",
+                            'header_type': c.header_type,
+                            'confidence': c.confidence,
+                            'description': c.description,
+                            'estimated_size': c.estimated_size
+                        }
+                        for c in candidates
+                    ]
+                }
+                print(json.dumps(result, indent=args.json_indent))
+            else:
+                print(f"Scanning {args.file} ({len(data)} bytes)")
+                print(f"Found {len(candidates)} OMF structure(s):\n")
+                for c in candidates:
+                    size_info = f", ~{c.estimated_size} bytes" if c.estimated_size else ""
+                    print(f"  0x{c.offset:08X}: {c.description}")
+                    print(f"              confidence={c.confidence:.0%}{size_info}")
+            sys.exit(0)
+        except FileNotFoundError:
+            print(f"Error: File not found: {args.file}", file=sys.stderr)
+            sys.exit(2)
+
+    # Pattern scan mode
+    if args.scan_patterns:
+        try:
+            with open(args.file, 'rb') as f:
+                data = f.read()
+            matches = list(scan_for_patterns(data))
+            if args.json:
+                result = {
+                    'file': args.file,
+                    'file_size': len(data),
+                    'matches': [
+                        {
+                            'pattern': name,
+                            'offset': offset,
+                            'offset_hex': f"0x{offset:X}",
+                            'match': match.hex()
+                        }
+                        for name, offset, match in matches
+                    ]
+                }
+                print(json.dumps(result, indent=args.json_indent))
+            else:
+                print(f"Scanning {args.file} ({len(data)} bytes)")
+                print(f"Available patterns: {', '.join(GREP_PATTERNS.keys())}")
+                print(f"Found {len(matches)} match(es):\n")
+                for name, offset, match in matches:
+                    preview = match[:20].hex() + ('...' if len(match) > 20 else '')
+                    print(f"  0x{offset:08X}: {name}")
+                    print(f"              {preview}")
+            sys.exit(0)
+        except FileNotFoundError:
+            print(f"Error: File not found: {args.file}", file=sys.stderr)
+            sys.exit(2)
 
     try:
         omf = OMFFile(args.file)

@@ -354,6 +354,7 @@ class ParsedLinNum(ParsedRecord):
     base_group: str
     base_segment: str
     entries: List[LineEntry] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
 
 
 class ParsedVerNum(ParsedRecord):
