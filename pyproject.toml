@@ -26,6 +26,4 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [dependency-groups]
-dev = [
-    "basedpyright>=1.34.0",
-]
+dev = []
