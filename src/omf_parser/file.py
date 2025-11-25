@@ -3,7 +3,7 @@
 from .scanner import Scanner, RecordInfo
 from .parsing import RecordParser
 from .records import get_record_handler
-from .constants import RECORD_NAMES, RESERVED_SEGMENTS
+from .constants import RECORD_NAMES, RESERVED_SEGMENTS, RecordType
 from .variant import Variant, TIS_STANDARD
 from .models import ParseResult
 
@@ -72,10 +72,25 @@ class OMFFile:
         self.parsed_records = []
 
         for record in self.records:
+            if record.module_variant is not None:
+                self.variant = record.module_variant
+
+            if self.is_library and record.type in (RecordType.THEADR, RecordType.LHEADR):
+                self._reset_module_state()
+
             result = self._parse_record(record)
             self.parsed_records.append(result)
 
         return self.parsed_records
+
+    def _reset_module_state(self):
+        """Reset per-module state at module boundaries in libraries."""
+        self.lnames = ["<null>"]
+        self.segdefs = ["<null>"]
+        self.grpdefs = ["<null>"]
+        self.extdefs = ["<null>"]
+        self.typdefs = ["<null>"]
+        self.last_data_record = None
 
     def _parse_record(self, record: RecordInfo):
         """Parse a single record.

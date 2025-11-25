@@ -17,6 +17,7 @@ class RecordInfo:
     content: bytes
     checksum: Optional[int]
     checksum_valid: Optional[bool]
+    module_variant: Optional['Variant'] = None
 
 
 class Scanner:
@@ -39,6 +40,7 @@ class Scanner:
         self.mixed_variants = False
         self._module_variant: Variant = TIS_STANDARD
         self._seen_variants: set = set()
+        self._module_start_idx: int = 0
 
     def scan(self) -> list[RecordInfo]:
         """Scan the file and return list of records.
@@ -65,13 +67,14 @@ class Scanner:
             if record is None:
                 break
 
-            records.append(record)
             self._detect_features(record)
-            self._track_module_boundaries(record)
+            records.append(record)
+            self._track_module_boundaries(record, records)
 
             if record.type == RecordType.LIBEND:
                 break
 
+        self._finalize_module(records)
         self._seen_variants.add(self._module_variant.name)
 
         if self.is_library and len(self._seen_variants) > 1:
@@ -79,13 +82,21 @@ class Scanner:
 
         return records
 
-    def _track_module_boundaries(self, record: RecordInfo):
-        """Track module boundaries to detect mixed variants in libraries."""
+    def _track_module_boundaries(self, record: RecordInfo, records: list[RecordInfo]):
+        """Track module boundaries and assign variants to completed modules."""
         if record.type in (RecordType.THEADR, RecordType.LHEADR):
-            self._seen_variants.add(self._module_variant.name)
+            self._finalize_module(records, exclude_last=True)
+            self._module_start_idx = len(records) - 1
             self._module_variant = TIS_STANDARD
         elif record.type in (RecordType.MODEND, RecordType.MODEND32):
-            self._seen_variants.add(self._module_variant.name)
+            self._finalize_module(records)
+
+    def _finalize_module(self, records: list[RecordInfo], exclude_last: bool = False):
+        """Assign the detected variant to all records in the current module."""
+        end_idx = len(records) - 1 if exclude_last else len(records)
+        for i in range(self._module_start_idx, end_idx):
+            records[i].module_variant = self._module_variant
+        self._seen_variants.add(self._module_variant.name)
 
     def _read_record(self) -> Optional[RecordInfo]:
         """Read a single record from current offset."""

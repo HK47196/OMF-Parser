@@ -92,11 +92,6 @@ def main():
         omf.load()
         omf.scan()
 
-        if omf.mixed_variants:
-            print(f"Error: Library contains modules with mixed variants: {', '.join(sorted(omf.seen_variants))}", file=sys.stderr)
-            print("Mixed-variant libraries are not supported.", file=sys.stderr)
-            sys.exit(1)
-
         omf.parse()
 
         if args.json:
