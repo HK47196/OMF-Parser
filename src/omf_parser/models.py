@@ -409,6 +409,17 @@ class ParsedLIDataBlock(BaseModel):
     block_count: int
     content: Optional[bytes] = None
     nested_blocks: List["ParsedLIDataBlock"] = Field(default_factory=list)
+    expanded_size: int = 0
+
+    def calculate_expanded_size(self) -> int:
+        """Calculate the total expanded size when repeat counts are applied."""
+        if self.block_count == 0:
+            content_size = len(self.content) if self.content else 0
+            self.expanded_size = self.repeat_count * content_size
+        else:
+            nested_total = sum(b.calculate_expanded_size() for b in self.nested_blocks)
+            self.expanded_size = self.repeat_count * nested_total
+        return self.expanded_size
 
 
 class ParsedLIData(ParsedRecord):
@@ -418,6 +429,8 @@ class ParsedLIData(ParsedRecord):
     segment_index: int
     offset: int
     blocks: List[ParsedLIDataBlock] = Field(default_factory=list)
+    total_expanded_size: int = 0
+    warnings: List[str] = Field(default_factory=list)
 
 
 class ParsedThread(BaseModel):
@@ -479,6 +492,8 @@ class ParsedComDat(ParsedRecord):
     absolute_frame: Optional[int] = None
     symbol: str = ""
     data_length: int = 0
+    iterated_blocks: List["ParsedLIDataBlock"] = Field(default_factory=list)
+    iterated_expanded_size: int = 0
 
 
 class ParsedBakPat(ParsedRecord):

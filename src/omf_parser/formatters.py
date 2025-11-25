@@ -281,6 +281,7 @@ class HumanFormatter:
         lines = [
             f"  Segment: {p.segment}",
             f"  Offset: 0x{p.offset:X}",
+            f"  Total Expanded Size: {p.total_expanded_size} bytes",
             "  Iterated Data Blocks:"
         ]
 
@@ -288,14 +289,19 @@ class HumanFormatter:
             prefix = " " * indent
             if block.block_count == 0:
                 content_str = _bytes_to_hex(block.content) if block.content else "(empty)"
-                lines.append(f"{prefix}Repeat {block.repeat_count}x: {content_str}")
+                size_str = f" -> {block.expanded_size} bytes" if block.expanded_size > 0 else ""
+                lines.append(f"{prefix}Repeat {block.repeat_count}x: {content_str}{size_str}")
             else:
-                lines.append(f"{prefix}Repeat {block.repeat_count}x ({block.block_count} nested blocks):")
+                size_str = f" -> {block.expanded_size} bytes" if block.expanded_size > 0 else ""
+                lines.append(f"{prefix}Repeat {block.repeat_count}x ({block.block_count} nested blocks):{size_str}")
                 for nested in block.nested_blocks:
                     format_block(nested, indent + 2)
 
         for block in p.blocks:
             format_block(block, 4)
+
+        for warn in p.warnings:
+            lines.append(f"  [!] WARNING: {warn}")
 
         return "\n".join(lines)
 
@@ -362,6 +368,26 @@ class HumanFormatter:
             lines.append(f"  Absolute Frame: 0x{p.absolute_frame:04X}")
         lines.append(f"  Symbol: '{p.symbol}'")
         lines.append(f"  Data Length: {p.data_length} bytes")
+
+        if p.iterated and p.iterated_blocks:
+            lines.append(f"  Iterated Expanded Size: {p.iterated_expanded_size} bytes")
+            lines.append("  Iterated Data Blocks:")
+
+            def format_block(block: ParsedLIDataBlock, indent: int):
+                prefix = " " * indent
+                if block.block_count == 0:
+                    content_str = _bytes_to_hex(block.content) if block.content else "(empty)"
+                    size_str = f" -> {block.expanded_size} bytes" if block.expanded_size > 0 else ""
+                    lines.append(f"{prefix}Repeat {block.repeat_count}x: {content_str}{size_str}")
+                else:
+                    size_str = f" -> {block.expanded_size} bytes" if block.expanded_size > 0 else ""
+                    lines.append(f"{prefix}Repeat {block.repeat_count}x ({block.block_count} nested blocks):{size_str}")
+                    for nested in block.nested_blocks:
+                        format_block(nested, indent + 2)
+
+            for block in p.iterated_blocks:
+                format_block(block, 4)
+
         return "\n".join(lines)
 
     def _format_ParsedBakPat(self, p: ParsedBakPat) -> str:

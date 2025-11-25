@@ -1,9 +1,10 @@
 """Data record handlers (LEDATA, LIDATA, FIXUPP)."""
 
 from . import omf_record
+from .microsoft import parse_lidata_blocks
 from ..constants import RecordType, FixuppFlags
 from ..models import (
-    ParsedLEData, ParsedLIData, ParsedLIDataBlock,
+    ParsedLEData, ParsedLIData,
     ParsedFixupp, ParsedThread, ParsedFixup,
     ThreadKind, FixupMode
 )
@@ -53,37 +54,13 @@ def handle_lidata(omf, record):
         offset=offset
     )
 
-    def parse_data_block():
-        repeat_size = sub.get_lidata_repeat_count_size(is_32bit)
-        if sub.bytes_remaining() < repeat_size + 2:
-            return None
+    if seg_idx == 0:
+        result.warnings.append("Segment index is zero (invalid per spec)")
 
-        repeat_count = sub.parse_numeric(repeat_size)
-        block_count = sub.parse_numeric(2)
-
-        block = ParsedLIDataBlock(
-            repeat_count=repeat_count,
-            block_count=block_count
-        )
-
-        if block_count == 0:
-            content_len = sub.read_byte()
-            if content_len is None:
-                return block
-            content = sub.read_bytes(content_len)
-            block.content = content
-        else:
-            for _ in range(block_count):
-                nested = parse_data_block()
-                if nested:
-                    block.nested_blocks.append(nested)
-
-        return block
-
-    while sub.bytes_remaining() > 0:
-        block = parse_data_block()
-        if block:
-            result.blocks.append(block)
+    blocks, warnings = parse_lidata_blocks(sub, is_32bit)
+    result.blocks = blocks
+    result.warnings.extend(warnings)
+    result.total_expanded_size = sum(b.expanded_size for b in result.blocks)
 
     omf.last_data_record = ('LIDATA', seg_idx, offset)
 
