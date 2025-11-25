@@ -1,13 +1,6 @@
 """OMF constants and record type definitions."""
 
 
-# Architectural mode constants
-MODE_AUTO = 0
-MODE_MS = 1      # Microsoft LINK
-MODE_IBM = 2     # IBM LINK386
-MODE_PHARLAP = 3 # PharLap 386|DOS-Extender
-
-
 # OMF Record Type Definitions
 RECORD_NAMES = {
     # Obsolete Intel 8086 Records (Appendix 3)
@@ -190,7 +183,6 @@ BAKPAT_LOCATION_NAMES = {
     0: "Byte(8)",
     1: "Word(16)",
     2: "DWord(32)",
-    9: "DWord(32-IBM)"
 }
 
 
@@ -208,17 +200,6 @@ VAR_TYPE_NAMES = {
 }
 
 
-# Mode names for display
-MODE_NAMES = {
-    MODE_MS: "Microsoft/TIS",
-    MODE_IBM: "IBM LINK386",
-    MODE_PHARLAP: "PharLap"
-}
-
-
-# Known vendor numbers for VENDEXT/VERNUM records
-# Vendor numbers are assigned by the TIS Committee
 KNOWN_VENDORS = {
     0: "TIS (reserved)",
-    # Additional vendor numbers can be added as they're discovered in real files
 }

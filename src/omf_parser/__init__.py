@@ -1,7 +1,8 @@
 """OMF parser package."""
 
-from .omf_parser import OMFCompleteParser
-from .constants import MODE_AUTO, MODE_MS, MODE_IBM, MODE_PHARLAP
+from .file import OMFFile
+from .scanner import Scanner, RecordInfo
+from .parsing import RecordParser
 
-__version__ = "1.0.0"
-__all__ = ['OMFCompleteParser', 'MODE_AUTO', 'MODE_MS', 'MODE_IBM', 'MODE_PHARLAP']
+__version__ = "2.0.0"
+__all__ = ['OMFFile', 'Scanner', 'RecordInfo', 'RecordParser']
