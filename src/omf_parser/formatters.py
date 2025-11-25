@@ -673,6 +673,16 @@ class HumanFormatter:
                 lines.append(f"  Data: {_bytes_to_hex(content.data)}")
             return "\n".join(lines)
 
+        if name == 'ComentLinkerDirective':
+            lines = [f"  Directive: '{content.directive_code}' ({content.directive_name})"]
+            for warn in content.warnings:
+                lines.append(f"    [!] WARNING: {warn}")
+            if content.content:
+                ld_content = self._format_linker_directive_content(content.content)
+                if ld_content:
+                    lines.append(ld_content)
+            return "\n".join(lines)
+
         if name == 'ComentOmfExtensions':
             lines = [f"  A0 Subtype: {content.subtype_name}"]
             for warn in content.warnings:
@@ -721,6 +731,69 @@ class HumanFormatter:
                 lines.append(f"      - {meaning}")
             lines.append(f"    Pseudocode Version: {content.pcode_version}")
             lines.append(f"    CodeView Version: {content.cv_version}")
+            return "\n".join(lines)
+
+        return ""
+
+    def _format_linker_directive_content(self, content) -> str:
+        """Format Watcom linker directive content."""
+        name = type(content).__name__
+
+        if name == 'LinkerDirSourceLang':
+            return f"    Debug Version: {content.major_version}.{content.minor_version}\n    Language: {content.language}"
+
+        if name == 'LinkerDirDefaultLib':
+            return f"    Priority: {content.priority}\n    Library: {content.library_name}"
+
+        if name == 'LinkerDirOptFarCalls':
+            lines = [f"    Segment Index: {content.segment_index}"]
+            if content.segment_name:
+                lines.append(f"    Segment: {content.segment_name}")
+            return "\n".join(lines)
+
+        if name == 'LinkerDirOptUnsafe':
+            return "    (Marks preceding FIXUPP as unsafe for optimization)"
+
+        if name == 'LinkerDirVFTableDef':
+            lines = []
+            if content.is_pure:
+                lines.append("    [Pure Virtual Table]")
+            lines.append(f"    VF Table External: [{content.vf_table_ext_index}] {content.vf_table_symbol or ''}")
+            lines.append(f"    Default External: [{content.default_ext_index}] {content.default_symbol or ''}")
+            if content.function_names:
+                lines.append("    Virtual Functions:")
+                for idx, fname in zip(content.lname_indices, content.function_names):
+                    lines.append(f"      [{idx}] {fname}")
+            return "\n".join(lines)
+
+        if name == 'LinkerDirVFReference':
+            lines = [f"    External Index: {content.ext_index}"]
+            if content.ext_symbol:
+                lines.append(f"    External: {content.ext_symbol}")
+            if content.is_comdat:
+                lines.append("    Reference Type: COMDAT")
+                if content.lname_index is not None:
+                    lines.append(f"    LNAME Index: {content.lname_index}")
+                if content.comdat_name:
+                    lines.append(f"    COMDAT Name: {content.comdat_name}")
+            else:
+                lines.append("    Reference Type: Segment")
+                if content.segment_index is not None:
+                    lines.append(f"    Segment Index: {content.segment_index}")
+                if content.segment_name:
+                    lines.append(f"    Segment: {content.segment_name}")
+            return "\n".join(lines)
+
+        if name == 'LinkerDirPackData':
+            return f"    Pack Limit: {content.pack_limit} bytes (0x{content.pack_limit:08X})"
+
+        if name == 'LinkerDirFlatAddrs':
+            return "    (Debug addresses use flat model)"
+
+        if name == 'LinkerDirTimestamp':
+            lines = [f"    Timestamp: 0x{content.timestamp:08X}"]
+            if content.timestamp_readable:
+                lines.append(f"    Date/Time: {content.timestamp_readable}")
             return "\n".join(lines)
 
         return ""

@@ -122,6 +122,7 @@ class CommentClass(IntEnum):
     TIMESTAMP = 0xDD
     USER = 0xDF
     DEPENDENCY = 0xE9
+    LINKER_DIRECTIVE = 0xFE
     COMMANDLINE = 0xFF
 
 
@@ -380,6 +381,7 @@ COMMENT_CLASSES: dict[int, str] = {
     CommentClass.TIMESTAMP: "Timestamp",
     CommentClass.USER: "User",
     CommentClass.DEPENDENCY: "Dependency File (Borland)",
+    CommentClass.LINKER_DIRECTIVE: "Watcom Linker Directive",
     CommentClass.COMMANDLINE: "Command Line (QuickC)",
 }
 

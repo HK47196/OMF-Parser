@@ -823,6 +823,76 @@ class Coment32BitLinker(ParsedComentContent):
     data: Optional[bytes] = None
 
 
+class LinkerDirSourceLang(ParsedComentContent):
+    """Watcom Linker Directive 'D' - Source Language."""
+    major_version: int
+    minor_version: int
+    language: str
+
+
+class LinkerDirDefaultLib(ParsedComentContent):
+    """Watcom Linker Directive 'L' - Default Library."""
+    priority: int
+    library_name: str
+
+
+class LinkerDirOptFarCalls(ParsedComentContent):
+    """Watcom Linker Directive 'O' - Optimize Far Calls."""
+    segment_index: int
+    segment_name: Optional[str] = None
+
+
+class LinkerDirOptUnsafe(ParsedComentContent):
+    """Watcom Linker Directive 'U' - Optimization Unsafe."""
+    pass
+
+
+class LinkerDirVFTableDef(ParsedComentContent):
+    """Watcom Linker Directive 'V'/'P' - VF Table Definition."""
+    is_pure: bool
+    vf_table_ext_index: int
+    default_ext_index: int
+    lname_indices: List[int] = Field(default_factory=list)
+    vf_table_symbol: Optional[str] = None
+    default_symbol: Optional[str] = None
+    function_names: List[str] = Field(default_factory=list)
+
+
+class LinkerDirVFReference(ParsedComentContent):
+    """Watcom Linker Directive 'R' - VF Reference."""
+    ext_index: int
+    ext_symbol: Optional[str] = None
+    is_comdat: bool
+    segment_index: Optional[int] = None
+    segment_name: Optional[str] = None
+    lname_index: Optional[int] = None
+    comdat_name: Optional[str] = None
+
+
+class LinkerDirPackData(ParsedComentContent):
+    """Watcom Linker Directive '7' - Pack Far Data."""
+    pack_limit: int
+
+
+class LinkerDirFlatAddrs(ParsedComentContent):
+    """Watcom Linker Directive 'F' - Flat Addresses."""
+    pass
+
+
+class LinkerDirTimestamp(ParsedComentContent):
+    """Watcom Linker Directive 'T' - Object Timestamp."""
+    timestamp: int
+    timestamp_readable: Optional[str] = None
+
+
+class ComentLinkerDirective(ParsedComentContent):
+    """Watcom Linker Directive (COMENT class 0xFE)."""
+    directive_code: str
+    directive_name: str
+    content: Optional[ParsedComentContent] = None
+    warnings: List[str] = Field(default_factory=list)
+
+
 class ParseResult(BaseModel):
     """Container for a parsed record result."""
     model_config = ConfigDict(strict=True, arbitrary_types_allowed=True)
