@@ -1,0 +1,117 @@
+Section 4
+---
+
+PharLap Extensions to This Record
+---------------------------------
+
+In the PharLap 32-bit OMF, there is an additional optional field that
+follows the Overlay Name Index field. The reserved bits should always
+be 0. The format of this field is
+
+   <------------5 bits----------------> <--1 bit-->  <--2 bits-->
+   Reserved                             U            AT
+
+where AT is the access type for the segment and has the following
+possible values
+   
+   0    Read only
+   1    Execute only
+   2    Execute/read
+   3    Read/write
+
+and U is the Use16/Use32 bit for the segment and has the following
+possible values:
+   
+   0    Use16
+   1    Use32
+  
+  Conflicts: The Microsoft-defined OMF has Use16/Use32 stored as the P
+  bit of the ACBP field. Microsoft's OMF does not specify the access
+  for the segment--it is specified in the .DEF file given to LINK.
+  
+  NOTES
+  
+  LINK imposes a limit of 255 SEGDEF records per object module.
+  
+  Certain name/class combinations are reserved for use by CodeView and
+  have special significance to the linker: name $$TYPES with class
+  name DEBTYP, and $$SYMBOLS with class name DEBSYM. See Appendix 1
+  for more information.
+
+Examples
+--------
+
+The following examples of Microsoft assembler SEGMENT directives show
+the resulting values for the A field in the corresponding SEGDEF
+object record:
+   
+   aseg  SEGMENT at 400h              ; A = 0
+   bseg  SEGMENT byte public 'CODE'   ; A = 1
+   cseg  SEGMENT para stack 'STACK'   ; A = 3
+
+The following examples of assembler SEGMENT directives show the
+resulting values for the C field in the corresponding SEGDEF object
+record:
+
+   aseg  SEGMENT at 400H            ; C = 0
+   bseg  SEGMENT public 'DATA'      ; C = 2
+   cseg  SEGMENT stack 'STACK'      ; C = 5
+   dseg  SEGMENT common 'COMMON'    ; C = 6
+
+In this first example, the segment is byte aligned:
+
+        0   1  2  3  4  5  6  7  8  9  A  B  C  D E  F 
+   0000 98  07 00 28 11 00 07 02 01 1E                 ....(.....
+  
+
+Byte 00H contains 98H, indicating that this is a SEGDEF record.
+
+Bytes 01-02H contain 0007H, the length of the remainder of the record.
+
+Byte 03H contains 28H (00101000B), the ACBP byte. Bits 7-5 (the A
+field) contain 1 (001B), indicating that this segment is relocatable
+and byte aligned. Bits 4-2 (the C field) contain 2 (010B), which
+represents a public combine type. (When this object module is linked,
+this segment will be concatenated with all other segments with the
+same name.) Bit 1 (the B field) is 0, indicating that this segment is
+smaller than 64K. Bit 0 (the P field) is ignored and should be 0, as
+it is here.
+
+Bytes 04-05H contain 0011H, the size of the segment in bytes.
+
+Bytes 06-08H index the list of names defined in the module's LNAMES
+record. Byte 06H (the Segment Name Index field) contains 07H, so the
+name of this segment is the seventh name in the LNAMES record. Byte
+07H (the Class Name Index field) contains 02H, so the segment's class
+name is the second name in the LNAMES record. Byte 08H (the Overlay
+Name Index field) contains 1, a reference to the first name in the
+LNAMES record. (This name is usually null, as MS-DOS ignores it
+anyway.)
+
+Byte 09H contains the Checksum field, 1EH.
+
+The second SEGDEF record declares a word-aligned segment. It differs
+only slightly from the first.
+
+     0  1  2  3  4  5  6  7  8  9  A B  C  D  E  F 
+0000 98 07 00 48 0F 00 05 03 01 01                 .. H......
+
+Bits 7-5 (the A field) of byte 03H (the ACBP byte) contain 2 (010B),
+indicating that this segment is relocatable and word aligned.
+
+Bytes 04-05H contain the size of the segment, 000FH.
+
+Byte 06H (the Segment Name Index field) contains 05H, which refers to
+the fifth name in the previous LNAMES record.
+
+Byte 07H (the Class Name Index field) contains 03H, a reference to the
+third name in the LNAMES record.
+
+
+---
+
+Section 5 excerpt
+---
+  Conflict: The PharLap OMF uses a 16-bit Repeat Count field, even in
+  32-bit records.
+

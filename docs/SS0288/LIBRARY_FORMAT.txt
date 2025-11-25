@@ -1,0 +1,77 @@
+APPENDIX 2: MICROSOFT MS-DOS LIBRARY FORMAT
+===========================================
+
+Libraries under MS-DOS are always multiples of 512-byte blocks.
+
+The first record in the library is a header. This first record looks
+very much like any other Microsoft object module format record.
+
+  Library Header Record (<n> bytes)
+  ---------------------------------
+                                                             
+   1     2                    4           2            1       <n - 10>
+   Type  Record Length        Dictionary  Dictionary   Flags   Padding
+                              Offest      Size
+   (F0H)  (Page Size Minus 3)             in Blocks            
+    
+   The first byte of the record identifies the record's type, and the
+   next two bytes specify the number of bytes remaining in the record.
+   Note that this word field is byte-swapped (that is, the low-order
+   byte precedes the high-order byte). The record type for this
+   library header is F0H (240 decimal).
+   
+   The Record Length field specifies the page size within the library.
+   Modules in a library always start at the beginning of a page. Page
+   size is determined by adding three to the value in the Record
+   Length field (thus the header record always occupies exactly one
+   page). Legal values for the page size are given by 2 to the <n>,
+   where <n> is greater than or equal to 4 and less than or equal to
+   15.
+   
+   The four bytes immediately following the Record Length field are a
+   byte-swapped long integer specifying the byte offset within the
+   library of the first byte of the first block of the dictionary.
+   
+   The next two bytes are a byte-swapped word field that specifies the
+   number of blocks in the dictionary. (The MS-DOS Library Manager
+   cannot create a library whose dictionary would require more than
+   251 512-byte pages.)
+   
+   The next byte contains flags describing the library. The current
+   flag definition is:
+   
+     0x01 = case sensitive (applies to both regular and extended
+     dictionaries)
+     
+   All other values are reserved for future use and should be 0.
+   
+   The remaining bytes in the library header record are not
+   significant. This record deviates from the typical Microsoft OMF
+   record in that the last byte is not used as a checksum on the rest
+   of the record.
+
+Immediately following the header is the first object module in the
+library. It, in turn, is succeeded by all other object modules in the
+library. Each module is in Microsoft OMF (that is, it starts with a
+LHEADR record and ends with a MODEND record). Individual modules are
+aligned so as to begin at the beginning of a new page. If, as is
+commonly the case, a module does not occupy a number of bytes that is
+exactly a multiple of the page size, then its last block will be
+padded with as many null bytes as are required to fill it.
+
+Following the last object module in the library is a record that
+serves as a marker between the object modules and the dictionary. It
+also resembles a Microsoft OMF record.
+
+   Library End Record (marks end of objects and beginning of
+   dictionary)
+
+   1           2                 <n>
+   Type (F1H)  Record Length     Padding
+   
+   The record's Type field contains F1H (241 decimal), and its Record
+   Length field is set so that the dictionary begins on a 512-byte
+   boundary. The record contains no further useful information; the
+   remaining bytes are insignificant. As with the library header, the
+   last byte is not a checksum.
+

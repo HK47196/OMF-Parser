@@ -1,0 +1,180 @@
+Dictionary
+----------
+   
+The remaining blocks in the library compose the dictionary. The number
+of blocks in the dictionary is given in the library header. Note that
+there should always be a prime number of blocks in the dictionary.
+
+The dictionary is a hashed index to the library. Public symbols are
+essentially hashed twice, though in fact, both hash indexes are
+produced simultaneously. The first hash index, the block index, is
+used to determine a block within the dictionary in which to place the
+symbol. The second hash index, the bucket index, is used to choose a
+bucket within the block for the symbol. Blocks always have 37 buckets;
+they are the first 37 bytes of each block. If a bucket is full, it
+contains a nonzero value that points to the text of the symbol. To
+actually find the symbol, take the bucket value, multiply it by two,
+and use the resulting number as a byte offset from the beginning of
+the block.
+
+Collisions (that is, two or more distinct symbols hashing to the same
+block and bucket in the dictionary) are resolved by a technique known
+as linear open addressing. At the same time the hash indexes are
+produced, two hash deltas are also produced. If a symbol collides with
+a symbol already installed in the dictionary, the librarian attempts
+to find an empty bucket for it by adding the bucket delta to the
+bucket index and using the result mod 37 as a new bucket index. If
+this new bucket index points to a bucket that is empty, the librarian
+will install the symbol in that bucket. If the bucket is not empty,
+the delta is applied repeatedly until an empty bucket is found or
+until it is determined that there are no empty buckets on the block.
+If the latter is the case, the block delta is added to the block
+index, and the result mod the number of blocks in the dictionary is
+used as a new block index. With the new block index and the original
+bucket index, the sequence is repeated until an empty bucket on some
+block is found.
+
+The number of blocks and the number of buckets are prime so that no
+matter what values of hash indexes and deltas are produced for a
+symbol, in the worst case, all possible block-bucket combinations will
+be tried. Once a free block-bucket pair has been found for a symbol,
+the pair and information concerning its place of definition must be
+installed. Since a bucket is a single byte pointing into a 512-byte
+block, the bucket can give at best a word offset within that block.
+Thus, symbol entries within a dictionary must start on word
+boundaries. Since bytes 0 through 36 of each dictionary block make up
+the hash table, the first symbol entry will begin at byte 38
+(decimal).
+
+   Dictionary Record (length is the dictionary size in 512-byte
+   blocks)
+
+   37     1      <variable>  2                <conditional>
+   HTAB   FFLAG  Name        Block Number      Align Byte
+                 <-------------------repeated------------->
+   
+   Entries consist of the following: the first byte is the length of
+   the symbol to follow, the following bytes are the text of the
+   symbol, and the last two bytes are a byte-swapped word field that
+   specifies the page number (counting the library header as the 0th
+   page) at which the module defining the symbol begins.
+   
+   All entries may have at most one trailing null byte in order to
+   align the next entry on a word boundary.
+   
+   It is possible for a dictionary block to be full without all its
+   buckets being used. Such will be the case, for example, if symbol
+   names are longer on average than nine characters each. Therefore,
+   there must be some way to mark a block as full so that empty
+   buckets will be ignored.
+   
+   Byte 37 decimal (counting from 0) is reserved for this purpose. If
+   the block is not full, byte 37 will contain the word offset of the
+   beginning of free space in the block, but if the block is full,
+   byte 37 will contain the special value 255 decimal (FFH). Module
+   names are stored in the LHEADR record of each module.
+   
+Extended Dictionary
+-------------------
+
+The extended dictionary is optional and indicates dependencies between
+modules in the library. Versions of LIB earlier than 3.09 do not
+create an extended dictionary. The extended dictionary is placed at
+the end of the library.
+
+The dictionary is preceded by these values:
+
+   BYTE =0xF2 Extended Dictionary header
+   WORD length of extended dictionary in bytes excluding first three
+        bytes
+
+Start of extended dictionary:
+
+   WORD number of modules in library = N
+
+Module table, indexed by module number, with N + 1 fixed-length
+entries:
+
+   WORD module page number
+   WORD offset from start of extended dictionary to list of required
+        modules
+
+Last entry is null.
+
+Dictionary Hashing Algorithm
+----------------------------
+
+The last part of each library file is a dictionary, which contains
+indexes to all symbols in the library. The dictionary is divided into
+512-byte pages. Each page consists of a 37-byte bucket table and a 475-
+byte table of symbol entries.
+
+To find the right spot in the dictionary for a given symbol, the
+hashing algorithm is used. The hashing algorithm analyzes the name of
+the symbol and produces two indexes: a page and a bucket index, which
+together point to a single entry in the dictionary. The only problem
+is that more than one symbol name can generate exactly the same
+address. Because of this, the name found in the dictionary entry must
+be compared with the symbol's name, and if they are not identical, a
+correction to the address must be made. To make this correction
+possible, the hashing algorithm, in addition to the base address
+(page, bucket), also produces the correction values (delta-page, delta-
+bucket), which are added to the base address if the symbol's name does
+not match the name in an entry. The number of pages in the dictionary
+must always be prime, so if the symbol is not found, the consecutive
+adding of deltas produces the starting address again.
+
+Below is psueudocode illustrating the hashing algorithm used by the
+LIB (librarian) utility.
+
+   extern char *symbol;   /* Symbol to find        */
+   extern int dictlength;  /* Dictionary length in pages  */
+   extern int buckets;   /* Number of buckets on one page */
+   
+   
+   
+   char *pb;  /* A pointer to the beginning of the symbol  */
+   char *pe;  /*   "      end     "      */
+   int slength;  /* Length of the symbol's name      */
+   
+   int page_index;   /*  Page index           */
+   int page_index_delta;/*  Page index delta        */
+   int page_offset;   /*  Page offset (bucket #)     */
+   int page_offset_delta;/* Page offset delta        */
+   
+   unsigned c;
+   
+   slength = strlen(symbol);
+   pb = symbol;
+   pe = symbol + slength;
+   page_index = 0;
+   page_index_delta = 0;
+   page_offset = 0;
+   page_offset_delta = 0;
+   
+   while( slength-)
+   {
+        c = *(pf++) | 32; /* Convert character to lowercase */
+        page_index = (page_index<<2) XOR c;    /* Hash */
+        page_offset_delta = (page_offset_delta>>2)XORc;
+        c = *(pe++) | 32;
+        page_offset = (page_offset>>2) XOR c;     /* Hash */
+        pageiindexdelta = (page_index_delta<<2) XOR c;
+   }
+   
+   /* Calculate page index */
+   page_index = page_index MODULO dictlength;
+   
+   
+   /* Calculate page index delta */
+   if((page_index_delta = page_index_delta MODULO dictlength) == 0)
+        page_index_delta = 1;
+   
+   
+   /* Calculate page offset */
+   page_offset = page_offset MODULO buckets;
+   
+   
+   /* Calculate page offset delta */
+   if( (page_offset_delta = page_offset_delta MODULO buckets) == 0)
+     page_offset_delta = 1;

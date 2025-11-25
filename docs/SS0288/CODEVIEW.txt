@@ -1,0 +1,44 @@
+APPENDIX 1: CODEVIEW EXTENSIONS
+===============================
+
+Calling the following information "CodeView's OMF" is a misnomer,
+since CodeView actually does very little to extend the OMF. Most
+CodeView information is stored within the confines of the existing
+OMF, except where noted below.
+
+CodeView information is stored on a per-module basis in specially-
+named logical segments. These segments are defined in the usual way
+(SEGDEF records), but LINK handles them specially, and they do not end
+up as segments in the .EXE file. These segment names are reserved:
+
+   Segment Name        Class Name          Combine Type
+   ------------        ----------          ------------
+
+   $$TYPES             DEBTYP              Private
+   $$SYMBOLS           DEBSYM              Private
+
+The segment $$IMPORT should also be considered a reserved name,
+although it is not used anymore. This segment was not part of any
+object files but was emitted by the linker to get the loader to
+automatically do fixups for CodeView information. The linker emitted a
+standard set of imports, not just ones referenced by the program being
+linked. Use of this segment may be revisited in the future.
+
+CodeView-specific data is stored in LEDATA records for the $$TYPES and
+$$SYMBOLS segments, in various proprietary formats. The $$TYPES
+segment contains information on user-defined variable types; $$SYMBOLS
+contains information about nonpublic symbols: stack, local, procedure,
+block start, constant, and register symbols and code labels.
+
+For instantiated functions in C 7.0, symbol information for CodeView
+will be output in COMDAT records that refer to segment $$SYMBOLS and
+have decorated names based on the function names. Type information
+will still go into the $$TYPES segment in LEDATA records.
+
+All OMF records that specify a Type Index field, including EXTDEF,
+PUBDEF, and COMDEF records, use proprietary CodeView values. Since
+many types are common, Type Index values in the range 0 through 511
+(1FFH) are reserved for a set of predefined primitive types. Indexes
+in the range 512 through 32767 (200H-7FFFH) index into the set of type
+definitions in the module's $$TYPES segment, offset by 512. Thus 512
+is the first new type, 513 the second, and so on.
