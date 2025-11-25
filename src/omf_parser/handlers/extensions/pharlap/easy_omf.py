@@ -48,20 +48,41 @@ class PharLapEasyOMFExtension(VendorExtension):
         return None
 
     def handle_segdef_extension(self, parser, sub, is_32bit, seg_info):
-        """PharLap SEGDEF may have extended attributes."""
+        """PharLap SEGDEF has extended attribute byte after overlay name index.
+
+        Per Easy OMF-386 spec:
+        - Bits 0-1: Access Type (00=RO, 01=EO, 10=ER, 11=RW)
+        - Bit 2: U (Use16/Use32)
+        - Bits 3-7: Reserved (should be 0)
+        """
         if parser.target_mode != MODE_PHARLAP:
             return None
 
-        # Check for extended attributes
-        if sub.bytes_remaining() >= 1:
-            ext_flags = sub.read_byte()
-            if ext_flags is not None:
-                parser.track_extension('segdef_ext', 'flags', self.vendor_name,
-                                     f'Extended flags: 0x{ext_flags:02X}')
-                print(f"      Extended flags: 0x{ext_flags:02X}")
-                return {'extended_flags': ext_flags}
+        if sub.bytes_remaining() < 1:
+            return None
 
-        return None
+        access_byte = sub.read_byte()
+        if access_byte is None:
+            return None
+
+        access_type = access_byte & 0x03
+        u_bit = (access_byte >> 2) & 0x01
+        reserved = (access_byte >> 3) & 0x1F
+
+        access_names = ["Read Only", "Execute Only", "Execute/Read", "Read/Write"]
+
+        parser.track_extension('segdef_ext', 'access', self.vendor_name,
+                             f'Access: {access_names[access_type]}, Use32: {u_bit}')
+        print(f"    [PharLap] Access: {access_names[access_type]}, Use32: {u_bit}")
+
+        if reserved != 0:
+            parser.add_warning(f"    [!] Reserved bits non-zero: 0x{reserved:02X}")
+
+        return {
+            'access_type': access_type,
+            'access_name': access_names[access_type],
+            'use32': u_bit
+        }
 
     def get_segdef_alignment_name(self, parser, align):
         """PharLap defines alignment 6 as 4K page boundary."""

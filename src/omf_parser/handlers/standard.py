@@ -2,7 +2,7 @@
 
 from ..constants import (
     COMMENT_CLASSES, A0_SUBTYPES, RESERVED_SEGMENTS,
-    ALIGN_NAMES, COMBINE_NAMES, MODE_PHARLAP, KNOWN_VENDORS
+    ALIGN_NAMES, COMBINE_NAMES, KNOWN_VENDORS
 )
 
 
@@ -88,18 +88,16 @@ class StandardHandlersMixin:
         print(f"    Class Name: {cls_name}")
         print(f"    Overlay Name: {ovl_name}")
 
-        # Check for PharLap extension (access type byte after overlay name)
-        # Per spec: PharLap adds an extra Access Type byte
-        if self.target_mode == MODE_PHARLAP and sub.bytes_remaining() >= 1:
-            access_byte = sub.read_byte()
-            access_type = access_byte & 0x03
-            u_bit = (access_byte >> 2) & 0x01
-            access_names = ["Read Only", "Execute Only", "Execute/Read", "Read/Write"]
-            print(f"    [PharLap] Access: {access_names[access_type]}, Use32: {u_bit}")
-        elif sub.bytes_remaining() >= 1:
-            # Unknown extension byte in non-PharLap mode
-            extra_byte = sub.read_byte()
-            print(f"    [Unknown] Extra byte: 0x{extra_byte:02X}")
+        # Check for vendor-specific extension bytes after overlay name
+        if sub.bytes_remaining() >= 1:
+            seg_info = {
+                'align': align, 'combine': combine, 'big': big, 'use32': use32,
+                'length': length, 'seg_name': seg_name, 'cls_name': cls_name
+            }
+            ext_result = self.call_extension_hook('handle_segdef_extension', sub, is_32bit, seg_info)
+            if ext_result is None and sub.bytes_remaining() >= 1:
+                extra_byte = sub.read_byte()
+                print(f"    [Unknown] Extra byte: 0x{extra_byte:02X}")
 
         raw_name = self.lnames[seg_name_idx] if seg_name_idx < len(self.lnames) else f"Seg#{len(self.segdefs)}"
         self.segdefs.append(raw_name)

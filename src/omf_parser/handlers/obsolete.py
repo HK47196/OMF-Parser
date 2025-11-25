@@ -112,8 +112,9 @@ class ObsoleteHandlersMixin:
         name = sub.parse_name()
         print(f"    Block Name: '{name}'")
 
-        offset = sub.parse_numeric(2)
-        print(f"    Offset: 0x{offset:04X}")
+        offset_size = sub.get_offset_field_size(False)
+        offset = sub.parse_numeric(offset_size)
+        print(f"    Offset: 0x{offset:0{offset_size*2}X}")
 
         # Debug info length and data
         if sub.bytes_remaining() > 0:
