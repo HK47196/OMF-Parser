@@ -10,7 +10,9 @@ from ..constants import (
 from ..models import (
     ParsedTheadr, ParsedLNames, ParsedSegDef, ParsedGrpDef,
     ParsedPubDef, ParsedExtDef, ParsedCExtDef, ParsedModEnd,
-    ParsedLinNum, ParsedVerNum, ParsedVendExt, ParsedLocSym, ParsedTypDef
+    ParsedLinNum, ParsedVerNum, ParsedVendExt, ParsedLocSym, ParsedTypDef,
+    PubDefSymbol, ExtDefEntry, CExtDefEntry, StartAddress, LineEntry,
+    TypDefLeafNear, TypDefLeafFar, TypDefLeafUnknown
 )
 
 
@@ -230,11 +232,11 @@ def handle_pubdef(omf, record):
         offset = sub.parse_numeric(offset_size)
         type_idx = sub.parse_index()
 
-        result.symbols.append({
-            'name': name,
-            'offset': offset,
-            'type_index': type_idx
-        })
+        result.symbols.append(PubDefSymbol(
+            name=name,
+            offset=offset,
+            type_index=type_idx
+        ))
 
     return result
 
@@ -253,11 +255,11 @@ def handle_extdef(omf, record):
 
         idx = len(omf.extdefs)
         omf.extdefs.append(name)
-        result.externals.append({
-            'index': idx,
-            'name': name,
-            'type_index': type_idx
-        })
+        result.externals.append(ExtDefEntry(
+            index=idx,
+            name=name,
+            type_index=type_idx
+        ))
 
     return result
 
@@ -276,11 +278,11 @@ def handle_cextdef(omf, record):
         name = omf.lnames[name_idx] if name_idx < len(omf.lnames) else f"LName#{name_idx}"
         idx = len(omf.extdefs)
         omf.extdefs.append(name)
-        result.externals.append({
-            'index': idx,
-            'name': omf.get_lname(name_idx),
-            'type_index': type_idx
-        })
+        result.externals.append(CExtDefEntry(
+            index=idx,
+            name=omf.get_lname(name_idx),
+            type_index=type_idx
+        ))
 
     return result
 
@@ -313,25 +315,28 @@ def handle_modend(omf, record):
             p_bit = (end_data >> ModendFlags.P_BIT_SHIFT) & 0x01
             target_method = end_data & ModendFlags.TARGET_MASK
 
-            start_addr = {
-                'frame_method': frame_method,
-                'p_bit': p_bit,
-                'target_method': target_method
-            }
-
             if p_bit != 0:
                 result.warnings.append(f"MODEND P-bit is {p_bit}, must be 0 per spec")
 
+            frame_datum = None
             if frame_method < 3:
-                start_addr['frame_datum'] = sub.parse_index()
+                frame_datum = sub.parse_index()
 
-            start_addr['target_datum'] = sub.parse_index()
+            target_datum = sub.parse_index()
 
+            target_displacement = None
             if p_bit == 0:
                 disp_size = sub.get_offset_field_size(is_32bit)
-                start_addr['target_displacement'] = sub.parse_numeric(disp_size)
+                target_displacement = sub.parse_numeric(disp_size)
 
-            result.start_address = start_addr
+            result.start_address = StartAddress(
+                frame_method=frame_method,
+                p_bit=p_bit,
+                target_method=target_method,
+                frame_datum=frame_datum,
+                target_datum=target_datum,
+                target_displacement=target_displacement
+            )
 
     return result
 
@@ -356,11 +361,11 @@ def handle_linnum(omf, record):
         offset_size = sub.get_offset_field_size(is_32bit)
         offset = sub.parse_numeric(offset_size)
 
-        result.entries.append({
-            'line': line_num,
-            'offset': offset,
-            'is_end_of_function': (line_num == 0)
-        })
+        result.entries.append(LineEntry(
+            line=line_num,
+            offset=offset,
+            is_end_of_function=(line_num == 0)
+        ))
 
     return result
 
@@ -431,11 +436,11 @@ def handle_locsym(omf, record):
         name = sub.parse_name()
         offset = sub.parse_numeric(2)
         type_idx = sub.parse_index()
-        result.symbols.append({
-            'name': name,
-            'offset': offset,
-            'type_index': type_idx
-        })
+        result.symbols.append(PubDefSymbol(
+            name=name,
+            offset=offset,
+            type_index=type_idx
+        ))
 
     return result
 
@@ -461,33 +466,33 @@ def handle_typdef(omf, record):
         if leaf_type == TypdefLeaf.NEAR:
             var_type = sub.read_byte()
             size_bits = sub.parse_variable_length_int()
-            result.leaves.append({
-                'type': 'NEAR',
-                'leaf_type': leaf_type,
-                'var_type': VAR_TYPE_NAMES.get(var_type, f'0x{var_type:02X}'),
-                'var_type_raw': var_type,
-                'size_bits': size_bits,
-                'size_bytes': size_bits // 8
-            })
+            result.leaves.append(TypDefLeafNear(
+                type='NEAR',
+                leaf_type=leaf_type,
+                var_type=VAR_TYPE_NAMES.get(var_type, f'0x{var_type:02X}'),
+                var_type_raw=var_type,
+                size_bits=size_bits,
+                size_bytes=size_bits // 8
+            ))
 
         elif leaf_type == TypdefLeaf.FAR:
             var_type = sub.read_byte()
             num_elements = sub.parse_variable_length_int()
             element_type_idx = sub.parse_index()
-            result.leaves.append({
-                'type': 'FAR',
-                'leaf_type': leaf_type,
-                'num_elements': num_elements,
-                'element_type': omf.get_typdef(element_type_idx),
-                'element_type_index': element_type_idx
-            })
+            result.leaves.append(TypDefLeafFar(
+                type='FAR',
+                leaf_type=leaf_type,
+                num_elements=num_elements,
+                element_type=omf.get_typdef(element_type_idx),
+                element_type_index=element_type_idx
+            ))
 
         else:
-            result.leaves.append({
-                'type': 'Unknown',
-                'leaf_type': leaf_type,
-                'remaining': sub.data[sub.offset:]
-            })
+            result.leaves.append(TypDefLeafUnknown(
+                type='Unknown',
+                leaf_type=leaf_type,
+                remaining=sub.data[sub.offset:]
+            ))
 
     else:
         result.format = "Intel"
@@ -501,37 +506,37 @@ def handle_typdef(omf, record):
             if leaf_type == TypdefLeaf.NEAR:
                 var_type = sub.read_byte()
                 size_bits = sub.parse_variable_length_int()
-                result.leaves.append({
-                    'type': 'NEAR',
-                    'leaf_index': leaf_idx + 1,
-                    'leaf_type': leaf_type,
-                    'var_type': VAR_TYPE_NAMES.get(var_type, f'0x{var_type:02X}'),
-                    'var_type_raw': var_type,
-                    'size_bits': size_bits,
-                    'size_bytes': size_bits // 8
-                })
+                result.leaves.append(TypDefLeafNear(
+                    type='NEAR',
+                    leaf_index=leaf_idx + 1,
+                    leaf_type=leaf_type,
+                    var_type=VAR_TYPE_NAMES.get(var_type, f'0x{var_type:02X}'),
+                    var_type_raw=var_type,
+                    size_bits=size_bits,
+                    size_bytes=size_bits // 8
+                ))
 
             elif leaf_type == TypdefLeaf.FAR:
                 var_type = sub.read_byte()
                 num_elements = sub.parse_variable_length_int()
                 element_type_idx = sub.parse_index()
-                result.leaves.append({
-                    'type': 'FAR',
-                    'leaf_index': leaf_idx + 1,
-                    'leaf_type': leaf_type,
-                    'num_elements': num_elements,
-                    'element_type': omf.get_typdef(element_type_idx),
-                    'element_type_index': element_type_idx
-                })
+                result.leaves.append(TypDefLeafFar(
+                    type='FAR',
+                    leaf_index=leaf_idx + 1,
+                    leaf_type=leaf_type,
+                    num_elements=num_elements,
+                    element_type=omf.get_typdef(element_type_idx),
+                    element_type_index=element_type_idx
+                ))
 
             else:
                 remaining = sub.data[sub.offset:sub.offset + 16]
-                result.leaves.append({
-                    'type': 'Unknown',
-                    'leaf_index': leaf_idx + 1,
-                    'leaf_type': leaf_type,
-                    'remaining': remaining
-                })
+                result.leaves.append(TypDefLeafUnknown(
+                    type='Unknown',
+                    leaf_index=leaf_idx + 1,
+                    leaf_type=leaf_type,
+                    remaining=remaining
+                ))
 
     omf.typdefs.append(f"TYPDEF#{len(omf.typdefs)}")
 

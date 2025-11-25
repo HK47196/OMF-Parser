@@ -5,7 +5,7 @@ from ..constants import REGISTER_NAMES
 from ..models import (
     ParsedRheadr, ParsedRegInt, ParsedReDataPeData, ParsedRiDataPiData,
     ParsedOvlDef, ParsedEndRec, ParsedBlkDef, ParsedBlkEnd,
-    ParsedDebSym, ParsedObsoleteLib
+    ParsedDebSym, ParsedObsoleteLib, RegisterEntry
 )
 
 
@@ -33,11 +33,11 @@ def handle_regint(omf, record):
     while sub.bytes_remaining() >= 3:
         reg_type = sub.read_byte()
         value = sub.parse_numeric(2)
-        result.registers.append({
-            'register': REGISTER_NAMES.get(reg_type, f'Reg{reg_type}'),
-            'register_type': reg_type,
-            'value': value
-        })
+        result.registers.append(RegisterEntry(
+            reg_name=REGISTER_NAMES.get(reg_type, f'Reg{reg_type}'),
+            reg_type=reg_type,
+            value=value
+        ))
 
     return result
 

@@ -11,7 +11,9 @@ from ..constants import (
 )
 from ..models import (
     ParsedComDef, ParsedComDat, ParsedBakPat, ParsedNBkPat,
-    ParsedLinSym, ParsedAlias
+    ParsedLinSym, ParsedAlias,
+    ComDefFarDefinition, ComDefNearDefinition, ComDefBorlandDefinition, ComDefUnknownDefinition,
+    BackpatchRecord, NamedBackpatchRecord, LineEntry, AliasEntry
 )
 
 
@@ -31,33 +33,47 @@ def handle_comdef(omf, record):
         if data_type is None:
             break
 
-        defn = {
-            'name': name,
-            'type_index': type_idx,
-            'data_type': data_type
-        }
-
         if data_type == ComdefType.FAR:
             num_elements = sub.parse_variable_length_int()
             element_size = sub.parse_variable_length_int()
             total = num_elements * element_size
-            defn['kind'] = 'FAR'
-            defn['num_elements'] = num_elements
-            defn['element_size'] = element_size
-            defn['total_size'] = total
+            defn = ComDefFarDefinition(
+                name=name,
+                type_index=type_idx,
+                data_type=data_type,
+                kind='FAR',
+                num_elements=num_elements,
+                element_size=element_size,
+                total_size=total
+            )
         elif data_type == ComdefType.NEAR:
             size = sub.parse_variable_length_int()
-            defn['kind'] = 'NEAR'
-            defn['size'] = size
+            defn = ComDefNearDefinition(
+                name=name,
+                type_index=type_idx,
+                data_type=data_type,
+                kind='NEAR',
+                size=size
+            )
         elif 0x01 <= data_type <= COMDEF_BORLAND_MAX:
             length = sub.parse_variable_length_int()
-            defn['kind'] = 'Borland'
-            defn['seg_index'] = data_type
-            defn['length'] = length
+            defn = ComDefBorlandDefinition(
+                name=name,
+                type_index=type_idx,
+                data_type=data_type,
+                kind='Borland',
+                seg_index=data_type,
+                length=length
+            )
         else:
             length = sub.parse_variable_length_int()
-            defn['kind'] = 'Unknown'
-            defn['length'] = length
+            defn = ComDefUnknownDefinition(
+                name=name,
+                type_index=type_idx,
+                data_type=data_type,
+                kind='Unknown',
+                length=length
+            )
 
         result.definitions.append(defn)
         omf.extdefs.append(name)
@@ -136,21 +152,21 @@ def handle_bakpat(omf, record):
 
         loc_str = BAKPAT_LOCATION_NAMES.get(loc_type, f"Unknown({loc_type})")
 
-        rec = {
-            'segment': omf.get_segdef(seg_idx),
-            'segment_index': seg_idx,
-            'location_type': loc_type,
-            'location_name': loc_str
-        }
-
         if loc_type == 2 and record.type == RecordType.BAKPAT:
             result.warnings.append("Location type 2 (DWord) only valid for B3H records")
 
         val_size = sub.get_offset_field_size(is_32bit)
-        rec['offset'] = sub.parse_numeric(val_size)
-        rec['value'] = sub.parse_numeric(val_size)
+        offset = sub.parse_numeric(val_size)
+        value = sub.parse_numeric(val_size)
 
-        result.records.append(rec)
+        result.records.append(BackpatchRecord(
+            segment=omf.get_segdef(seg_idx),
+            segment_index=seg_idx,
+            location_type=loc_type,
+            location_name=loc_str,
+            offset=offset,
+            value=value
+        ))
 
     return result
 
@@ -169,21 +185,25 @@ def handle_nbkpat(omf, record):
     while sub.bytes_remaining() > 0:
         loc_type = sub.read_byte()
 
-        rec = {'location_type': loc_type}
-
         if omf.variant.nbkpat_uses_inline_name():
-            rec['symbol'] = sub.parse_name()
+            symbol = sub.parse_name()
         else:
             name_idx = sub.parse_index()
-            rec['symbol'] = omf.get_lname(name_idx)
+            symbol = omf.get_lname(name_idx)
 
-        rec['location_name'] = loc_names.get(loc_type, f"Unknown({loc_type})")
+        loc_name = loc_names.get(loc_type, f"Unknown({loc_type})")
 
         val_size = sub.get_offset_field_size(is_32bit)
-        rec['offset'] = sub.parse_numeric(val_size)
-        rec['value'] = sub.parse_numeric(val_size)
+        offset = sub.parse_numeric(val_size)
+        value = sub.parse_numeric(val_size)
 
-        result.records.append(rec)
+        result.records.append(NamedBackpatchRecord(
+            location_type=loc_type,
+            location_name=loc_name,
+            symbol=symbol,
+            offset=offset,
+            value=value
+        ))
 
     return result
 
@@ -214,11 +234,11 @@ def handle_linsym(omf, record):
         offset_size = sub.get_offset_field_size(is_32bit)
         offset = sub.parse_numeric(offset_size)
 
-        result.entries.append({
-            'line': line_num,
-            'offset': offset,
-            'is_end_of_function': (line_num == 0)
-        })
+        result.entries.append(LineEntry(
+            line=line_num,
+            offset=offset,
+            is_end_of_function=(line_num == 0)
+        ))
 
     return result
 
@@ -233,9 +253,9 @@ def handle_alias(omf, record):
     while sub.bytes_remaining() > 0:
         alias_name = sub.parse_name()
         subst_name = sub.parse_name()
-        result.aliases.append({
-            'alias': alias_name,
-            'substitute': subst_name
-        })
+        result.aliases.append(AliasEntry(
+            alias=alias_name,
+            substitute=subst_name
+        ))
 
     return result

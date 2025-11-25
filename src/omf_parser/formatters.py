@@ -1,9 +1,10 @@
 """Output formatters for parsed OMF data."""
 
 import json
-from dataclasses import asdict, is_dataclass
 from enum import Enum
 from typing import List, Any
+
+from pydantic import BaseModel
 
 from .models import (
     ParseResult, ParsedRecord,
@@ -151,20 +152,20 @@ class HumanFormatter:
         if p.frame_note:
             lines.append(f"    [Note] {p.frame_note}")
         for sym in p.symbols:
-            lines.append(f"    Symbol: '{sym['name']}' Offset=0x{sym['offset']:X} Type={sym['type_index']}")
+            lines.append(f"    Symbol: '{sym.name}' Offset=0x{sym.offset:X} Type={sym.type_index}")
         return "\n".join(lines)
 
     def _format_ParsedExtDef(self, p: ParsedExtDef) -> str:
         local = "Local " if p.is_local else ""
         lines = [f"  {local}External Definitions:"]
         for ext in p.externals:
-            lines.append(f"    [{ext['index']}] '{ext['name']}' Type={ext['type_index']}")
+            lines.append(f"    [{ext.index}] '{ext.name}' Type={ext.type_index}")
         return "\n".join(lines)
 
     def _format_ParsedCExtDef(self, p: ParsedCExtDef) -> str:
         lines = ["  COMDAT External Definitions:"]
         for ext in p.externals:
-            lines.append(f"    [{ext['index']}] {ext['name']} Type={ext['type_index']}")
+            lines.append(f"    [{ext.index}] {ext.name} Type={ext.type_index}")
         return "\n".join(lines)
 
     def _format_ParsedModEnd(self, p: ParsedModEnd) -> str:
@@ -179,13 +180,13 @@ class HumanFormatter:
         if p.start_address:
             lines.append("  Start Address:")
             sa = p.start_address
-            if 'frame_datum' in sa:
-                lines.append(f"    Frame Method: {sa['frame_method']}, Datum: {sa['frame_datum']}")
+            if sa.frame_datum is not None:
+                lines.append(f"    Frame Method: {sa.frame_method}, Datum: {sa.frame_datum}")
             else:
-                lines.append(f"    Frame Method: {sa['frame_method']}")
-            lines.append(f"    Target Method: {sa['target_method']}, Datum: {sa['target_datum']}")
-            if 'target_displacement' in sa:
-                lines.append(f"    Target Displacement: 0x{sa['target_displacement']:X}")
+                lines.append(f"    Frame Method: {sa.frame_method}")
+            lines.append(f"    Target Method: {sa.target_method}, Datum: {sa.target_datum}")
+            if sa.target_displacement is not None:
+                lines.append(f"    Target Displacement: 0x{sa.target_displacement:X}")
         return "\n".join(lines)
 
     def _format_ParsedLinNum(self, p: ParsedLinNum) -> str:
@@ -195,10 +196,10 @@ class HumanFormatter:
             "  Line Number Entries:"
         ]
         for entry in p.entries:
-            if entry['is_end_of_function']:
-                lines.append(f"    Line 0 (end of function): Offset=0x{entry['offset']:X}")
+            if entry.is_end_of_function:
+                lines.append(f"    Line 0 (end of function): Offset=0x{entry.offset:X}")
             else:
-                lines.append(f"    Line {entry['line']}: Offset=0x{entry['offset']:X}")
+                lines.append(f"    Line {entry.line}: Offset=0x{entry.offset:X}")
         return "\n".join(lines)
 
     def _format_ParsedVerNum(self, p: ParsedVerNum) -> str:
@@ -234,7 +235,7 @@ class HumanFormatter:
         if p.frame_note:
             lines.append(f"    [Note] {p.frame_note}")
         for sym in p.symbols:
-            lines.append(f"    '{sym['name']}' Offset=0x{sym['offset']:X} Type={sym['type_index']}")
+            lines.append(f"    '{sym.name}' Offset=0x{sym.offset:X} Type={sym.type_index}")
         return "\n".join(lines)
 
     def _format_ParsedTypDef(self, p: ParsedTypDef) -> str:
@@ -245,24 +246,24 @@ class HumanFormatter:
         lines.append(f"  Format: {p.format}")
 
         for leaf in p.leaves:
-            if 'leaf_index' in leaf:
-                lines.append(f"  Leaf {leaf['leaf_index']}:")
+            if hasattr(leaf, 'leaf_index') and leaf.leaf_index is not None:
+                lines.append(f"  Leaf {leaf.leaf_index}:")
                 indent = "    "
             else:
                 indent = "  "
 
-            if leaf['type'] == 'NEAR':
+            if leaf.type == 'NEAR':
                 lines.append(f"{indent}NEAR Variable")
-                lines.append(f"{indent}  Type: {leaf['var_type']}")
-                lines.append(f"{indent}  Size: {leaf['size_bits']} bits ({leaf['size_bytes']} bytes)")
-            elif leaf['type'] == 'FAR':
+                lines.append(f"{indent}  Type: {leaf.var_type}")
+                lines.append(f"{indent}  Size: {leaf.size_bits} bits ({leaf.size_bytes} bytes)")
+            elif leaf.type == 'FAR':
                 lines.append(f"{indent}FAR Variable (Array)")
-                lines.append(f"{indent}  Num Elements: {leaf['num_elements']}")
-                lines.append(f"{indent}  Element Type: {leaf['element_type']}")
+                lines.append(f"{indent}  Num Elements: {leaf.num_elements}")
+                lines.append(f"{indent}  Element Type: {leaf.element_type}")
             else:
-                lines.append(f"{indent}Unknown Leaf Type: 0x{leaf['leaf_type']:02X}")
-                if 'remaining' in leaf and leaf['remaining']:
-                    lines.append(f"{indent}  Remaining: {_bytes_to_hex(leaf['remaining'])}")
+                lines.append(f"{indent}Unknown Leaf Type: 0x{leaf.leaf_type:02X}")
+                if hasattr(leaf, 'remaining') and leaf.remaining:
+                    lines.append(f"{indent}  Remaining: {_bytes_to_hex(leaf.remaining)}")
 
         return "\n".join(lines)
 
@@ -330,14 +331,14 @@ class HumanFormatter:
         local = "Local " if p.is_local else ""
         lines = [f"  {local}Communal Definitions:"]
         for defn in p.definitions:
-            if defn['kind'] == 'FAR':
-                lines.append(f"    '{defn['name']}' FAR: {defn['num_elements']} x {defn['element_size']} = {defn['total_size']} bytes")
-            elif defn['kind'] == 'NEAR':
-                lines.append(f"    '{defn['name']}' NEAR: {defn['size']} bytes")
-            elif defn['kind'] == 'Borland':
-                lines.append(f"    '{defn['name']}' Borland SegIdx={defn['seg_index']}: {defn['length']} bytes")
+            if defn.kind == 'FAR':
+                lines.append(f"    '{defn.name}' FAR: {defn.num_elements} x {defn.element_size} = {defn.total_size} bytes")
+            elif defn.kind == 'NEAR':
+                lines.append(f"    '{defn.name}' NEAR: {defn.size} bytes")
+            elif defn.kind == 'Borland':
+                lines.append(f"    '{defn.name}' Borland SegIdx={defn.seg_index}: {defn.length} bytes")
             else:
-                lines.append(f"    '{defn['name']}' DataType=0x{defn['data_type']:02X}: {defn.get('length', '?')} bytes")
+                lines.append(f"    '{defn.name}' DataType=0x{defn.data_type:02X}: {getattr(defn, 'length', '?')} bytes")
         return "\n".join(lines)
 
     def _format_ParsedComDat(self, p: ParsedComDat) -> str:
@@ -368,19 +369,19 @@ class HumanFormatter:
         for warn in p.warnings:
             lines.append(f"    [!] Warning: {warn}")
         for rec in p.records:
-            lines.append(f"    Segment: {rec['segment']}")
-            lines.append(f"    Location Type: {rec['location_name']}")
-            lines.append(f"    Offset: 0x{rec['offset']:X}")
-            lines.append(f"    Value: 0x{rec['value']:X}")
+            lines.append(f"    Segment: {rec.segment}")
+            lines.append(f"    Location Type: {rec.location_name}")
+            lines.append(f"    Offset: 0x{rec.offset:X}")
+            lines.append(f"    Value: 0x{rec.value:X}")
         return "\n".join(lines)
 
     def _format_ParsedNBkPat(self, p: ParsedNBkPat) -> str:
         lines = ["  Named Backpatch Records:"]
         for rec in p.records:
-            lines.append(f"    Symbol: '{rec['symbol']}'")
-            lines.append(f"    Location Type: {rec['location_name']}")
-            lines.append(f"    Offset: 0x{rec['offset']:X}")
-            lines.append(f"    Value: 0x{rec['value']:X}")
+            lines.append(f"    Symbol: '{rec.symbol}'")
+            lines.append(f"    Location Type: {rec.location_name}")
+            lines.append(f"    Offset: 0x{rec.offset:X}")
+            lines.append(f"    Value: 0x{rec.value:X}")
         return "\n".join(lines)
 
     def _format_ParsedLinSym(self, p: ParsedLinSym) -> str:
@@ -390,16 +391,16 @@ class HumanFormatter:
             "  Line Number Entries:"
         ]
         for entry in p.entries:
-            if entry['is_end_of_function']:
-                lines.append(f"    Line 0 (end of function): Offset=0x{entry['offset']:X}")
+            if entry.is_end_of_function:
+                lines.append(f"    Line 0 (end of function): Offset=0x{entry.offset:X}")
             else:
-                lines.append(f"    Line {entry['line']}: Offset=0x{entry['offset']:X}")
+                lines.append(f"    Line {entry.line}: Offset=0x{entry.offset:X}")
         return "\n".join(lines)
 
     def _format_ParsedAlias(self, p: ParsedAlias) -> str:
         lines = ["  Alias Definitions:"]
         for alias in p.aliases:
-            lines.append(f"    '{alias['alias']}' -> '{alias['substitute']}'")
+            lines.append(f"    '{alias.alias}' -> '{alias.substitute}'")
         return "\n".join(lines)
 
     def _format_ParsedLibHdr(self, p: ParsedLibHdr) -> str:
@@ -417,7 +418,7 @@ class HumanFormatter:
     def _format_ParsedLibDict(self, p: ParsedLibDict) -> str:
         lines = []
         for entry in p.entries:
-            lines.append(f"  [{entry['block']}:{entry['bucket']:02}] '{entry['symbol']}' -> Page {entry['page']}")
+            lines.append(f"  [{entry.block}:{entry.bucket:02}] '{entry.symbol}' -> Page {entry.page}")
         lines.append(f"  Total Dictionary Entries: {p.total_entries}")
         return "\n".join(lines)
 
@@ -427,7 +428,7 @@ class HumanFormatter:
             f"  Number of Modules: {p.num_modules}"
         ]
         for mod in p.modules:
-            lines.append(f"    Module {mod['index']}: Page={mod['page']}, DepOffset={mod['dep_offset']}")
+            lines.append(f"    Module {mod.index}: Page={mod.page}, DepOffset={mod.dep_offset}")
         return "\n".join(lines)
 
     def _format_ParsedRheadr(self, p: ParsedRheadr) -> str:
@@ -447,7 +448,7 @@ class HumanFormatter:
             "    Provides initial values for 8086 registers"
         ]
         for reg in p.registers:
-            lines.append(f"    {reg['register']}: 0x{reg['value']:04X}")
+            lines.append(f"    {reg.reg_name}: 0x{reg.value:04X}")
         return "\n".join(lines)
 
     def _format_ParsedReDataPeData(self, p: ParsedReDataPeData) -> str:
@@ -534,7 +535,7 @@ class HumanFormatter:
         for mod in p.modules:
             lines.append(f"    Module: {mod}")
         for loc in p.locations:
-            lines.append(f"    Module {loc['module']}: Offset 0x{loc['offset']:08X}")
+            lines.append(f"    Module {loc.module}: Offset 0x{loc.offset:08X}")
         if p.data:
             lines.append(f"    Data: {_bytes_to_hex(p.data)}")
         return "\n".join(lines)
@@ -611,13 +612,13 @@ class HumanFormatter:
         if name == 'ComentWkExt':
             lines = ["  Weak Extern definitions:"]
             for entry in content.entries:
-                lines.append(f"    Weak Ext#{entry['weak_extdef_index']} -> Default Ext#{entry['default_resolution_index']}")
+                lines.append(f"    Weak Ext#{entry.weak_extdef_index} -> Default Ext#{entry.default_resolution_index}")
             return "\n".join(lines)
 
         if name == 'ComentLzExt':
             lines = ["  Lazy Extern definitions:"]
             for entry in content.entries:
-                lines.append(f"    Lazy Ext#{entry['lazy_extdef_index']} -> Default Ext#{entry['default_resolution_index']}")
+                lines.append(f"    Lazy Ext#{entry.lazy_extdef_index} -> Default Ext#{entry.default_resolution_index}")
             return "\n".join(lines)
 
         if name == 'ComentEasyOmf':
@@ -747,9 +748,9 @@ class JSONFormatter:
             return obj.hex()
         if isinstance(obj, Enum):
             return obj.value
-        if is_dataclass(obj):
+        if isinstance(obj, BaseModel):
             result = {}
-            for key, value in asdict(obj).items():
+            for key, value in obj.model_dump().items():
                 result[key] = self._to_serializable(value)
             return result
         if isinstance(obj, list):

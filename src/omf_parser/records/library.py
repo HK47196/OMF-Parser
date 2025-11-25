@@ -3,7 +3,7 @@
 import struct
 from . import omf_record
 from ..constants import RecordType, LibraryConsts
-from ..models import ParsedLibHdr, ParsedLibEnd, ParsedLibDict, ParsedExtDict
+from ..models import ParsedLibHdr, ParsedLibEnd, ParsedLibDict, ParsedExtDict, DictEntry, ExtDictModule
 
 
 @omf_record(RecordType.LIBHDR)
@@ -73,12 +73,12 @@ def parse_library_dictionary(omf):
                 page_offset = entry_offset + 1 + s_len
                 page_num = struct.unpack('<H', block[page_offset:page_offset + 2])[0]
 
-                result.entries.append({
-                    'block': block_num,
-                    'bucket': bucket_idx,
-                    'symbol': s_str,
-                    'page': page_num
-                })
+                result.entries.append(DictEntry(
+                    block=block_num,
+                    bucket=bucket_idx,
+                    symbol=s_str,
+                    page=page_num
+                ))
                 result.total_entries += 1
             except Exception:
                 pass
@@ -122,10 +122,10 @@ def parse_extended_dictionary(omf, offset):
         dep_offset = struct.unpack('<H', omf.data[pos + 2:pos + 4])[0]
         pos += 4
         if page_num != 0 or dep_offset != 0:
-            result.modules.append({
-                'index': i,
-                'page': page_num,
-                'dep_offset': dep_offset
-            })
+            result.modules.append(ExtDictModule(
+                index=i,
+                page=page_num,
+                dep_offset=dep_offset
+            ))
 
     return result

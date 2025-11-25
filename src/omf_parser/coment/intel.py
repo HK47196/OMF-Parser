@@ -11,7 +11,8 @@ from ..models import (
     ComentIncErr, ComentNoPad, ComentWkExt, ComentLzExt,
     ComentEasyOmf, ComentOmfExtensions,
     A0ImpDef, A0ExpDef, A0IncDef, A0ProtectedMemory, A0LnkDir,
-    A0BigEndian, A0PreComp
+    A0BigEndian, A0PreComp,
+    WeakExternEntry, LazyExternEntry
 )
 
 
@@ -99,10 +100,10 @@ def handle_wkext(omf, sub, flags, text):
     while pos < len(text) - 1:
         weak_idx = text[pos]
         default_idx = text[pos + 1]
-        result.entries.append({
-            'weak_extdef_index': weak_idx,
-            'default_resolution_index': default_idx
-        })
+        result.entries.append(WeakExternEntry(
+            weak_extdef_index=weak_idx,
+            default_resolution_index=default_idx
+        ))
         pos += 2
     return result
 
@@ -115,10 +116,10 @@ def handle_lzext(omf, sub, flags, text):
     while pos < len(text) - 1:
         lazy_idx = text[pos]
         default_idx = text[pos + 1]
-        result.entries.append({
-            'lazy_extdef_index': lazy_idx,
-            'default_resolution_index': default_idx
-        })
+        result.entries.append(LazyExternEntry(
+            lazy_extdef_index=lazy_idx,
+            default_resolution_index=default_idx
+        ))
         pos += 2
     return result
 
