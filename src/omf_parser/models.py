@@ -893,6 +893,21 @@ class ComentLinkerDirective(ParsedComentContent):
     warnings: List[str] = Field(default_factory=list)
 
 
+class ComentDisasmDirective(ParsedComentContent):
+    """Watcom Disassembler Directive (COMENT class 0xFD)."""
+    subtype: str
+    subtype_name: str
+    is_32bit: bool
+    segment_index: int
+    segment_name: Optional[str] = None
+    lname_index: Optional[int] = None
+    comdat_name: Optional[str] = None
+    start_offset: int
+    end_offset: int
+    region_size: int
+    warnings: List[str] = Field(default_factory=list)
+
+
 class ParseResult(BaseModel):
     """Container for a parsed record result."""
     model_config = ConfigDict(strict=True, arbitrary_types_allowed=True)

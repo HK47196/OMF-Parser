@@ -5,7 +5,7 @@ from datetime import datetime
 from . import coment_class
 from ..constants import CommentClass
 from ..models import (
-    ComentProcModel, ComentLinkerDirective,
+    ComentProcModel, ComentLinkerDirective, ComentDisasmDirective,
     LinkerDirSourceLang, LinkerDirDefaultLib, LinkerDirOptFarCalls,
     LinkerDirOptUnsafe, LinkerDirVFTableDef, LinkerDirVFReference,
     LinkerDirPackData, LinkerDirFlatAddrs, LinkerDirTimestamp
@@ -273,4 +273,72 @@ def _parse_timestamp(omf, data, result):
     return LinkerDirTimestamp(
         timestamp=timestamp,
         timestamp_readable=readable
+    )
+
+
+DISASM_DIRECTIVE_SUBTYPES = {
+    0x73: ('s', 'DDIR_SCAN_TABLE', False),      # 16-bit offsets
+    0x53: ('S', 'DDIR_SCAN_TABLE_32', True),    # 32-bit offsets
+}
+
+
+@coment_class(CommentClass.DISASM_DIRECTIVE)
+def handle_disasm_directive(omf, sub, flags, text):
+    """Watcom Disassembler Directive (0xFD).
+
+    Marks non-executable data regions within code segments for disassemblers.
+    """
+    if not text:
+        return None
+
+    parser = RecordParser(text)
+    warnings = []
+
+    subtype_byte = parser.read_byte()
+    subtype_info = DISASM_DIRECTIVE_SUBTYPES.get(subtype_byte)
+
+    if subtype_info is None:
+        warnings.append(f"Unknown disasm directive subtype: 0x{subtype_byte:02X}")
+        return ComentDisasmDirective(
+            subtype=chr(subtype_byte) if 0x20 <= subtype_byte < 0x7F else f"0x{subtype_byte:02X}",
+            subtype_name=f"Unknown(0x{subtype_byte:02X})",
+            is_32bit=False,
+            segment_index=0,
+            start_offset=0,
+            end_offset=0,
+            region_size=0,
+            warnings=warnings
+        )
+
+    subtype_char, subtype_name, is_32bit = subtype_info
+    offset_size = 4 if is_32bit else 2
+
+    seg_idx = parser.parse_index()
+    seg_name = _safe_lookup(omf.segdefs, seg_idx, "Segment") if seg_idx > 0 else None
+
+    lname_idx = None
+    comdat_name = None
+    if seg_idx == 0:
+        lname_idx = parser.parse_index()
+        if lname_idx == 0:
+            warnings.append("Invalid record: both segment index and LNAME index are zero")
+        else:
+            comdat_name = _safe_lookup(omf.lnames, lname_idx, "LNAME")
+
+    start_offset = parser.parse_numeric(offset_size)
+    end_offset = parser.parse_numeric(offset_size)
+    region_size = end_offset - start_offset
+
+    return ComentDisasmDirective(
+        subtype=subtype_char,
+        subtype_name=subtype_name,
+        is_32bit=is_32bit,
+        segment_index=seg_idx,
+        segment_name=seg_name,
+        lname_index=lname_idx,
+        comdat_name=comdat_name,
+        start_offset=start_offset,
+        end_offset=end_offset,
+        region_size=region_size,
+        warnings=warnings
     )

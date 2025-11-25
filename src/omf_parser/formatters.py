@@ -673,6 +673,23 @@ class HumanFormatter:
                 lines.append(f"  Data: {_bytes_to_hex(content.data)}")
             return "\n".join(lines)
 
+        if name == 'ComentDisasmDirective':
+            lines = [f"  Subtype: '{content.subtype}' ({content.subtype_name})"]
+            for warn in content.warnings:
+                lines.append(f"    [!] WARNING: {warn}")
+            if content.segment_index > 0:
+                lines.append(f"    Segment Index: {content.segment_index}")
+                if content.segment_name:
+                    lines.append(f"    Segment: {content.segment_name}")
+            else:
+                lines.append("    Target: COMDAT")
+                if content.lname_index is not None:
+                    lines.append(f"    LNAME Index: {content.lname_index}")
+                if content.comdat_name:
+                    lines.append(f"    COMDAT Name: {content.comdat_name}")
+            lines.append(f"    Data Region: 0x{content.start_offset:X} - 0x{content.end_offset:X} ({content.region_size} bytes)")
+            return "\n".join(lines)
+
         if name == 'ComentLinkerDirective':
             lines = [f"  Directive: '{content.directive_code}' ({content.directive_name})"]
             for warn in content.warnings:
