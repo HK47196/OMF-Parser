@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import asdict, is_dataclass
+from enum import Enum
 from typing import List, Any
 
 from .models import (
@@ -301,7 +302,8 @@ class HumanFormatter:
         lines = ["  Fixup Subrecords:"]
         for sub in p.subrecords:
             if isinstance(sub, ParsedThread):
-                out = f"    THREAD {sub.kind}#{sub.thread_num} Method={sub.method_name}"
+                kind_str = sub.kind.value if isinstance(sub.kind, Enum) else sub.kind
+                out = f"    THREAD {kind_str}#{sub.thread_num} Method={sub.method_name}"
                 if sub.index is not None:
                     label = "FrameNum" if sub.method == 3 else "Index"
                     out += f" {label}={sub.index}"
@@ -310,7 +312,8 @@ class HumanFormatter:
                     lines.append(f"    [!] WARNING: {warn}")
             elif isinstance(sub, ParsedFixup):
                 lines.append(f"    FIXUP @{sub.data_offset:03X}")
-                lines.append(f"      Location: {sub.location}, Mode: {sub.mode}")
+                mode_str = sub.mode.value if isinstance(sub.mode, Enum) else sub.mode
+                lines.append(f"      Location: {sub.location}, Mode: {mode_str}")
                 frame_line = f"      Frame: Method={sub.frame_method} ({sub.frame_source})"
                 if sub.frame_datum is not None:
                     frame_line += f" Datum={sub.frame_datum}"
@@ -608,13 +611,13 @@ class HumanFormatter:
         if name == 'ComentWkExt':
             lines = ["  Weak Extern definitions:"]
             for entry in content.entries:
-                lines.append(f"    Weak Ext#{entry['weak_index']} -> Default Ext#{entry['default_index']}")
+                lines.append(f"    Weak Ext#{entry['weak_extdef_index']} -> Default Ext#{entry['default_resolution_index']}")
             return "\n".join(lines)
 
         if name == 'ComentLzExt':
             lines = ["  Lazy Extern definitions:"]
             for entry in content.entries:
-                lines.append(f"    Lazy Ext#{entry['lazy_index']} -> Default Ext#{entry['default_index']}")
+                lines.append(f"    Lazy Ext#{entry['lazy_extdef_index']} -> Default Ext#{entry['default_resolution_index']}")
             return "\n".join(lines)
 
         if name == 'ComentEasyOmf':
@@ -742,6 +745,8 @@ class JSONFormatter:
             return None
         if isinstance(obj, bytes):
             return obj.hex()
+        if isinstance(obj, Enum):
+            return obj.value
         if is_dataclass(obj):
             result = {}
             for key, value in asdict(obj).items():

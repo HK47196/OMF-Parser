@@ -83,8 +83,8 @@ def handle_segdef(omf, record):
         alignment=align_name,
         align_value=align,
         combine=COMBINE_NAMES[combine],
-        big=big,
-        use32=use32
+        big=bool(big),
+        use32=bool(use32)
     )
 
     if align == 0:

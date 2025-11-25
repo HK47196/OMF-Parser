@@ -5,7 +5,217 @@ They are designed to be serializable to JSON and formattable to human-readable t
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any, Union
+from enum import Enum
+from typing import List, Optional, Dict, Any, Union, Literal, Tuple
+from typing_extensions import TypedDict, NotRequired
+
+
+# =============================================================================
+# Enums for categorical values
+# =============================================================================
+
+class ThreadKind(str, Enum):
+    """FIXUPP thread type."""
+    FRAME = "FRAME"
+    TARGET = "TARGET"
+
+
+class FixupMode(str, Enum):
+    """FIXUPP fixup mode."""
+    SEGMENT_RELATIVE = "Segment-relative"
+    SELF_RELATIVE = "Self-relative"
+
+
+class TypDefFormat(str, Enum):
+    """TYPDEF format type."""
+    MICROSOFT = "Microsoft"
+    INTEL = "Intel"
+
+
+class ComDefKind(str, Enum):
+    """COMDEF definition kind."""
+    FAR = "FAR"
+    NEAR = "NEAR"
+    BORLAND = "Borland"
+    UNKNOWN = "Unknown"
+
+
+# =============================================================================
+# TypedDict definitions for structured dictionaries
+# =============================================================================
+
+class PubDefSymbol(TypedDict):
+    """Symbol entry in PUBDEF/LPUBDEF records."""
+    name: str
+    offset: int
+    type_index: int
+
+
+class ExtDefEntry(TypedDict):
+    """External definition entry."""
+    index: int
+    name: str
+    type_index: int
+
+
+class CExtDefEntry(TypedDict):
+    """COMDAT external definition entry."""
+    index: int
+    name: str
+    type_index: int
+
+
+class StartAddress(TypedDict, total=False):
+    """MODEND start address information."""
+    frame_method: int
+    p_bit: int
+    target_method: int
+    frame_datum: int
+    target_datum: int
+    target_displacement: int
+
+
+class LineEntry(TypedDict):
+    """Line number entry in LINNUM/LINSYM records."""
+    line: int
+    offset: int
+    is_end_of_function: bool
+
+
+class ComDefDefinitionBase(TypedDict):
+    """Base fields for COMDEF definitions."""
+    name: str
+    type_index: int
+    data_type: int
+    kind: str
+
+
+class ComDefFarDefinition(ComDefDefinitionBase):
+    """FAR COMDEF definition."""
+    num_elements: int
+    element_size: int
+    total_size: int
+
+
+class ComDefNearDefinition(ComDefDefinitionBase):
+    """NEAR COMDEF definition."""
+    size: int
+
+
+class ComDefBorlandDefinition(ComDefDefinitionBase):
+    """Borland COMDEF definition."""
+    seg_index: int
+    length: int
+
+
+class ComDefUnknownDefinition(ComDefDefinitionBase):
+    """Unknown COMDEF definition."""
+    length: int
+
+
+ComDefDefinition = Union[ComDefFarDefinition, ComDefNearDefinition, ComDefBorlandDefinition, ComDefUnknownDefinition]
+
+
+class BackpatchRecord(TypedDict):
+    """BAKPAT backpatch record entry."""
+    segment: str
+    segment_index: int
+    location_type: int
+    location_name: str
+    offset: int
+    value: int
+
+
+class NamedBackpatchRecord(TypedDict):
+    """NBKPAT named backpatch record entry."""
+    location_type: int
+    location_name: str
+    symbol: str
+    offset: int
+    value: int
+
+
+class AliasEntry(TypedDict):
+    """Alias definition entry."""
+    alias: str
+    substitute: str
+
+
+class WeakExternEntry(TypedDict):
+    """Weak extern definition entry."""
+    weak_extdef_index: int
+    default_resolution_index: int
+
+
+class LazyExternEntry(TypedDict):
+    """Lazy extern definition entry."""
+    lazy_extdef_index: int
+    default_resolution_index: int
+
+
+class DictEntry(TypedDict):
+    """Library dictionary entry."""
+    block: int
+    bucket: int
+    symbol: str
+    page: int
+
+
+class ExtDictModule(TypedDict, total=False):
+    """Extended dictionary module entry."""
+    page: int
+    dependencies: List[int]
+
+
+class RegisterEntry(TypedDict):
+    """Register initialization entry (obsolete)."""
+    register: str
+    register_value: int
+    content_type: str
+    content: Union[int, str, None]
+
+
+class TypDefLeafNear(TypedDict, total=False):
+    """TYPDEF NEAR leaf descriptor."""
+    type: Literal["NEAR"]
+    leaf_index: int
+    leaf_type: int
+    var_type: str
+    var_type_raw: int
+    size_bits: int
+    size_bytes: int
+
+
+class TypDefLeafFar(TypedDict, total=False):
+    """TYPDEF FAR leaf descriptor."""
+    type: Literal["FAR"]
+    leaf_index: int
+    leaf_type: int
+    num_elements: int
+    element_type: str
+    element_type_index: int
+
+
+class TypDefLeafUnknown(TypedDict, total=False):
+    """TYPDEF unknown leaf descriptor."""
+    type: Literal["Unknown"]
+    leaf_index: int
+    leaf_type: int
+    remaining: bytes
+
+
+TypDefLeaf = Union[TypDefLeafNear, TypDefLeafFar, TypDefLeafUnknown]
+
+
+class LibLocEntry(TypedDict):
+    """Library location entry (obsolete)."""
+    module: str
+    block_num: int
+    byte_offset: int
+
+
+# Type alias for LNAMES entry (index, name, is_reserved)
+LNameEntry = Tuple[int, str, bool]
 
 
 @dataclass
@@ -19,17 +229,17 @@ class ParsedRecord:
 @dataclass
 class ParsedTheadr(ParsedRecord):
     """THEADR/LHEADR - Module header."""
-    record_name: str  # "THEADR" or "LHEADR"
+    record_name: Literal["THEADR", "LHEADR"]
     module_name: str
 
 
 @dataclass
 class ParsedLNames(ParsedRecord):
     """LNAMES/LLNAMES - Logical names."""
-    record_name: str  # "LNAMES" or "LLNAMES (Local)"
+    record_name: Literal["LNAMES", "LLNAMES (Local)"]
     start_index: int
     end_index: int
-    names: List[tuple]  # List of (index, name, is_reserved)
+    names: List[LNameEntry]
 
 
 @dataclass
@@ -39,8 +249,8 @@ class ParsedSegDef(ParsedRecord):
     alignment: str
     align_value: int
     combine: str
-    big: int
-    use32: int
+    big: bool
+    use32: bool
     absolute_frame: Optional[int] = None
     absolute_offset: Optional[int] = None
     length: int = 0
@@ -49,7 +259,7 @@ class ParsedSegDef(ParsedRecord):
     class_name: str = ""
     overlay_name: str = ""
     access_byte: Optional[int] = None
-    access_name: Optional[str] = None
+    access_name: Optional[Literal["RO", "EO", "ER", "RW"]] = None
     extra_byte: Optional[int] = None
 
 
@@ -72,20 +282,20 @@ class ParsedPubDef(ParsedRecord):
     base_segment: str
     absolute_frame: Optional[int] = None
     frame_note: Optional[str] = None
-    symbols: List[Dict[str, Any]] = field(default_factory=list)
+    symbols: List[PubDefSymbol] = field(default_factory=list)
 
 
 @dataclass
 class ParsedExtDef(ParsedRecord):
     """EXTDEF/LEXTDEF - External definitions."""
     is_local: bool
-    externals: List[Dict[str, Any]] = field(default_factory=list)
+    externals: List[ExtDefEntry] = field(default_factory=list)
 
 
 @dataclass
 class ParsedCExtDef(ParsedRecord):
     """CEXTDEF - COMDAT external definitions."""
-    externals: List[Dict[str, Any]] = field(default_factory=list)
+    externals: List[CExtDefEntry] = field(default_factory=list)
 
 
 @dataclass
@@ -95,7 +305,7 @@ class ParsedModEnd(ParsedRecord):
     is_main: bool
     has_start: bool
     is_relocatable: bool
-    start_address: Optional[Dict[str, Any]] = None
+    start_address: Optional[StartAddress] = None
     warnings: List[str] = field(default_factory=list)
 
 
@@ -105,7 +315,7 @@ class ParsedLinNum(ParsedRecord):
     is_32bit: bool
     base_group: str
     base_segment: str
-    entries: List[Dict[str, Any]] = field(default_factory=list)
+    entries: List[LineEntry] = field(default_factory=list)
 
 
 @dataclass
@@ -135,7 +345,7 @@ class ParsedLocSym(ParsedRecord):
     base_segment: str
     absolute_frame: Optional[int] = None
     frame_note: Optional[str] = None
-    symbols: List[Dict[str, Any]] = field(default_factory=list)
+    symbols: List[PubDefSymbol] = field(default_factory=list)
 
 
 @dataclass
@@ -143,8 +353,8 @@ class ParsedTypDef(ParsedRecord):
     """TYPDEF - Type definition."""
     name: Optional[str] = None
     en_byte: int = 0
-    format: str = ""  # "Microsoft" or "Intel"
-    leaves: List[Dict[str, Any]] = field(default_factory=list)
+    format: Literal["Microsoft", "Intel", ""] = ""
+    leaves: List[TypDefLeaf] = field(default_factory=list)
 
 
 # Data record models
@@ -182,7 +392,7 @@ class ParsedLIData(ParsedRecord):
 @dataclass
 class ParsedThread:
     """FIXUPP thread subrecord."""
-    kind: str  # "FRAME" or "TARGET"
+    kind: ThreadKind
     thread_num: int
     method: int
     method_name: str
@@ -195,7 +405,7 @@ class ParsedFixup:
     """FIXUPP fixup subrecord."""
     data_offset: int
     location: str
-    mode: str
+    mode: FixupMode
     frame_method: int
     frame_source: str
     target_method: int
@@ -218,7 +428,7 @@ class ParsedFixupp(ParsedRecord):
 class ParsedComDef(ParsedRecord):
     """COMDEF/LCOMDEF - Communal definitions."""
     is_local: bool
-    definitions: List[Dict[str, Any]] = field(default_factory=list)
+    definitions: List[ComDefDefinition] = field(default_factory=list)
 
 
 @dataclass
@@ -247,7 +457,7 @@ class ParsedComDat(ParsedRecord):
 class ParsedBakPat(ParsedRecord):
     """BAKPAT - Backpatch record."""
     is_32bit: bool
-    records: List[Dict[str, Any]] = field(default_factory=list)
+    records: List[BackpatchRecord] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
 
 
@@ -255,7 +465,7 @@ class ParsedBakPat(ParsedRecord):
 class ParsedNBkPat(ParsedRecord):
     """NBKPAT - Named backpatch record."""
     is_32bit: bool
-    records: List[Dict[str, Any]] = field(default_factory=list)
+    records: List[NamedBackpatchRecord] = field(default_factory=list)
 
 
 @dataclass
@@ -264,13 +474,13 @@ class ParsedLinSym(ParsedRecord):
     is_32bit: bool
     continuation: bool
     symbol: str
-    entries: List[Dict[str, Any]] = field(default_factory=list)
+    entries: List[LineEntry] = field(default_factory=list)
 
 
 @dataclass
 class ParsedAlias(ParsedRecord):
     """ALIAS - Alias definitions."""
-    aliases: List[Dict[str, str]] = field(default_factory=list)
+    aliases: List[AliasEntry] = field(default_factory=list)
 
 
 # Library record models
@@ -294,7 +504,7 @@ class ParsedLibEnd(ParsedRecord):
 @dataclass
 class ParsedLibDict(ParsedRecord):
     """Library dictionary."""
-    entries: List[Dict[str, Any]] = field(default_factory=list)
+    entries: List[DictEntry] = field(default_factory=list)
     total_entries: int = 0
 
 
@@ -303,7 +513,7 @@ class ParsedExtDict(ParsedRecord):
     """Extended dictionary."""
     length: int
     num_modules: int
-    modules: List[Dict[str, Any]] = field(default_factory=list)
+    modules: List[ExtDictModule] = field(default_factory=list)
 
 
 # Obsolete record models
@@ -318,13 +528,13 @@ class ParsedRheadr(ParsedRecord):
 @dataclass
 class ParsedRegInt(ParsedRecord):
     """REGINT - Register initialization (obsolete)."""
-    registers: List[Dict[str, Any]] = field(default_factory=list)
+    registers: List[RegisterEntry] = field(default_factory=list)
 
 
 @dataclass
 class ParsedReDataPeData(ParsedRecord):
     """REDATA/PEDATA - Enumerated data (obsolete)."""
-    record_type: str  # "REDATA" or "PEDATA"
+    record_type: Literal["REDATA", "PEDATA"]
     segment: Optional[str] = None
     segment_index: Optional[int] = None
     frame: Optional[int] = None
@@ -337,7 +547,7 @@ class ParsedReDataPeData(ParsedRecord):
 @dataclass
 class ParsedRiDataPiData(ParsedRecord):
     """RIDATA/PIDATA - Iterated data (obsolete)."""
-    record_type: str  # "RIDATA" or "PIDATA"
+    record_type: Literal["RIDATA", "PIDATA"]
     segment: Optional[str] = None
     segment_index: Optional[int] = None
     frame: Optional[int] = None
@@ -388,10 +598,10 @@ class ParsedDebSym(ParsedRecord):
 @dataclass
 class ParsedObsoleteLib(ParsedRecord):
     """Obsolete Intel library records."""
-    record_type: str  # "LIBHED", "LIBNAM", "LIBLOC", "LIBDIC"
+    record_type: Literal["LIBHED", "LIBNAM", "LIBLOC", "LIBDIC"]
     data: Optional[bytes] = None
     modules: List[str] = field(default_factory=list)
-    locations: List[Dict[str, Any]] = field(default_factory=list)
+    locations: List[LibLocEntry] = field(default_factory=list)
 
 
 # COMENT models
@@ -477,13 +687,13 @@ class ComentNoPad(ParsedComentContent):
 @dataclass
 class ComentWkExt(ParsedComentContent):
     """Weak extern definitions."""
-    entries: List[Dict[str, int]] = field(default_factory=list)
+    entries: List[WeakExternEntry] = field(default_factory=list)
 
 
 @dataclass
 class ComentLzExt(ParsedComentContent):
     """Lazy extern definitions."""
-    entries: List[Dict[str, int]] = field(default_factory=list)
+    entries: List[LazyExternEntry] = field(default_factory=list)
 
 
 @dataclass

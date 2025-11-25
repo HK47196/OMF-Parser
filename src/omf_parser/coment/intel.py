@@ -100,8 +100,8 @@ def handle_wkext(omf, sub, flags, text):
         weak_idx = text[pos]
         default_idx = text[pos + 1]
         result.entries.append({
-            'weak_index': weak_idx,
-            'default_index': default_idx
+            'weak_extdef_index': weak_idx,
+            'default_resolution_index': default_idx
         })
         pos += 2
     return result
@@ -116,8 +116,8 @@ def handle_lzext(omf, sub, flags, text):
         lazy_idx = text[pos]
         default_idx = text[pos + 1]
         result.entries.append({
-            'lazy_index': lazy_idx,
-            'default_index': default_idx
+            'lazy_extdef_index': lazy_idx,
+            'default_resolution_index': default_idx
         })
         pos += 2
     return result

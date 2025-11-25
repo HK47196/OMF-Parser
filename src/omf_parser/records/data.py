@@ -4,7 +4,8 @@ from . import omf_record
 from ..constants import RecordType, FixuppFlags
 from ..models import (
     ParsedLEData, ParsedLIData, ParsedLIDataBlock,
-    ParsedFixupp, ParsedThread, ParsedFixup
+    ParsedFixupp, ParsedThread, ParsedFixup,
+    ThreadKind, FixupMode
 )
 
 
@@ -122,7 +123,7 @@ def handle_fixupp(omf, record):
             elif method < 3:
                 idx = sub.parse_index()
 
-            kind = "FRAME" if is_frame else "TARGET"
+            kind = ThreadKind.FRAME if is_frame else ThreadKind.TARGET
 
             if is_frame:
                 method_name = method_names_frame[method]
@@ -163,7 +164,7 @@ def handle_fixupp(omf, record):
             loc_type = (b1 >> FixuppFlags.LOC_TYPE_SHIFT) & FixuppFlags.LOC_TYPE_MASK
             data_offset = ((b1 & FixuppFlags.OFFSET_HIGH_MASK) << 8) | b2
 
-            mode_str = "Segment-relative" if mode else "Self-relative"
+            mode_enum = FixupMode.SEGMENT_RELATIVE if mode else FixupMode.SELF_RELATIVE
 
             loc_names = omf.variant.fixupp_loc_names()
             loc_str = loc_names.get(loc_type, f"Unknown({loc_type})")
@@ -207,7 +208,7 @@ def handle_fixupp(omf, record):
             fixup = ParsedFixup(
                 data_offset=data_offset,
                 location=loc_str,
-                mode=mode_str,
+                mode=mode_enum,
                 frame_method=frame_method,
                 frame_source=frame_src,
                 frame_datum=frame_datum,
