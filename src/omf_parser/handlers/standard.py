@@ -49,7 +49,11 @@ class StandardHandlersMixin:
         use32 = acbp & 0x01
 
         print(f"  ACBP: 0x{acbp:02X}")
-        print(f"    Alignment: {ALIGN_NAMES[align]}")
+
+        align_name = self.call_extension_hook('get_segdef_alignment_name', align)
+        if not align_name:
+            align_name = ALIGN_NAMES[align]
+        print(f"    Alignment: {align_name}")
         print(f"    Combine: {COMBINE_NAMES[combine]}")
         print(f"    Big: {big} (segment is {'64K/4GB' if big else 'smaller'})")
         print(f"    Use32: {use32} ({'Use32' if use32 else 'Use16'})")

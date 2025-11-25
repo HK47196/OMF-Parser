@@ -63,15 +63,29 @@ class PharLapEasyOMFExtension(VendorExtension):
 
         return None
 
-    def handle_fixupp_location_type(self, parser, loc_type):
-        """PharLap has additional location types for 386."""
+    def get_segdef_alignment_name(self, parser, align):
+        """PharLap defines alignment 6 as 4K page boundary."""
         if parser.target_mode != MODE_PHARLAP:
             return None
 
-        # PharLap-specific location types
+        if align == 6:
+            return "4K Page"
+        return None
+
+    def handle_fixupp_location_type(self, parser, loc_type):
+        """PharLap redefines location types 5 and 6 for 386.
+
+        Per Easy OMF-386 spec:
+        - Loc=5: 32-bit offset (replaces standard 'Ldr-Offset(16)')
+        - Loc=6: Base + 32-bit offset / long pointer (replaces 'Reserved(6)')
+        """
+        if parser.target_mode != MODE_PHARLAP:
+            return None
+
+        # PharLap redefines these standard location types
         pharlap_types = {
-            0x0D: ("PharLap:386-Offset32", 4),
-            0x0E: ("PharLap:386-Pointer48", 6),
+            5: ("Offset(32)", 4),           # 32-bit offset
+            6: ("Ptr(16:32)", 6),            # Base + 32-bit offset (48-bit pointer)
         }
 
         if loc_type in pharlap_types:
