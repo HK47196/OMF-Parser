@@ -1,0 +1,26 @@
+[project]
+name = "omf-parser"
+version = "0.1.0"
+license = "AGPL-3.0-or-later"
+description = "Parser/dumper for the Relocatable Object Module Format (OMF), TIS v1.1 specification and extensions"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0",
+    "typing_extensions>=4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "mypy>=1.0",
+]
+
+[project.scripts]
+omf-parser = "omf_parser.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
