@@ -699,6 +699,7 @@ class ComentLzExt(ParsedComentContent):
 class ComentEasyOmf(ParsedComentContent):
     """Easy OMF-386 marker."""
     marker: Optional[str] = None
+    warnings: List[str] = Field(default_factory=list)
 
 
 class ComentOmfExtensions(ParsedComentContent):

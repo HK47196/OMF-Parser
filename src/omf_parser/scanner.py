@@ -72,8 +72,7 @@ class Scanner:
             if record.type == RecordType.LIBEND:
                 break
 
-        if self._module_variant != TIS_STANDARD:
-            self._seen_variants.add(self._module_variant.name)
+        self._seen_variants.add(self._module_variant.name)
 
         if self.is_library and len(self._seen_variants) > 1:
             self.mixed_variants = True
@@ -83,12 +82,10 @@ class Scanner:
     def _track_module_boundaries(self, record: RecordInfo):
         """Track module boundaries to detect mixed variants in libraries."""
         if record.type in (RecordType.THEADR, RecordType.LHEADR):
-            if self._module_variant != TIS_STANDARD:
-                self._seen_variants.add(self._module_variant.name)
+            self._seen_variants.add(self._module_variant.name)
             self._module_variant = TIS_STANDARD
         elif record.type in (RecordType.MODEND, RecordType.MODEND32):
-            if self._module_variant != TIS_STANDARD:
-                self._seen_variants.add(self._module_variant.name)
+            self._seen_variants.add(self._module_variant.name)
 
     def _read_record(self) -> Optional[RecordInfo]:
         """Read a single record from current offset."""

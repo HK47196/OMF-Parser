@@ -660,6 +660,8 @@ class HumanFormatter:
             lines = ["  Easy OMF-386: 32-bit extensions enabled"]
             if content.marker:
                 lines.append(f"  Marker: {content.marker}")
+            for warn in content.warnings:
+                lines.append(f"    [!] {warn}")
             return "\n".join(lines)
 
         if name == 'Coment32BitLinker':

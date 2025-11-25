@@ -131,7 +131,12 @@ def handle_easy_omf(omf, sub, flags, text):
     omf.features.add('pharlap')
 
     decoded = _decode_text(text) if text else None
-    return ComentEasyOmf(marker=decoded)
+    result = ComentEasyOmf(marker=decoded)
+
+    if decoded != '80386':
+        result.warnings.append(f"Expected '80386' marker, got {repr(decoded)}")
+
+    return result
 
 
 @coment_class(CommentClass.OMF_EXTENSIONS)
