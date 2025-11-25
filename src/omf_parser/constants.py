@@ -99,8 +99,9 @@ class CommentClass(IntEnum):
     TRANSLATOR = 0x00
     COPYRIGHT = 0x01
     LIBSPEC = 0x81
+    WAT_PROC_MODEL = 0x9B
     MSDOS_VERSION = 0x9C
-    MEMORY_MODEL = 0x9D
+    MS_PROC_MODEL = 0x9D
     DOSSEG = 0x9E
     DEFAULT_LIBRARY = 0x9F
     OMF_EXTENSIONS = 0xA0
@@ -356,8 +357,9 @@ COMMENT_CLASSES: dict[int, str] = {
     CommentClass.TRANSLATOR: "Translator",
     CommentClass.COPYRIGHT: "Intel Copyright",
     CommentClass.LIBSPEC: "Library Specifier (obsolete)",
+    CommentClass.WAT_PROC_MODEL: "Watcom Processor/Model",
     CommentClass.MSDOS_VERSION: "MS-DOS Version (obsolete)",
-    CommentClass.MEMORY_MODEL: "Memory Model",
+    CommentClass.MS_PROC_MODEL: "MS Processor/Model",
     CommentClass.DOSSEG: "DOSSEG",
     CommentClass.DEFAULT_LIBRARY: "Default Library Search",
     CommentClass.OMF_EXTENSIONS: "OMF Extensions",

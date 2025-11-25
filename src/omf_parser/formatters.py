@@ -565,7 +565,6 @@ class HumanFormatter:
             'ComentLibSpec': ('Library', 'library'),
             'ComentLibMod': ('Library Module', 'module_name'),
             'ComentExeStr': ('Exe String', 'exe_string'),
-            'ComentMemoryModel': ('Memory Model', 'model'),
             'ComentDefaultLibrary': ('Default Library', 'library'),
             'ComentComment': ('Comment', 'comment'),
             'ComentCompiler': ('Compiler', 'compiler'),
@@ -596,6 +595,16 @@ class HumanFormatter:
             if content.major is not None:
                 return f"  [Obsolete] MS-DOS Version\n    Version: {content.major}.{content.minor or 0}"
             return "  [Obsolete] MS-DOS Version"
+
+        if name == 'ComentProcModel':
+            lines = [
+                f"  Processor: {content.processor}",
+                f"  Memory Model: {content.mem_model}",
+                f"  Floating Point: {content.fp_mode}",
+            ]
+            if content.pic:
+                lines.append("  Position Independent: Yes")
+            return "\n".join(lines)
 
         if name == 'ComentNewOmf':
             lines = ["  New OMF Extension marker"]
@@ -749,7 +758,7 @@ class JSONFormatter:
             return obj.value
         if isinstance(obj, BaseModel):
             result = {}
-            for key, value in obj.model_dump().items():
+            for key, value in obj.model_dump(serialize_as_any=True).items():
                 result[key] = self._to_serializable(value)
             return result
         if isinstance(obj, list):

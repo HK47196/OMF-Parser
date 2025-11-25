@@ -71,4 +71,5 @@ def get_coment_handler(cls, active_features):
 
 from . import standard  # Must be first - registers COMENT record handler
 from . import intel
-from . import microsoft
+from . import watcom
+from . import microsoft  # Must be after watcom (imports from it)

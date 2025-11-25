@@ -3,7 +3,7 @@
 from . import coment_class
 from ..constants import CommentClass
 from ..models import (
-    ComentDosVersion, ComentMemoryModel, ComentDefaultLibrary,
+    ComentDosVersion, ComentDefaultLibrary,
     ComentComment, ComentCompiler, ComentDate, ComentTimestamp,
     ComentUser, ComentDependencyFile, ComentCmdLine, Coment32BitLinker
 )
@@ -27,11 +27,11 @@ def handle_dos_version(omf, sub, flags, text):
     return ComentDosVersion(major=major, minor=minor)
 
 
-@coment_class(CommentClass.MEMORY_MODEL)
-def handle_memory_model(omf, sub, flags, text):
-    """Memory Model."""
-    decoded = _decode_text(text)
-    return ComentMemoryModel(model=decoded)
+@coment_class(CommentClass.MS_PROC_MODEL)
+def handle_ms_proc_model(omf, sub, flags, text):
+    """MS Processor/Model - same format as Watcom 0x9B."""
+    from .watcom import parse_proc_model
+    return parse_proc_model(text)
 
 
 @coment_class(CommentClass.DEFAULT_LIBRARY)

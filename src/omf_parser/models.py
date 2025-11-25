@@ -749,9 +749,16 @@ class ComentDosVersion(ParsedComentContent):
     minor: Optional[int] = None
 
 
-class ComentMemoryModel(ParsedComentContent):
-    """Memory model."""
-    model: str
+class ComentProcModel(ParsedComentContent):
+    """Processor and memory model info (Watcom 0x9B / MS 0x9D)."""
+    processor: str
+    processor_raw: str
+    mem_model: str
+    mem_model_raw: str
+    optimized: bool
+    fp_mode: str
+    fp_mode_raw: str
+    pic: bool
 
 
 class ComentDefaultLibrary(ParsedComentContent):
