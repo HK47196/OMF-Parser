@@ -579,6 +579,16 @@
       "title": "NamedBackpatchRecord",
       "type": "object"
     },
+    "OMFVariant": {
+      "description": "OMF format variant.\n\nVariants change how records are parsed (field sizes, extra fields, etc.).\nThis is distinct from extensions which add new semantics but use the same parsing.\n\n- TIS_STANDARD: Baseline OMF-86/286/386 per TIS specification\n- PHARLAP: PharLap Easy OMF-386 (4-byte offsets, SEGDEF access byte)\n- IBM_LINK386: OS/2 2.x+ format (inline names in COMDAT/NBKPAT/LINSYM)",
+      "enum": [
+        "TIS Standard",
+        "PharLap Easy OMF-386",
+        "IBM LINK386"
+      ],
+      "title": "OMFVariant",
+      "type": "string"
+    },
     "ParseResult": {
       "description": "Container for a parsed record result.",
       "properties": {
@@ -3085,9 +3095,8 @@
       "title": "Is Library",
       "type": "boolean"
     },
-    "variant": {
-      "title": "Variant",
-      "type": "string"
+    "omf_variant": {
+      "$ref": "#/$defs/OMFVariant"
     },
     "mixed_variants": {
       "title": "Mixed Variants",
@@ -3097,7 +3106,7 @@
       "anyOf": [
         {
           "items": {
-            "type": "string"
+            "$ref": "#/$defs/OMFVariant"
           },
           "type": "array"
         },
@@ -3142,7 +3151,7 @@
     "filepath",
     "file_size",
     "is_library",
-    "variant",
+    "omf_variant",
     "mixed_variants",
     "seen_variants",
     "features",
