@@ -655,11 +655,19 @@ REGISTER_NAMES: dict[int, str] = {
     0: "CS", 1: "DS", 2: "SS", 3: "ES", 4: "IP", 5: "SP"
 }
 
-VAR_TYPE_NAMES: dict[int, str] = {
-    0x77: "Array",
-    0x79: "Structure",
-    0x7B: "Scalar"
-}
+class TypDefVarType(LabeledEnum):
+    """TYPDEF variable type values for NEAR/FAR leaves.
+
+    Per TIS OMF 1.1 Appendix 3, the variable type field must contain one
+    of these three values. The specific value is ignored by most linkers.
+
+    - Array: Array type (0x77)
+    - Structure: Structure type (0x79)
+    - Scalar: Scalar type (0x7B)
+    """
+    ARRAY = EnumValue(0x77, "Array")
+    STRUCTURE = EnumValue(0x79, "Structure")
+    SCALAR = EnumValue(0x7B, "Scalar")
 
 
 KNOWN_VENDORS: dict[int, str] = {

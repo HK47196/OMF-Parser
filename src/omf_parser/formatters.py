@@ -257,7 +257,7 @@ class HumanFormatter:
 
             if leaf.type == 'NEAR':
                 lines.append(f"{indent}NEAR Variable")
-                lines.append(f"{indent}  Type: {leaf.var_type}")
+                lines.append(f"{indent}  Type: {leaf.var_type.label}")
                 lines.append(f"{indent}  Size: {leaf.size_bits} bits ({leaf.size_bytes} bytes)")
             elif leaf.type == 'FAR':
                 lines.append(f"{indent}FAR Variable (Array)")

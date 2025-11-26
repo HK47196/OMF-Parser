@@ -1,7 +1,7 @@
 """TYPDEF record handler."""
 
 from . import omf_record
-from ..constants import RecordType, TypdefLeaf, VAR_TYPE_NAMES
+from ..constants import RecordType, TypdefLeaf, TypDefVarType
 from ..models import (
     ParsedTypDef, TypDefLeafNear, TypDefLeafFar, TypDefLeafUnknown
 )
@@ -46,8 +46,7 @@ def handle_typdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedTypDef | No
             result.leaves.append(TypDefLeafNear(
                 type='NEAR',
                 leaf_type=leaf_type,
-                var_type=VAR_TYPE_NAMES.get(var_type, f'0x{var_type:02X}'),
-                var_type_raw=var_type,
+                var_type=TypDefVarType(var_type),
                 size_bits=size_bits,
                 size_bytes=size_bits // 8
             ))
@@ -98,8 +97,7 @@ def handle_typdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedTypDef | No
                     type='NEAR',
                     leaf_index=leaf_idx + 1,
                     leaf_type=leaf_type,
-                    var_type=VAR_TYPE_NAMES.get(var_type, f'0x{var_type:02X}'),
-                    var_type_raw=var_type,
+                    var_type=TypDefVarType(var_type),
                     size_bits=size_bits,
                     size_bytes=size_bits // 8
                 ))

@@ -20,6 +20,7 @@ from omf_parser.constants import (
     ComdatAlign,
     BackpatchLocation,
     OMFVariant,
+    TypDefVarType,
 )
 
 # Bytes serialize as hex string
@@ -229,8 +230,7 @@ class TypDefLeafNear(BaseModel):
     type: Literal["NEAR"]
     leaf_index: Optional[int] = None
     leaf_type: int
-    var_type: str
-    var_type_raw: int
+    var_type: TypDefVarType
     size_bits: int
     size_bytes: int
 
