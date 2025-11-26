@@ -1423,7 +1423,7 @@
       "type": "object"
     },
     "FixupLocation": {
-      "description": "FIXUPP location types. Some values differ between TIS and PharLap variants.\n\n- Byte(8): Low-order byte (8-bit displacement or low byte of 16-bit offset)\n- Offset(16): 16-bit offset\n- Segment(16): 16-bit base/selector\n- Ptr(16:16): 32-bit far pointer (16-bit segment:16-bit offset) [PharLap: 16:32]\n- HiByte(8): High-order byte of 16-bit offset\n- Loader-resolved Offset(16): 16-bit loader-resolved offset [PharLap: 32-bit offset]\n- Ptr(16:32) [loc 6]: PharLap 48-bit pointer [TIS: reserved]\n- Offset(32): 32-bit offset\n- Ptr(16:32) [loc 11]: 48-bit far pointer (16-bit segment:32-bit offset)\n- Loader-resolved Offset(32): 32-bit loader-resolved offset",
+      "description": "FIXUPP location types. Some values differ between TIS and PharLap variants.\n\nTIS standard locations:\n- 0: Byte(8) - Low-order byte (8-bit displacement or low byte of 16-bit offset)\n- 1: Offset(16) - 16-bit offset\n- 2: Segment(16) - 16-bit base/selector\n- 3: Ptr(16:16) - 32-bit far pointer (16-bit segment:16-bit offset)\n- 4: HiByte(8) - High-order byte of 16-bit offset\n- 5: Loader-resolved Offset(16) - 16-bit loader-resolved offset\n- 9: Offset(32) - 32-bit offset\n- 11: Ptr(16:32) - 48-bit far pointer (16-bit segment:32-bit offset)\n- 13: Loader-resolved Offset(32) - 32-bit loader-resolved offset\n\nPharLap Easy OMF-386 differences:\n- 5: 32-bit offset (PHARLAP_OFFSET_32, synthetic int_val=105)\n- 6: 48-bit pointer (16:32) (TIS: reserved)",
       "enum": [
         [
           0,
@@ -1448,6 +1448,10 @@
         [
           5,
           "Loader-resolved Offset(16)"
+        ],
+        [
+          105,
+          "Offset(32) [loc 5]"
         ],
         [
           6,
@@ -4265,7 +4269,7 @@
       "type": "array"
     },
     "SegAlignment": {
-      "description": "SEGDEF alignment values (A field in ACBP byte).\n\n- Absolute: Absolute segment (frame number and offset follow)\n- Byte: Relocatable, byte aligned\n- Word: Relocatable, word (2-byte) aligned\n- Paragraph: Relocatable, paragraph (16-byte) aligned\n- Page: Relocatable, page aligned (256-byte Intel / 4K IBM)\n- DWord: Relocatable, dword (4-byte) aligned\n- LTL(6): Not supported (Intel: LTL paragraph aligned)\n- Undefined(7): Not defined",
+      "description": "SEGDEF alignment values (A field in ACBP byte).\n\n- Absolute: Absolute segment (frame number and offset follow)\n- Byte: Relocatable, byte aligned\n- Word: Relocatable, word (2-byte) aligned\n- Paragraph: Relocatable, paragraph (16-byte) aligned\n- Page: Relocatable, page aligned (256-byte Intel / 4K IBM)\n- DWord: Relocatable, dword (4-byte) aligned\n- LTL(6): Not supported (Intel: LTL paragraph aligned) [PharLap: 4K page]\n- Undefined(7): Not defined",
       "enum": [
         [
           0,
@@ -4294,6 +4298,10 @@
         [
           6,
           "LTL(6)"
+        ],
+        [
+          106,
+          "Page (4K) [align 6]"
         ],
         [
           7,
