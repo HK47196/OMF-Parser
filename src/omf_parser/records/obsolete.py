@@ -160,7 +160,8 @@ def handle_blkdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedBlkDef:
         result.frame = sub.parse_numeric(2)
 
     result.block_name = sub.parse_name()
-    result.offset = sub.parse_numeric(2)
+    offset_size = sub.get_offset_field_size(False)  # No 32-bit variant exists
+    result.offset = sub.parse_numeric(offset_size)
 
     if sub.bytes_remaining() > 0:
         result.debug_length = sub.parse_numeric(2)
