@@ -840,7 +840,7 @@ class HumanFormatter:
             f"Total Records: {len(omf.records)}"
         ]
 
-        all_warnings = []
+        all_warnings = list(omf.warnings)
         all_errors = []
         for result in omf.parsed_records:
             if result.error:
@@ -888,7 +888,7 @@ class JSONFormatter:
 
     def format_file(self, omf: "OMFFile", include_raw: bool = False) -> str:
         """Format entire parsed file as JSON."""
-        all_warnings: list[str] = []
+        all_warnings: list[str] = list(omf.warnings)
         all_errors: list[str] = []
         for result in omf.parsed_records:
             if result.error:

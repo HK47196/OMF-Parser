@@ -38,6 +38,7 @@ class Scanner:
         self.is_library = False
         self.has_32bit_records = False
         self.mixed_variants = False
+        self.warnings: list[str] = []
         self._module_variant: Variant = TIS_STANDARD
         self._seen_variants: set[OMFVariant] = set()
         self._module_start_idx: int = 0
@@ -67,7 +68,8 @@ class Scanner:
             if record is None:
                 break
 
-            self._detect_features(record)
+            current_idx = len(records)
+            self._detect_features(record, current_idx)
             records.append(record)
             self._track_module_boundaries(record, records)
 
@@ -156,14 +158,14 @@ class Scanner:
             return True
         return (sum(record_data) & 0xFF) == 0
 
-    def _detect_features(self, record: RecordInfo) -> None:
+    def _detect_features(self, record: RecordInfo, record_idx: int) -> None:
         """Detect features from record content."""
         if record.type == RecordType.COMENT:
-            self._detect_coment_features(record)
+            self._detect_coment_features(record, record_idx)
         elif record.type == RecordType.VENDEXT:
             self._detect_vendext_features(record)
 
-    def _detect_coment_features(self, record: RecordInfo) -> None:
+    def _detect_coment_features(self, record: RecordInfo, record_idx: int) -> None:
         """Detect variant and features from COMENT record."""
         if len(record.content) < 2:
             return
@@ -175,6 +177,7 @@ class Scanner:
             self._module_variant = PHARLAP
             self.features.add('easy_omf')
             self.features.add('pharlap')
+            self._validate_easy_omf_placement(record, record_idx)
 
         if len(record.content) > 2:
             try:
@@ -196,3 +199,19 @@ class Scanner:
         if len(record.content) >= 2:
             vendor_num = struct.unpack('<H', record.content[:2])[0]
             self.features.add(f'vendext_{vendor_num}')
+
+    def _validate_easy_omf_placement(self, record: RecordInfo, record_idx: int) -> None:
+        """Validate that Easy OMF-386 marker is immediately after THEADR.
+
+        Per PharLap spec: "The 80386 comment record should be located
+        immediately after the module header record (THEADR) and before
+        any other records of the object module."
+        """
+        expected_idx = self._module_start_idx + 1
+        if record_idx != expected_idx:
+            position_in_module = record_idx - self._module_start_idx
+            self.warnings.append(
+                f"Easy OMF-386 marker at record {record_idx} (offset 0x{record.offset:X}) "
+                f"is not immediately after THEADR; found at position {position_in_module} "
+                f"in module (expected position 1)"
+            )

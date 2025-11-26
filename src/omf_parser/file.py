@@ -44,6 +44,7 @@ class OMFFile:
         self.mixed_variants = False
         self.seen_variants: set[OMFVariant] = set()
         self.parsed_records: list[ParseResult] = []
+        self.warnings: list[str] = []
 
     def load(self) -> None:
         """Load file data from filepath."""
@@ -66,6 +67,7 @@ class OMFFile:
         self.has_32bit_records = scanner.has_32bit_records
         self.mixed_variants = scanner.mixed_variants
         self.seen_variants = scanner._seen_variants
+        self.warnings = scanner.warnings
 
     def parse(self) -> list[ParseResult]:
         """Phase 2: Parse all records with feature-aware handlers.
