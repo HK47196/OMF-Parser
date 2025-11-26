@@ -122,6 +122,11 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Nuitka
+*.build/
+*.onefile-build/
+*.dist/
+
 # IDEs
 .vscode/
 .idea/
