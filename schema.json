@@ -4242,13 +4242,27 @@
       "type": "array"
     },
     "SegAccess": {
+      "description": "SEGDEF access types (AT field in PharLap access byte).\n\nPer PharLap Easy OMF-386 specification, the access byte contains a 2-bit\nAT field specifying the segment's access type.\n\n- RO: Read only (0)\n- EO: Execute only (1)\n- ER: Execute/read (2)\n- RW: Read/write (3)",
       "enum": [
-        "RO",
-        "EO",
-        "ER",
-        "RW"
+        [
+          0,
+          "Read only"
+        ],
+        [
+          1,
+          "Execute only"
+        ],
+        [
+          2,
+          "Execute/read"
+        ],
+        [
+          3,
+          "Read/write"
+        ]
       ],
-      "type": "string"
+      "title": "SegAccess",
+      "type": "array"
     },
     "SegAlignment": {
       "description": "SEGDEF alignment values (A field in ACBP byte).\n\n- Absolute: Absolute segment (frame number and offset follow)\n- Byte: Relocatable, byte aligned\n- Word: Relocatable, word (2-byte) aligned\n- Paragraph: Relocatable, paragraph (16-byte) aligned\n- Page: Relocatable, page aligned (256-byte Intel / 4K IBM)\n- DWord: Relocatable, dword (4-byte) aligned\n- LTL(6): Not supported (Intel: LTL paragraph aligned)\n- Undefined(7): Not defined",
