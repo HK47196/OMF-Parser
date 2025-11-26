@@ -2,7 +2,8 @@
 
 from . import omf_record
 from ..constants import (
-    RecordType, SegdefFlags, SegmentSize, SegAlignment, SegCombine, SegAccess
+    RecordType, SegdefFlags, SegmentSize, SegAlignment, SegCombine, SegAccess,
+    OMFVariant
 )
 from ..models import ParsedSegDef
 from ..protocols import OMFFileProtocol
@@ -24,9 +25,15 @@ def handle_segdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedSegDef | No
     big = (acbp >> 1) & SegdefFlags.BIG_MASK
     use32 = acbp & SegdefFlags.USE32_MASK
 
+    # PharLap align 6 is 4K page boundary, not LTL
+    if align_val == 6 and omf.variant.omf_variant == OMFVariant.PHARLAP:
+        alignment = SegAlignment.PHARLAP_PAGE_4K
+    else:
+        alignment = SegAlignment(align_val)
+
     result = ParsedSegDef(
         acbp=acbp,
-        alignment=SegAlignment(align_val),
+        alignment=alignment,
         combine=SegCombine(combine_val),
         big=bool(big),
         use32=bool(use32)

@@ -292,7 +292,7 @@ class SegAlignment(LabeledEnum):
     - Paragraph: Relocatable, paragraph (16-byte) aligned
     - Page: Relocatable, page aligned (256-byte Intel / 4K IBM)
     - DWord: Relocatable, dword (4-byte) aligned
-    - LTL(6): Not supported (Intel: LTL paragraph aligned)
+    - LTL(6): Not supported (Intel: LTL paragraph aligned) [PharLap: 4K page]
     - Undefined(7): Not defined
     """
     ABSOLUTE = EnumValue(0, "Absolute")
@@ -302,6 +302,7 @@ class SegAlignment(LabeledEnum):
     PAGE = EnumValue(4, "Page (256-byte Intel / 4K IBM)")
     DWORD = EnumValue(5, "DWord")
     LTL = EnumValue(6, "LTL(6)")
+    PHARLAP_PAGE_4K = EnumValue(106, "Page (4K) [align 6]")  # PharLap align 6
     UNDEFINED = EnumValue(7, "Undefined(7)")
 
 
@@ -347,16 +348,20 @@ class SegAccess(LabeledEnum):
 class FixupLocation(LabeledEnum):
     """FIXUPP location types. Some values differ between TIS and PharLap variants.
 
-    - Byte(8): Low-order byte (8-bit displacement or low byte of 16-bit offset)
-    - Offset(16): 16-bit offset
-    - Segment(16): 16-bit base/selector
-    - Ptr(16:16): 32-bit far pointer (16-bit segment:16-bit offset) [PharLap: 16:32]
-    - HiByte(8): High-order byte of 16-bit offset
-    - Loader-resolved Offset(16): 16-bit loader-resolved offset [PharLap: 32-bit offset]
-    - Ptr(16:32) [loc 6]: PharLap 48-bit pointer [TIS: reserved]
-    - Offset(32): 32-bit offset
-    - Ptr(16:32) [loc 11]: 48-bit far pointer (16-bit segment:32-bit offset)
-    - Loader-resolved Offset(32): 32-bit loader-resolved offset
+    TIS standard locations:
+    - 0: Byte(8) - Low-order byte (8-bit displacement or low byte of 16-bit offset)
+    - 1: Offset(16) - 16-bit offset
+    - 2: Segment(16) - 16-bit base/selector
+    - 3: Ptr(16:16) - 32-bit far pointer (16-bit segment:16-bit offset)
+    - 4: HiByte(8) - High-order byte of 16-bit offset
+    - 5: Loader-resolved Offset(16) - 16-bit loader-resolved offset
+    - 9: Offset(32) - 32-bit offset
+    - 11: Ptr(16:32) - 48-bit far pointer (16-bit segment:32-bit offset)
+    - 13: Loader-resolved Offset(32) - 32-bit loader-resolved offset
+
+    PharLap Easy OMF-386 differences:
+    - 5: 32-bit offset (PHARLAP_OFFSET_32, synthetic int_val=105)
+    - 6: 48-bit pointer (16:32) (TIS: reserved)
     """
     BYTE = EnumValue(0, "Byte(8)")
     OFFSET_16 = EnumValue(1, "Offset(16)")
@@ -364,6 +369,7 @@ class FixupLocation(LabeledEnum):
     PTR_16_16 = EnumValue(3, "Ptr(16:16)")
     HIBYTE = EnumValue(4, "HiByte(8)")
     LOADER_OFFSET_16 = EnumValue(5, "Loader-resolved Offset(16)")
+    PHARLAP_OFFSET_32 = EnumValue(105, "Offset(32) [loc 5]")  # PharLap loc 5
     PHARLAP_PTR_16_32 = EnumValue(6, "Ptr(16:32) [loc 6]")
     OFFSET_32 = EnumValue(9, "Offset(32)")
     PTR_16_32 = EnumValue(11, "Ptr(16:32)")

@@ -2,7 +2,7 @@
 
 from . import omf_record
 from ..constants import (
-    RecordType, FixuppFlags, FrameMethod, TargetMethod, FixupLocation
+    RecordType, FixuppFlags, FrameMethod, TargetMethod, FixupLocation, OMFVariant
 )
 from ..models import (
     ParsedFixupp, ParsedThread, ParsedFixup, ThreadKind, FixupMode
@@ -92,7 +92,11 @@ def handle_fixupp(omf: OMFFileProtocol, record: RecordInfo) -> ParsedFixupp:
             data_offset = ((b1 & FixuppFlags.OFFSET_HIGH_MASK) << 8) | b2
 
             mode_enum = FixupMode.SEGMENT_RELATIVE if mode else FixupMode.SELF_RELATIVE
-            location = FixupLocation(loc_type_val)
+            # PharLap loc 5 is 32-bit offset, not loader-resolved 16-bit
+            if loc_type_val == 5 and omf.variant.omf_variant == OMFVariant.PHARLAP:
+                location = FixupLocation.PHARLAP_OFFSET_32
+            else:
+                location = FixupLocation(loc_type_val)
 
             fix_dat = sub.read_byte()
             if fix_dat is None:
