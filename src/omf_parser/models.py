@@ -25,6 +25,7 @@ from omf_parser.constants import (
     WatcomProcessor,
     WatcomMemModel,
     WatcomFPMode,
+    LinkerDirectiveCode,
 )
 
 # Bytes serialize as hex string
@@ -894,8 +895,7 @@ class LinkerDirTimestamp(ParsedComentContent):
 
 class ComentLinkerDirective(ParsedComentContent):
     """Watcom Linker Directive (COMENT class 0xFE)."""
-    directive_code: str
-    directive_name: str
+    directive_code: LinkerDirectiveCode
     content: Optional["AnyLinkerDirContent"] = None
 
 

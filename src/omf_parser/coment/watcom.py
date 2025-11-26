@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from . import coment_class
-from ..constants import CommentClass, WatcomProcessor, WatcomMemModel, WatcomFPMode
+from ..constants import CommentClass, WatcomProcessor, WatcomMemModel, WatcomFPMode, LinkerDirectiveCode
 from ..models import (
     ComentProcModel, ComentLinkerDirective, ComentDisasmDirective,
     LinkerDirSourceLang, LinkerDirDefaultLib, LinkerDirOptFarCalls,
@@ -50,18 +50,6 @@ def handle_wat_proc_model(omf: OMFFileProtocol, sub: RecordParser, flags: int, t
     return parse_proc_model(text)
 
 
-LINKER_DIRECTIVE_NAMES = {
-    0x44: ('D', 'Source Language'),
-    0x4C: ('L', 'Default Library'),
-    0x4F: ('O', 'Optimize Far Calls'),
-    0x55: ('U', 'Optimization Unsafe'),
-    0x56: ('V', 'VF Table Definition'),
-    0x50: ('P', 'VF Pure Definition'),
-    0x52: ('R', 'VF Reference'),
-    0x37: ('7', 'Pack Far Data'),
-    0x46: ('F', 'Flat Addresses'),
-    0x54: ('T', 'Object Timestamp'),
-}
 
 
 def _safe_lookup(table: list[str], index: int, prefix: str = "") -> str:
@@ -77,34 +65,37 @@ def handle_linker_directive(omf: OMFFileProtocol, sub: RecordParser, flags: int,
     if not text:
         return None
 
-    directive = text[0]
-    code, name = LINKER_DIRECTIVE_NAMES.get(directive, (chr(directive), f'Unknown(0x{directive:02X})'))
+    directive_byte = text[0]
+    directive_char = chr(directive_byte)
 
-    result = ComentLinkerDirective(directive_code=code, directive_name=name)
+    try:
+        code = LinkerDirectiveCode(directive_char)
+    except ValueError:
+        raise ValueError(f"Unknown linker directive code: 0x{directive_byte:02X} ({directive_char!r})") from None
+
+    result = ComentLinkerDirective(directive_code=code)
     remaining = text[1:]
 
-    if directive == 0x44:  # 'D' - Source Language
+    if code == LinkerDirectiveCode.SOURCE_LANG:
         result.content = _parse_source_language(omf, remaining, result)
-    elif directive == 0x4C:  # 'L' - Default Library
+    elif code == LinkerDirectiveCode.DEFAULT_LIB:
         result.content = _parse_default_library(omf, remaining, result)
-    elif directive == 0x4F:  # 'O' - Optimize Far Calls
+    elif code == LinkerDirectiveCode.OPT_FAR_CALLS:
         result.content = _parse_opt_far_calls(omf, remaining, result)
-    elif directive == 0x55:  # 'U' - Optimization Unsafe
+    elif code == LinkerDirectiveCode.OPT_UNSAFE:
         result.content = LinkerDirOptUnsafe()
-    elif directive == 0x56:  # 'V' - VF Table Definition
+    elif code == LinkerDirectiveCode.VF_TABLE_DEF:
         result.content = _parse_vf_table_def(omf, remaining, result, is_pure=False)
-    elif directive == 0x50:  # 'P' - VF Pure Definition
+    elif code == LinkerDirectiveCode.VF_PURE_DEF:
         result.content = _parse_vf_table_def(omf, remaining, result, is_pure=True)
-    elif directive == 0x52:  # 'R' - VF Reference
+    elif code == LinkerDirectiveCode.VF_REFERENCE:
         result.content = _parse_vf_reference(omf, remaining, result)
-    elif directive == 0x37:  # '7' - Pack Far Data
+    elif code == LinkerDirectiveCode.PACK_DATA:
         result.content = _parse_pack_data(omf, remaining, result)
-    elif directive == 0x46:  # 'F' - Flat Addresses
+    elif code == LinkerDirectiveCode.FLAT_ADDRS:
         result.content = LinkerDirFlatAddrs()
-    elif directive == 0x54:  # 'T' - Object Timestamp
+    elif code == LinkerDirectiveCode.TIMESTAMP:
         result.content = _parse_timestamp(omf, remaining, result)
-    else:
-        result.warnings.append(f"Unknown linker directive code: 0x{directive:02X}")
 
     return result
 

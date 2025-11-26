@@ -693,7 +693,7 @@ class HumanFormatter:
             return "\n".join(lines)
 
         if name == 'ComentLinkerDirective':
-            lines = [f"  Directive: '{content.directive_code}' ({content.directive_name})"]
+            lines = [f"  Directive: '{content.directive_code.char_val}' ({content.directive_code.label})"]
             for warn in content.warnings:
                 lines.append(f"    [!] WARNING: {warn}")
             if content.content:

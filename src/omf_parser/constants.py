@@ -485,6 +485,23 @@ class WatcomFPMode(CharLabeledEnum):
     FP80X87_INLINE = CharEnumValue('p', "80x87 inline")
 
 
+class LinkerDirectiveCode(CharLabeledEnum):
+    """Watcom linker directive codes (COMENT class 0xFE).
+
+    Values from Watcom documentation, captured in coment/watcom.py.
+    """
+    SOURCE_LANG = CharEnumValue('D', "Source Language")
+    DEFAULT_LIB = CharEnumValue('L', "Default Library")
+    OPT_FAR_CALLS = CharEnumValue('O', "Optimize Far Calls")
+    OPT_UNSAFE = CharEnumValue('U', "Optimization Unsafe")
+    VF_TABLE_DEF = CharEnumValue('V', "VF Table Definition")
+    VF_PURE_DEF = CharEnumValue('P', "VF Pure Definition")
+    VF_REFERENCE = CharEnumValue('R', "VF Reference")
+    PACK_DATA = CharEnumValue('7', "Pack Far Data")
+    FLAT_ADDRS = CharEnumValue('F', "Flat Addresses")
+    TIMESTAMP = CharEnumValue('T', "Object Timestamp")
+
+
 class ModEndType(IntFlag):
     """MODEND module type flags.
 
