@@ -476,7 +476,7 @@ class HumanFormatter:
             "    Provides initial values for 8086 registers"
         ]
         for reg in p.registers:
-            lines.append(f"    {reg.reg_name}: 0x{reg.value:04X}")
+            lines.append(f"    {reg.reg_type.label}: 0x{reg.value:04X}")
         return "\n".join(lines)
 
     def _format_ParsedReDataPeData(self, p: ParsedReDataPeData) -> str:

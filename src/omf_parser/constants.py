@@ -651,9 +651,18 @@ A0_SUBTYPES: dict[int, str] = {
 RESERVED_SEGMENTS = {"$$TYPES", "$$SYMBOLS", "$$IMPORT"}
 
 
-REGISTER_NAMES: dict[int, str] = {
-    0: "CS", 1: "DS", 2: "SS", 3: "ES", 4: "IP", 5: "SP"
-}
+class RegisterType(LabeledEnum):
+    """8086 register types for REGINT record (obsolete 70H).
+
+    Per TIS OMF 1.1 Appendix 3, the REGINT record provides information
+    about register/register-pairs: CS and IP, SS and SP, DS and ES.
+    """
+    CS = EnumValue(0, "CS")
+    DS = EnumValue(1, "DS")
+    SS = EnumValue(2, "SS")
+    ES = EnumValue(3, "ES")
+    IP = EnumValue(4, "IP")
+    SP = EnumValue(5, "SP")
 
 class TypDefVarType(LabeledEnum):
     """TYPDEF variable type values for NEAR/FAR leaves.

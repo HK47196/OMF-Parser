@@ -21,6 +21,7 @@ from omf_parser.constants import (
     BackpatchLocation,
     OMFVariant,
     TypDefVarType,
+    RegisterType,
 )
 
 # Bytes serialize as hex string
@@ -218,8 +219,7 @@ class RegisterEntry(BaseModel):
     """Register initialization entry (obsolete)."""
     model_config = ConfigDict(strict=True)
 
-    reg_name: str
-    reg_type: int
+    reg_type: RegisterType
     value: int
 
 

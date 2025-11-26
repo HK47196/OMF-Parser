@@ -1,7 +1,7 @@
 """Obsolete Intel 8086 record handlers."""
 
 from . import omf_record
-from ..constants import REGISTER_NAMES
+from ..constants import RegisterType
 from ..models import (
     ParsedRheadr, ParsedRegInt, ParsedReDataPeData, ParsedRiDataPiData,
     ParsedOvlDef, ParsedEndRec, ParsedBlkDef, ParsedBlkEnd,
@@ -33,15 +33,15 @@ def handle_regint(omf: OMFFileProtocol, record: RecordInfo) -> ParsedRegInt:
     result = ParsedRegInt()
 
     while sub.bytes_remaining() >= 3:
-        reg_type = sub.read_byte()
-        if reg_type is None:
+        reg_type_byte = sub.read_byte()
+        if reg_type_byte is None:
             # Per TIS OMF 1.1: Record Length declares expected size.
             # Missing data indicates malformed record.
             result.warnings.append("Truncated REGINT record")
             break
+        reg_type = RegisterType(reg_type_byte)
         value = sub.parse_numeric(2)
         result.registers.append(RegisterEntry(
-            reg_name=REGISTER_NAMES.get(reg_type, f'Reg{reg_type}'),
             reg_type=reg_type,
             value=value
         ))
