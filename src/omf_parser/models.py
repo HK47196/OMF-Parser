@@ -316,6 +316,7 @@ class ParsedSegDef(ParsedRecord):
     """SEGDEF - Segment definition."""
     acbp: int
     alignment: SegAlignment
+    alignment_bytes: Optional[int] = None
     combine: SegCombine
     big: bool
     use32: bool
@@ -416,6 +417,7 @@ class ParsedLEData(ParsedRecord):
     segment_index: int
     offset: int
     data_length: int
+    data_offset: int = 0
     data_preview: Optional[BytesField] = None
 
 
@@ -467,6 +469,7 @@ class ParsedFixup(BaseModel):
 
     data_offset: int
     location: FixupLocation
+    location_size: int
     mode: FixupMode
     frame_method: FrameMethod
     frame_source: str  # Resolved name (segment/group/external name)
@@ -507,6 +510,7 @@ class ParsedComDat(ParsedRecord):
     absolute_frame: Optional[int] = None
     symbol: str = ""
     data_length: int = 0
+    data_offset: int = 0
     iterated_blocks: List["ParsedLIDataBlock"] = Field(default_factory=list)
     iterated_expanded_size: int = 0
 

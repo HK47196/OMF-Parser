@@ -30,6 +30,7 @@ def handle_segdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedSegDef | No
     result = ParsedSegDef(
         acbp=acbp,
         alignment=alignment,
+        alignment_bytes=SegAlignment.alignment_bytes(alignment, variant),
         combine=SegCombine.from_raw(combine_val, variant),
         big=bool(big),
         use32=bool(use32)

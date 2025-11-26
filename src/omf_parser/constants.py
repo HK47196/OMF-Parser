@@ -316,6 +316,26 @@ class SegAlignment(StrEnum):
             case (7, _): return cls.UNDEFINED
             case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
 
+    @classmethod
+    def alignment_bytes(cls, member: "SegAlignment", variant: OMFVariant) -> int | None:
+        """Get byte alignment value for a SegAlignment member.
+
+        Returns None for ABSOLUTE, LTL, and UNDEFINED which don't have
+        a meaningful byte alignment value.
+        """
+        match member:
+            case cls.ABSOLUTE: return None
+            case cls.BYTE: return 1
+            case cls.WORD: return 2
+            case cls.PARAGRAPH: return 16
+            case cls.PAGE:
+                return 4096 if variant == OMFVariant.IBM_LINK386 else 256
+            case cls.DWORD: return 4
+            case cls.PHARLAP_PAGE_4K: return 4096
+            case cls.LTL: return None
+            case cls.UNDEFINED: return None
+            case _: raise ValueError(f"Unhandled alignment: {member}")
+
 
 class SegCombine(StrEnum):
     """SEGDEF combine values (C field in ACBP byte).
@@ -426,6 +446,23 @@ class FixupLocation(StrEnum):
             case (11, _): return cls.PTR_16_32
             case (13, _): return cls.LOADER_OFFSET_32
             case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
+
+    @classmethod
+    def location_size(cls, member: "FixupLocation") -> int:
+        """Get byte size of the fixup location field."""
+        match member:
+            case cls.BYTE: return 1
+            case cls.OFFSET_16: return 2
+            case cls.SEGMENT_16: return 2
+            case cls.PTR_16_16: return 4
+            case cls.HIBYTE: return 1
+            case cls.LOADER_OFFSET_16: return 2
+            case cls.PHARLAP_OFFSET_32: return 4
+            case cls.PHARLAP_PTR_16_32: return 6
+            case cls.OFFSET_32: return 4
+            case cls.PTR_16_32: return 6
+            case cls.LOADER_OFFSET_32: return 4
+            case _: raise ValueError(f"Unhandled location: {member}")
 
 
 class FrameMethod(StrEnum):

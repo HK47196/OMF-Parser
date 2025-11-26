@@ -16,6 +16,11 @@ def handle_ledata(omf: OMFFileProtocol, record: RecordInfo) -> ParsedLEData:
     seg_idx = sub.parse_index()
     offset_size = sub.get_offset_field_size(is_32bit)
     offset = sub.parse_numeric(offset_size)
+
+    # Absolute file position where data starts:
+    # record.offset (record type byte) + 3 (header) + sub.offset (fields consumed)
+    data_file_offset = record.offset + 3 + sub.offset
+
     data_len = sub.bytes_remaining()
 
     result = ParsedLEData(
@@ -23,7 +28,8 @@ def handle_ledata(omf: OMFFileProtocol, record: RecordInfo) -> ParsedLEData:
         segment=omf.get_segdef(seg_idx),
         segment_index=seg_idx,
         offset=offset,
-        data_length=data_len
+        data_length=data_len,
+        data_offset=data_file_offset
     )
 
     if data_len > 0:

@@ -2319,6 +2319,11 @@
           "title": "Data Length",
           "type": "integer"
         },
+        "data_offset": {
+          "default": 0,
+          "title": "Data Offset",
+          "type": "integer"
+        },
         "iterated_blocks": {
           "items": {
             "$ref": "#/$defs/ParsedLIDataBlock"
@@ -2618,6 +2623,10 @@
         "location": {
           "$ref": "#/$defs/FixupLocation"
         },
+        "location_size": {
+          "title": "Location Size",
+          "type": "integer"
+        },
         "mode": {
           "$ref": "#/$defs/FixupMode"
         },
@@ -2675,6 +2684,7 @@
       "required": [
         "data_offset",
         "location",
+        "location_size",
         "mode",
         "frame_method",
         "frame_source",
@@ -2785,6 +2795,11 @@
         },
         "data_length": {
           "title": "Data Length",
+          "type": "integer"
+        },
+        "data_offset": {
+          "default": 0,
+          "title": "Data Offset",
           "type": "integer"
         },
         "data_preview": {
@@ -3676,6 +3691,18 @@
         },
         "alignment": {
           "$ref": "#/$defs/SegAlignment"
+        },
+        "alignment_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alignment Bytes"
         },
         "combine": {
           "$ref": "#/$defs/SegCombine"

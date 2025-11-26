@@ -146,6 +146,7 @@ def handle_fixupp(omf: OMFFileProtocol, record: RecordInfo) -> ParsedFixupp:
             fixup = ParsedFixup(
                 data_offset=data_offset,
                 location=location,
+                location_size=FixupLocation.location_size(location),
                 mode=mode_enum,
                 frame_method=frame_method,
                 frame_source=frame_src,

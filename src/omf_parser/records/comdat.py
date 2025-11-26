@@ -62,6 +62,10 @@ def handle_comdat(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComDat | No
         name_idx = sub.parse_index()
         result.symbol = omf.get_lname(name_idx)
 
+    # Absolute file position where data starts:
+    # record.offset (record type byte) + 3 (header) + sub.offset (fields consumed)
+    result.data_offset = record.offset + 3 + sub.offset
+
     result.data_length = sub.bytes_remaining()
 
     if iterated and result.data_length > 0:
