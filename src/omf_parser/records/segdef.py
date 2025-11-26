@@ -77,6 +77,8 @@ def handle_segdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedSegDef | No
                 access_type = access_byte & SegdefFlags.ACCESS_TYPE_MASK
                 result.access_byte = access_byte
                 result.access = SegAccess.from_raw(access_type, variant)
+                # PharLap U bit (bit 2) is authoritative for Use16/Use32
+                result.use32 = bool(access_byte & SegdefFlags.ACCESS_U_BIT_MASK)
 
     raw_name = omf.lnames[seg_name_idx] if seg_name_idx < len(omf.lnames) else f"Seg#{len(omf.segdefs)}"
     omf.segdefs.append(raw_name)

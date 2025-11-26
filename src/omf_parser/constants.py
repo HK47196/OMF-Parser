@@ -769,7 +769,9 @@ class SegdefFlags:
     COMBINE_MASK = 0x07
     BIG_MASK = 0x01
     USE32_MASK = 0x01
-    ACCESS_TYPE_MASK = 0x03
+    # PharLap access byte masks
+    ACCESS_TYPE_MASK = 0x03  # Bits 0-1: AT (access type)
+    ACCESS_U_BIT_MASK = 0x04  # Bit 2: U (Use16/Use32, authoritative for PharLap)
 
 
 class ComentFlags:
