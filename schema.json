@@ -219,6 +219,41 @@
       "title": "A0ProtectedMemory",
       "type": "object"
     },
+    "A0Subtype": {
+      "description": "OMF Extensions (A0) comment subtypes.",
+      "enum": [
+        [
+          1,
+          "IMPDEF"
+        ],
+        [
+          2,
+          "EXPDEF"
+        ],
+        [
+          3,
+          "INCDEF"
+        ],
+        [
+          4,
+          "Protected Memory Library"
+        ],
+        [
+          5,
+          "LNKDIR"
+        ],
+        [
+          6,
+          "Big-endian"
+        ],
+        [
+          7,
+          "PRECOMP"
+        ]
+      ],
+      "title": "A0Subtype",
+      "type": "array"
+    },
     "AliasEntry": {
       "description": "Alias definition entry.",
       "properties": {
@@ -1113,12 +1148,7 @@
           "type": "array"
         },
         "subtype": {
-          "title": "Subtype",
-          "type": "integer"
-        },
-        "subtype_name": {
-          "title": "Subtype Name",
-          "type": "string"
+          "$ref": "#/$defs/A0Subtype"
         },
         "content": {
           "anyOf": [
@@ -1152,8 +1182,7 @@
         }
       },
       "required": [
-        "subtype",
-        "subtype_name"
+        "subtype"
       ],
       "title": "ComentOmfExtensions",
       "type": "object"
@@ -2503,10 +2532,6 @@
           "title": "Comment Class",
           "type": "integer"
         },
-        "class_name": {
-          "title": "Class Name",
-          "type": "string"
-        },
         "no_purge": {
           "title": "No Purge",
           "type": "boolean"
@@ -2616,13 +2641,19 @@
           ],
           "default": null,
           "title": "Raw Data"
+        },
+        "class_name": {
+          "description": "Derive class name from comment_class value.",
+          "readOnly": true,
+          "title": "Class Name",
+          "type": "string"
         }
       },
       "required": [
         "comment_class",
-        "class_name",
         "no_purge",
-        "no_list"
+        "no_list",
+        "class_name"
       ],
       "title": "ParsedComent",
       "type": "object"
