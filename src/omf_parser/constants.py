@@ -244,16 +244,15 @@ class CommentClass(IntEnum):
     COMMANDLINE = 0xFF
 
 
-@unique
-class A0Subtype(IntEnum):
+class A0Subtype(LabeledEnum):
     """OMF Extensions (A0) comment subtypes."""
-    IMPDEF = 0x01
-    EXPDEF = 0x02
-    INCDEF = 0x03
-    PROTECTED_MEMORY = 0x04
-    LNKDIR = 0x05
-    BIG_ENDIAN = 0x06
-    PRECOMP = 0x07
+    IMPDEF = (0x01, "IMPDEF")
+    EXPDEF = (0x02, "EXPDEF")
+    INCDEF = (0x03, "INCDEF")
+    PROTECTED_MEMORY = (0x04, "Protected Memory Library")
+    LNKDIR = (0x05, "LNKDIR")
+    BIG_ENDIAN = (0x06, "Big-endian")
+    PRECOMP = (0x07, "PRECOMP")
 
 
 @unique
@@ -751,15 +750,6 @@ COMMENT_CLASSES: dict[int, str] = {
     CommentClass.COMMANDLINE: "Command Line (QuickC)",
 }
 
-A0_SUBTYPES: dict[int, str] = {
-    A0Subtype.IMPDEF: "IMPDEF",
-    A0Subtype.EXPDEF: "EXPDEF",
-    A0Subtype.INCDEF: "INCDEF",
-    A0Subtype.PROTECTED_MEMORY: "Protected Memory Library",
-    A0Subtype.LNKDIR: "LNKDIR",
-    A0Subtype.BIG_ENDIAN: "Big-endian",
-    A0Subtype.PRECOMP: "PRECOMP",
-}
 
 
 RESERVED_SEGMENTS = {"$$TYPES", "$$SYMBOLS", "$$IMPORT"}

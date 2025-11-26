@@ -3,7 +3,6 @@
 from . import coment_class
 from ..constants import (
     CommentClass, A0Subtype, ExpdefFlags, LnkdirFlags, SignedConversion,
-    A0_SUBTYPES
 )
 from ..models import (
     ComentTranslator, ComentCopyright, ComentLibSpec, ComentDosseg,
@@ -147,10 +146,9 @@ def handle_omf_extensions(omf: OMFFileProtocol, sub: RecordParser, flags: int, t
     if not text:
         return None
 
-    subtype = text[0]
-    subtype_name = A0_SUBTYPES.get(subtype, f"Unknown(0x{subtype:02X})")
+    subtype = A0Subtype(text[0])
 
-    result = ComentOmfExtensions(subtype=subtype, subtype_name=subtype_name)
+    result = ComentOmfExtensions(subtype=subtype)
 
     remaining = text[1:]
 
@@ -170,7 +168,7 @@ def handle_omf_extensions(omf: OMFFileProtocol, sub: RecordParser, flags: int, t
     elif subtype == A0Subtype.PRECOMP:
         result.content = A0PreComp()
     else:
-        result.warnings.append(f"Unknown A0 subtype 0x{subtype:02X}")
+        raise AssertionError(f"Unhandled A0Subtype: {subtype}")
 
     return result
 

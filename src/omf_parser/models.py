@@ -28,6 +28,7 @@ from omf_parser.constants import (
     LinkerDirectiveCode,
     DisasmDirectiveSubtype,
     ComdefType,
+    A0Subtype,
 )
 
 # Bytes serialize as hex string
@@ -716,8 +717,7 @@ class ComentEasyOmf(ParsedComentContent):
 
 class ComentOmfExtensions(ParsedComentContent):
     """OMF Extensions (A0 subtypes)."""
-    subtype: int
-    subtype_name: str
+    subtype: A0Subtype
     content: Optional["AnyA0Content"] = None
 
 

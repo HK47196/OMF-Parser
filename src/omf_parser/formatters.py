@@ -707,7 +707,7 @@ class HumanFormatter:
             return "\n".join(lines)
 
         if name == 'ComentOmfExtensions':
-            lines = [f"  A0 Subtype: {content.subtype_name}"]
+            lines = [f"  A0 Subtype: {content.subtype.label}"]
             for warn in content.warnings:
                 lines.append(f"    [!] {warn}")
             if content.content:
