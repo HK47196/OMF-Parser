@@ -5,6 +5,7 @@ from .scanner import Scanner, RecordInfo
 from .parsing import RecordParser
 from .formatters import HumanFormatter, JSONFormatter
 from .models import ParseResult
+from .constants import OMFVariant
 from .detect import (
     is_omf,
     detect_omf,
@@ -23,6 +24,7 @@ __all__ = [
     'HumanFormatter',
     'JSONFormatter',
     'ParseResult',
+    'OMFVariant',
     'is_omf',
     'detect_omf',
     'scan_for_omf',

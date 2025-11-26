@@ -4,7 +4,7 @@ import struct
 from dataclasses import dataclass
 
 from .variant import Variant, TIS_STANDARD, PHARLAP, IBM_LINK386
-from .constants import RecordType, CommentClass
+from .constants import RecordType, CommentClass, OMFVariant
 
 
 @dataclass
@@ -38,7 +38,7 @@ class Scanner:
         self.is_library = False
         self.mixed_variants = False
         self._module_variant: Variant = TIS_STANDARD
-        self._seen_variants: set[str] = set()
+        self._seen_variants: set[OMFVariant] = set()
         self._module_start_idx: int = 0
 
     def scan(self) -> list[RecordInfo]:
@@ -74,7 +74,7 @@ class Scanner:
                 break
 
         self._finalize_module(records)
-        self._seen_variants.add(self._module_variant.name)
+        self._seen_variants.add(self._module_variant.omf_variant)
 
         if self.is_library and len(self._seen_variants) > 1:
             self.mixed_variants = True
@@ -95,7 +95,7 @@ class Scanner:
         end_idx = len(records) - 1 if exclude_last else len(records)
         for i in range(self._module_start_idx, end_idx):
             records[i].module_variant = self._module_variant
-        self._seen_variants.add(self._module_variant.name)
+        self._seen_variants.add(self._module_variant.omf_variant)
 
     def _read_record(self) -> RecordInfo | None:
         """Read a single record from current offset."""

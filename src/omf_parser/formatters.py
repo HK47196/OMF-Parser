@@ -50,7 +50,7 @@ class HumanFormatter:
             lines.append("File Type: OMF Object Module (.OBJ)")
 
         if omf.mixed_variants:
-            lines.append(f"Variants: {', '.join(sorted(omf.seen_variants))} (mixed)")
+            lines.append(f"Variants: {', '.join(v.value for v in sorted(omf.seen_variants, key=lambda x: x.value))} (mixed)")
         else:
             lines.append(f"Variant: {omf.variant.name}")
         if omf.features:
@@ -882,9 +882,9 @@ class JSONFormatter:
             filepath=omf.filepath,
             file_size=len(omf.data) if omf.data else 0,
             is_library=omf.is_library,
-            variant=omf.variant.name,
+            omf_variant=omf.variant.omf_variant,
             mixed_variants=omf.mixed_variants,
-            seen_variants=sorted(omf.seen_variants) if omf.mixed_variants else None,
+            seen_variants=sorted(omf.seen_variants, key=lambda v: v.value) if omf.mixed_variants else None,
             features=sorted(omf.features),
             records=omf.parsed_records,
             warnings=all_warnings,

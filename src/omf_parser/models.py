@@ -19,6 +19,7 @@ from omf_parser.constants import (
     ComdatAllocation,
     ComdatAlign,
     BackpatchLocation,
+    OMFVariant,
 )
 
 # Bytes serialize as hex string
@@ -985,9 +986,9 @@ class ParsedOMFFile(BaseModel):
     filepath: str
     file_size: int
     is_library: bool
-    variant: str
+    omf_variant: OMFVariant
     mixed_variants: bool
-    seen_variants: Optional[List[str]]
+    seen_variants: Optional[List[OMFVariant]]
     features: List[str]
     records: List[ParseResult]
     warnings: List[str] = []

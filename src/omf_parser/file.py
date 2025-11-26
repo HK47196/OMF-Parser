@@ -3,7 +3,7 @@
 from .scanner import Scanner, RecordInfo
 from .parsing import RecordParser
 from .records import get_record_handler
-from .constants import RECORD_NAMES, RESERVED_SEGMENTS, RecordType
+from .constants import RECORD_NAMES, RESERVED_SEGMENTS, RecordType, OMFVariant
 from .variant import Variant, TIS_STANDARD
 from .models import ParseResult
 
@@ -41,7 +41,7 @@ class OMFFile:
         self.lib_dict_blocks = 0
 
         self.mixed_variants = False
-        self.seen_variants: set[str] = set()
+        self.seen_variants: set[OMFVariant] = set()
         self.parsed_records: list[ParseResult] = []
 
     def load(self) -> None:

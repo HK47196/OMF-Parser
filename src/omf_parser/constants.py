@@ -4,6 +4,21 @@ from enum import Enum, IntEnum, IntFlag, unique
 from typing import NamedTuple, overload
 
 
+class OMFVariant(str, Enum):
+    """OMF format variant.
+
+    Variants change how records are parsed (field sizes, extra fields, etc.).
+    This is distinct from extensions which add new semantics but use the same parsing.
+
+    - TIS_STANDARD: Baseline OMF-86/286/386 per TIS specification
+    - PHARLAP: PharLap Easy OMF-386 (4-byte offsets, SEGDEF access byte)
+    - IBM_LINK386: OS/2 2.x+ format (inline names in COMDAT/NBKPAT/LINSYM)
+    """
+    TIS_STANDARD = "TIS Standard"
+    PHARLAP = "PharLap Easy OMF-386"
+    IBM_LINK386 = "IBM LINK386"
+
+
 class EnumValue(NamedTuple):
     """Value for LabeledEnum members."""
     int_val: int

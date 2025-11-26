@@ -11,11 +11,18 @@ Variants:
 
 from dataclasses import dataclass
 
+from .constants import OMFVariant
+
 
 @dataclass
 class Variant:
     """Base TIS Standard OMF variant."""
-    name: str = "TIS Standard"
+    omf_variant: OMFVariant = OMFVariant.TIS_STANDARD
+
+    @property
+    def name(self) -> str:
+        """Return the variant name string."""
+        return self.omf_variant.value
 
     # --- Field Size Methods ---
 
@@ -57,7 +64,7 @@ class Variant:
 @dataclass
 class PharLapVariant(Variant):
     """PharLap Easy OMF-386 variant for 32-bit DOS extenders."""
-    name: str = "PharLap Easy OMF-386"
+    omf_variant: OMFVariant = OMFVariant.PHARLAP
 
     def offset_field_size(self, is_32bit: bool) -> int:
         """PharLap: Always 4 bytes, regardless of record type."""
@@ -75,7 +82,7 @@ class PharLapVariant(Variant):
 @dataclass
 class IBMVariant(Variant):
     """IBM LINK386 variant for OS/2 2.x+."""
-    name: str = "IBM LINK386"
+    omf_variant: OMFVariant = OMFVariant.IBM_LINK386
 
     def comdat_uses_inline_name(self) -> bool:
         """IBM stores COMDAT symbol as inline name."""
