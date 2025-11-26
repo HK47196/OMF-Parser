@@ -27,6 +27,7 @@ from omf_parser.constants import (
     WatcomFPMode,
     LinkerDirectiveCode,
     DisasmDirectiveSubtype,
+    ComdefType,
 )
 
 # Bytes serialize as hex string
@@ -112,8 +113,7 @@ class ComDefFarDefinition(BaseModel):
 
     name: str
     type_index: int
-    data_type: int
-    kind: Literal["FAR"]
+    data_type: ComdefType
     num_elements: int
     element_size: int
     total_size: int
@@ -125,8 +125,7 @@ class ComDefNearDefinition(BaseModel):
 
     name: str
     type_index: int
-    data_type: int
-    kind: Literal["NEAR"]
+    data_type: ComdefType
     size: int
 
 
@@ -136,7 +135,6 @@ class ComDefBorlandDefinition(BaseModel):
 
     name: str
     type_index: int
-    data_type: int
     kind: Literal["Borland"]
     seg_index: int
     length: int
@@ -148,8 +146,8 @@ class ComDefUnknownDefinition(BaseModel):
 
     name: str
     type_index: int
-    data_type: int
     kind: Literal["Unknown"]
+    raw_data_type: int
     length: int
 
 

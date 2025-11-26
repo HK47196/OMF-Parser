@@ -20,7 +20,9 @@ from .models import (
     ParsedRheadr, ParsedRegInt, ParsedReDataPeData, ParsedRiDataPiData,
     ParsedOvlDef, ParsedEndRec, ParsedBlkDef, ParsedBlkEnd,
     ParsedDebSym, ParsedObsoleteLib,
-    ParsedComent
+    ParsedComent,
+    ComDefFarDefinition, ComDefNearDefinition,
+    ComDefBorlandDefinition, ComDefUnknownDefinition,
 )
 from .parsing import format_hex_with_ascii
 
@@ -340,14 +342,16 @@ class HumanFormatter:
         local = "Local " if p.is_local else ""
         lines = [f"  {local}Communal Definitions:"]
         for defn in p.definitions:
-            if defn.kind == 'FAR':
+            if isinstance(defn, ComDefFarDefinition):
                 lines.append(f"    '{defn.name}' FAR: {defn.num_elements} x {defn.element_size} = {defn.total_size} bytes")
-            elif defn.kind == 'NEAR':
+            elif isinstance(defn, ComDefNearDefinition):
                 lines.append(f"    '{defn.name}' NEAR: {defn.size} bytes")
-            elif defn.kind == 'Borland':
+            elif isinstance(defn, ComDefBorlandDefinition):
                 lines.append(f"    '{defn.name}' Borland SegIdx={defn.seg_index}: {defn.length} bytes")
+            elif isinstance(defn, ComDefUnknownDefinition):
+                lines.append(f"    '{defn.name}' DataType=0x{defn.raw_data_type:02X}: {defn.length} bytes")
             else:
-                lines.append(f"    '{defn.name}' DataType=0x{defn.data_type:02X}: {getattr(defn, 'length', '?')} bytes")
+                raise TypeError(f"Unhandled ComDefDefinition type: {type(defn).__name__}")
         return "\n".join(lines)
 
     def _format_ParsedComDat(self, p: ParsedComDat) -> str:

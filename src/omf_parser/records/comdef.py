@@ -31,26 +31,24 @@ def handle_comdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComDef:
             break
 
         defn: ComDefFarDefinition | ComDefNearDefinition | ComDefBorlandDefinition | ComDefUnknownDefinition
-        if data_type == ComdefType.FAR:
+        if data_type == ComdefType.FAR.int_val:
             num_elements = sub.parse_variable_length_int()
             element_size = sub.parse_variable_length_int()
             total = num_elements * element_size
             defn = ComDefFarDefinition(
                 name=name,
                 type_index=type_idx,
-                data_type=data_type,
-                kind='FAR',
+                data_type=ComdefType.FAR,
                 num_elements=num_elements,
                 element_size=element_size,
                 total_size=total
             )
-        elif data_type == ComdefType.NEAR:
+        elif data_type == ComdefType.NEAR.int_val:
             size = sub.parse_variable_length_int()
             defn = ComDefNearDefinition(
                 name=name,
                 type_index=type_idx,
-                data_type=data_type,
-                kind='NEAR',
+                data_type=ComdefType.NEAR,
                 size=size
             )
         elif 0x01 <= data_type <= COMDEF_BORLAND_MAX:
@@ -58,7 +56,6 @@ def handle_comdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComDef:
             defn = ComDefBorlandDefinition(
                 name=name,
                 type_index=type_idx,
-                data_type=data_type,
                 kind='Borland',
                 seg_index=data_type,
                 length=length
@@ -68,8 +65,8 @@ def handle_comdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComDef:
             defn = ComDefUnknownDefinition(
                 name=name,
                 type_index=type_idx,
-                data_type=data_type,
                 kind='Unknown',
+                raw_data_type=data_type,
                 length=length
             )
 

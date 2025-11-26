@@ -266,11 +266,14 @@ class GrpdefComponent(IntEnum):
     ABSOLUTE = 0xFA
 
 
-@unique
-class ComdefType(IntEnum):
-    """COMDEF data type codes."""
-    FAR = 0x61
-    NEAR = 0x62
+class ComdefType(LabeledEnum):
+    """COMDEF data type codes.
+
+    - FAR: FAR data with element count and size
+    - NEAR: NEAR data with byte size
+    """
+    FAR = EnumValue(0x61, "FAR")
+    NEAR = EnumValue(0x62, "NEAR")
 
 
 @unique

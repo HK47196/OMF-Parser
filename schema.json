@@ -329,10 +329,6 @@
           "title": "Type Index",
           "type": "integer"
         },
-        "data_type": {
-          "title": "Data Type",
-          "type": "integer"
-        },
         "kind": {
           "const": "Borland",
           "title": "Kind",
@@ -350,7 +346,6 @@
       "required": [
         "name",
         "type_index",
-        "data_type",
         "kind",
         "seg_index",
         "length"
@@ -370,13 +365,7 @@
           "type": "integer"
         },
         "data_type": {
-          "title": "Data Type",
-          "type": "integer"
-        },
-        "kind": {
-          "const": "FAR",
-          "title": "Kind",
-          "type": "string"
+          "$ref": "#/$defs/ComdefType"
         },
         "num_elements": {
           "title": "Num Elements",
@@ -395,7 +384,6 @@
         "name",
         "type_index",
         "data_type",
-        "kind",
         "num_elements",
         "element_size",
         "total_size"
@@ -415,13 +403,7 @@
           "type": "integer"
         },
         "data_type": {
-          "title": "Data Type",
-          "type": "integer"
-        },
-        "kind": {
-          "const": "NEAR",
-          "title": "Kind",
-          "type": "string"
+          "$ref": "#/$defs/ComdefType"
         },
         "size": {
           "title": "Size",
@@ -432,7 +414,6 @@
         "name",
         "type_index",
         "data_type",
-        "kind",
         "size"
       ],
       "title": "ComDefNearDefinition",
@@ -449,14 +430,14 @@
           "title": "Type Index",
           "type": "integer"
         },
-        "data_type": {
-          "title": "Data Type",
-          "type": "integer"
-        },
         "kind": {
           "const": "Unknown",
           "title": "Kind",
           "type": "string"
+        },
+        "raw_data_type": {
+          "title": "Raw Data Type",
+          "type": "integer"
         },
         "length": {
           "title": "Length",
@@ -466,8 +447,8 @@
       "required": [
         "name",
         "type_index",
-        "data_type",
         "kind",
+        "raw_data_type",
         "length"
       ],
       "title": "ComDefUnknownDefinition",
@@ -552,6 +533,21 @@
         ]
       ],
       "title": "ComdatSelection",
+      "type": "array"
+    },
+    "ComdefType": {
+      "description": "COMDEF data type codes.\n\n- FAR: FAR data with element count and size\n- NEAR: NEAR data with byte size",
+      "enum": [
+        [
+          97,
+          "FAR"
+        ],
+        [
+          98,
+          "NEAR"
+        ]
+      ],
+      "title": "ComdefType",
       "type": "array"
     },
     "Coment32BitLinker": {
@@ -738,12 +734,7 @@
           "type": "array"
         },
         "subtype": {
-          "title": "Subtype",
-          "type": "string"
-        },
-        "subtype_name": {
-          "title": "Subtype Name",
-          "type": "string"
+          "$ref": "#/$defs/DisasmDirectiveSubtype"
         },
         "is_32bit": {
           "title": "Is 32Bit",
@@ -804,7 +795,6 @@
       },
       "required": [
         "subtype",
-        "subtype_name",
         "is_32bit",
         "segment_index",
         "start_offset",
@@ -1006,12 +996,7 @@
           "type": "array"
         },
         "directive_code": {
-          "title": "Directive Code",
-          "type": "string"
-        },
-        "directive_name": {
-          "title": "Directive Name",
-          "type": "string"
+          "$ref": "#/$defs/LinkerDirectiveCode"
         },
         "content": {
           "anyOf": [
@@ -1051,8 +1036,7 @@
         }
       },
       "required": [
-        "directive_code",
-        "directive_name"
+        "directive_code"
       ],
       "title": "ComentLinkerDirective",
       "type": "object"
@@ -1345,6 +1329,21 @@
       ],
       "title": "DictEntry",
       "type": "object"
+    },
+    "DisasmDirectiveSubtype": {
+      "description": "Watcom disassembler directive subtypes (COMENT class 0xFD).\n\nMarks non-executable data regions within code segments for disassemblers.\n\n- SCAN_TABLE_16: 16-bit scan table ('s', 0x73) - uses 16-bit offsets\n- SCAN_TABLE_32: 32-bit scan table ('S', 0x53) - uses 32-bit offsets",
+      "enum": [
+        [
+          "s",
+          "DDIR_SCAN_TABLE"
+        ],
+        [
+          "S",
+          "DDIR_SCAN_TABLE_32"
+        ]
+      ],
+      "title": "DisasmDirectiveSubtype",
+      "type": "array"
     },
     "ExtDefEntry": {
       "description": "External definition entry.",
@@ -1878,6 +1877,53 @@
       ],
       "title": "LinkerDirVFTableDef",
       "type": "object"
+    },
+    "LinkerDirectiveCode": {
+      "description": "Watcom linker directive codes (COMENT class 0xFE).\n\nValues from Watcom documentation, captured in coment/watcom.py.",
+      "enum": [
+        [
+          "D",
+          "Source Language"
+        ],
+        [
+          "L",
+          "Default Library"
+        ],
+        [
+          "O",
+          "Optimize Far Calls"
+        ],
+        [
+          "U",
+          "Optimization Unsafe"
+        ],
+        [
+          "V",
+          "VF Table Definition"
+        ],
+        [
+          "P",
+          "VF Pure Definition"
+        ],
+        [
+          "R",
+          "VF Reference"
+        ],
+        [
+          "7",
+          "Pack Far Data"
+        ],
+        [
+          "F",
+          "Flat Addresses"
+        ],
+        [
+          "T",
+          "Object Timestamp"
+        ]
+      ],
+      "title": "LinkerDirectiveCode",
+      "type": "array"
     },
     "NamedBackpatchRecord": {
       "description": "NBKPAT named backpatch record entry.",
