@@ -1,7 +1,7 @@
 """Obsolete Intel 8086 record handlers."""
 
 from . import omf_record
-from ..constants import RegisterType
+from ..constants import OMFVariant, RegisterType
 from ..models import (
     ParsedRheadr, ParsedRegInt, ParsedReDataPeData, ParsedRiDataPiData,
     ParsedOvlDef, ParsedEndRec, ParsedBlkDef, ParsedBlkEnd,
@@ -82,6 +82,12 @@ def handle_redata_pedata(omf: OMFFileProtocol, record: RecordInfo) -> ParsedReDa
     if data_len > 0:
         result.data_preview = sub.data[sub.offset:sub.offset + min(16, data_len)]
 
+    if omf.variant.omf_variant == OMFVariant.PHARLAP:
+        result.warnings.append(
+            f"Obsolete 8086 record {result.record_type} in PharLap file - "
+            "using 2-byte offsets (not extended by Easy OMF-386)"
+        )
+
     return result
 
 
@@ -113,6 +119,12 @@ def handle_ridata_pidata(omf: OMFFileProtocol, record: RecordInfo) -> ParsedRiDa
         )
 
     result.remaining_bytes = sub.bytes_remaining()
+
+    if omf.variant.omf_variant == OMFVariant.PHARLAP:
+        result.warnings.append(
+            f"Obsolete 8086 record {result.record_type} in PharLap file - "
+            "using 2-byte offsets (not extended by Easy OMF-386)"
+        )
 
     return result
 
@@ -160,7 +172,7 @@ def handle_blkdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedBlkDef:
         result.frame = sub.parse_numeric(2)
 
     result.block_name = sub.parse_name()
-    offset_size = sub.get_offset_field_size(False)  # No 32-bit variant exists
+    offset_size = sub.get_offset_field_size(False)  # Per TIS OMF 1.1 (PharLap extends via variant)
     result.offset = sub.parse_numeric(offset_size)
 
     if sub.bytes_remaining() > 0:
