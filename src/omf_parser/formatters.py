@@ -126,9 +126,9 @@ class HumanFormatter:
             lines.append(f"    Absolute Frame: 0x{p.absolute_frame:04X}, Offset: 0x{p.absolute_offset:02X}")
 
         lines.append(f"    Length: {p.length} (0x{p.length:X})")
-        lines.append(f"    Segment Name: {p.segment_name}")
-        lines.append(f"    Class Name: {p.class_name}")
-        lines.append(f"    Overlay Name: {p.overlay_name}")
+        lines.append(f"    Segment Name: '{p.segment_name}'")
+        lines.append(f"    Class Name: '{p.class_name}'")
+        lines.append(f"    Overlay Name: '{p.overlay_name}'")
 
         if p.access_byte is not None:
             lines.append(f"    Access: 0x{p.access_byte:02X} ({p.access})")
@@ -136,7 +136,7 @@ class HumanFormatter:
         return "\n".join(lines)
 
     def _format_ParsedGrpDef(self, p: ParsedGrpDef) -> str:
-        lines = [f"  Group Name: {p.name}"]
+        lines = [f"  Group Name: '{p.name}'"]
         if p.is_flat:
             lines.append("    [Special] FLAT pseudo-group - Virtual Zero Address")
         for comp in p.components:

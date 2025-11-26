@@ -138,8 +138,8 @@ class OMFFile:
         if 0 <= index < len(self.lnames):
             name = self.lnames[index]
             if name in RESERVED_SEGMENTS:
-                return f"'{name}' [RESERVED]"
-            return f"'{name}'"
+                return f"{name} [RESERVED]"
+            return name
         return f"LName#{index}(?)"
 
     def get_segdef(self, index: int | None) -> str:
@@ -158,7 +158,7 @@ class OMFFile:
 
     def get_extdef(self, index: int) -> str:
         if 0 <= index < len(self.extdefs):
-            return f"'{self.extdefs[index]}'"
+            return self.extdefs[index]
         return f"Ext#{index}"
 
     def get_typdef(self, index: int) -> str:

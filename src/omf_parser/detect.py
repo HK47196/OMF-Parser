@@ -57,8 +57,8 @@ GREP_PATTERNS = {
     'theadr_c': rb'\x80..\x00?.{0,64}\.[Cc]\x00?',
     'theadr_obj': rb'\x80..\x00?.{0,64}\.[Oo][Bb][Jj]\x00?',
 
-    # Easy OMF-386 marker
-    'easy_omf': rb'\x88..\x00\xAA80386',
+    # Easy OMF-386 marker (flags byte can be 0x00 or 0x80)
+    'easy_omf': rb'\x88..[\x00\x80]\xAA80386',
 
     # COMENT with known translators
     'ms_translator': rb'\x88..[\x00\x80]\x00Microsoft',
