@@ -2,8 +2,7 @@
 
 from . import omf_record
 from ..constants import (
-    RecordType, SegdefFlags, SegmentSize, SegAlignment, SegCombine, SegAccess,
-    OMFVariant
+    RecordType, SegdefFlags, SegmentSize, SegAlignment, SegCombine, SegAccess
 )
 from ..models import ParsedSegDef
 from ..protocols import OMFFileProtocol
@@ -25,16 +24,13 @@ def handle_segdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedSegDef | No
     big = (acbp >> 1) & SegdefFlags.BIG_MASK
     use32 = acbp & SegdefFlags.USE32_MASK
 
-    # PharLap align 6 is 4K page boundary, not LTL
-    if align_val == 6 and omf.variant.omf_variant == OMFVariant.PHARLAP:
-        alignment = SegAlignment.PHARLAP_PAGE_4K
-    else:
-        alignment = SegAlignment(align_val)
+    variant = omf.variant.omf_variant
+    alignment = SegAlignment.from_raw(align_val, variant)
 
     result = ParsedSegDef(
         acbp=acbp,
         alignment=alignment,
-        combine=SegCombine(combine_val),
+        combine=SegCombine.from_raw(combine_val, variant),
         big=bool(big),
         use32=bool(use32)
     )
@@ -80,10 +76,7 @@ def handle_segdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedSegDef | No
             else:
                 access_type = access_byte & SegdefFlags.ACCESS_TYPE_MASK
                 result.access_byte = access_byte
-                access = SegAccess(access_type)
-                if access is None:
-                    raise ValueError(f"Invalid SegAccess value: {access_type}")
-                result.access = access
+                result.access = SegAccess.from_raw(access_type, variant)
 
     raw_name = omf.lnames[seg_name_idx] if seg_name_idx < len(omf.lnames) else f"Seg#{len(omf.segdefs)}"
     omf.segdefs.append(raw_name)

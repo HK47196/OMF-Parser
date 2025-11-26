@@ -31,6 +31,7 @@ def handle_comdat(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComDat | No
     selection_val = (attrib >> ComdatFlags.SELECTION_SHIFT) & ComdatFlags.SELECTION_MASK
     allocation_val = attrib & ComdatFlags.ALLOCATION_MASK
 
+    variant = omf.variant.omf_variant
     result = ParsedComDat(
         is_32bit=is_32bit,
         flags=flags,
@@ -38,9 +39,9 @@ def handle_comdat(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComDat | No
         iterated=iterated,
         local=local,
         data_in_code=data_in_code,
-        selection=ComdatSelection(selection_val),
-        allocation=ComdatAllocation(allocation_val),
-        alignment=ComdatAlign(align_val)
+        selection=ComdatSelection.from_raw(selection_val, variant),
+        allocation=ComdatAllocation.from_raw(allocation_val, variant),
+        alignment=ComdatAlign.from_raw(align_val, variant)
     )
 
     offset_size = sub.get_offset_field_size(is_32bit)

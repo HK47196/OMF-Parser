@@ -640,21 +640,19 @@ class ParsedObsoleteLib(ParsedRecord):
 
 
 class ParsedComent(ParsedRecord):
-    """COMENT - Comment record."""
-    comment_class: int
+    """COMENT - Comment record with known class."""
+    comment_class: CommentClass
     no_purge: bool
     no_list: bool
     content: Optional["AnyComentContent"] = None
-    raw_data: Optional[BytesField] = None
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def class_name(self) -> str:
-        """Derive class name from comment_class value."""
-        try:
-            return CommentClass(self.comment_class).label
-        except ValueError:
-            return "Unknown"
+
+class ParsedUnknownComent(ParsedRecord):
+    """COMENT - Comment record with unknown class."""
+    comment_class: int
+    no_purge: bool
+    no_list: bool
+    raw_data: Optional[BytesField] = None
 
 
 class ComentTranslator(ParsedComentContent):
@@ -946,6 +944,7 @@ AnyParsedRecord = (
     | ParsedLibDict
     | ParsedExtDict
     | ParsedComent
+    | ParsedUnknownComent
     | ParsedRheadr
     | ParsedRegInt
     | ParsedReDataPeData

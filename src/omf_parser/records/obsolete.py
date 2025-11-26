@@ -39,7 +39,7 @@ def handle_regint(omf: OMFFileProtocol, record: RecordInfo) -> ParsedRegInt:
             # Missing data indicates malformed record.
             result.warnings.append("Truncated REGINT record")
             break
-        reg_type = RegisterType(reg_type_byte)
+        reg_type = RegisterType.from_raw(reg_type_byte, omf.variant.omf_variant)
         value = sub.parse_numeric(2)
         result.registers.append(RegisterEntry(
             reg_type=reg_type,

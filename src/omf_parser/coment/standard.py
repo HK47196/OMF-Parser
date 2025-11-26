@@ -2,14 +2,14 @@
 
 from ..records import omf_record
 from ..constants import RecordType, ComentFlags, CommentClass
-from ..models import ParsedComent
+from ..models import ParsedComent, ParsedUnknownComent
 from ..protocols import OMFFileProtocol
 from ..scanner import RecordInfo
 from . import get_coment_handler
 
 
 @omf_record(RecordType.COMENT)
-def handle_coment(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComent | None:
+def handle_coment(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComent | ParsedUnknownComent | None:
     """Handle COMENT (88H)."""
     sub = omf.make_parser(record)
 
@@ -21,27 +21,31 @@ def handle_coment(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComent | No
 
     np = (flags & ComentFlags.NP) != 0
     nl = (flags & ComentFlags.NL) != 0
+    text = sub.data[sub.offset:]
+
+    # Try to parse as known comment class
+    try:
+        comment_class = CommentClass.from_raw(cls, omf.variant.omf_variant)
+    except ValueError:
+        # Unknown comment class
+        return ParsedUnknownComent(
+            comment_class=cls,
+            no_purge=np,
+            no_list=nl,
+            raw_data=text if text else None
+        )
 
     result = ParsedComent(
-        comment_class=cls,
+        comment_class=comment_class,
         no_purge=np,
         no_list=nl
     )
-
-    text = sub.data[sub.offset:]
 
     handler = get_coment_handler(cls, omf.features)
     if handler:
         content = handler(omf, sub, flags, text)
         result.content = content
     else:
-        try:
-            known_class = CommentClass(cls)
-            warning = f"No handler for comment class 0x{cls:02X} ({known_class.label})"
-        except ValueError:
-            warning = f"Unknown comment class 0x{cls:02X}"
-        result.warnings.append(warning)
-        if text:
-            result.raw_data = text
+        result.warnings.append(f"No handler for comment class {comment_class}")
 
     return result

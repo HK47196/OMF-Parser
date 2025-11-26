@@ -222,37 +222,16 @@
     "A0Subtype": {
       "description": "OMF Extensions (A0) comment subtypes.",
       "enum": [
-        [
-          1,
-          "IMPDEF"
-        ],
-        [
-          2,
-          "EXPDEF"
-        ],
-        [
-          3,
-          "INCDEF"
-        ],
-        [
-          4,
-          "Protected Memory Library"
-        ],
-        [
-          5,
-          "LNKDIR"
-        ],
-        [
-          6,
-          "Big-endian"
-        ],
-        [
-          7,
-          "PRECOMP"
-        ]
+        "IMPDEF",
+        "EXPDEF",
+        "INCDEF",
+        "Protected Memory Library",
+        "LNKDIR",
+        "Big-endian",
+        "PRECOMP"
       ],
       "title": "A0Subtype",
-      "type": "array"
+      "type": "string"
     },
     "AliasEntry": {
       "description": "Alias definition entry.",
@@ -276,25 +255,13 @@
     "BackpatchLocation": {
       "description": "BAKPAT/NBKPAT location types.\n\n- Byte(8): 8-bit value\n- Word(16): 16-bit value\n- DWord(32): 32-bit value\n- DWord(32-IBM): 32-bit value (IBM LINK386 extension)",
       "enum": [
-        [
-          0,
-          "Byte(8)"
-        ],
-        [
-          1,
-          "Word(16)"
-        ],
-        [
-          2,
-          "DWord(32)"
-        ],
-        [
-          9,
-          "DWord(32-IBM)"
-        ]
+        "Byte(8)",
+        "Word(16)",
+        "DWord(32)",
+        "DWord(32-IBM)"
       ],
       "title": "BackpatchLocation",
-      "type": "array"
+      "type": "string"
     },
     "BackpatchRecord": {
       "description": "BAKPAT backpatch record entry.",
@@ -492,98 +459,47 @@
     "ComdatAlign": {
       "description": "COMDAT alignment values. Values 0-5 correspond to SEGDEF alignment.\n\n- FromSEGDEF: Use alignment from associated SEGDEF record\n- Byte: Byte aligned\n- Word: Word (2-byte) aligned\n- Para: Paragraph (16-byte) aligned\n- Page: Page aligned\n- DWord: DWord (4-byte) aligned",
       "enum": [
-        [
-          0,
-          "FromSEGDEF"
-        ],
-        [
-          1,
-          "Byte"
-        ],
-        [
-          2,
-          "Word"
-        ],
-        [
-          3,
-          "Para"
-        ],
-        [
-          4,
-          "Page"
-        ],
-        [
-          5,
-          "DWord"
-        ]
+        "FromSEGDEF",
+        "Byte",
+        "Word",
+        "Para",
+        "Page",
+        "DWord"
       ],
       "title": "ComdatAlign",
-      "type": "array"
+      "type": "string"
     },
     "ComdatAllocation": {
       "description": "COMDAT allocation attribute (low-order 4 bits of attribute byte).\n\n- Explicit: Allocate in segment specified by SEGDEF index\n- Far Code (CODE16): Allocate in default 16-bit code segment\n- Far Data (DATA16): Allocate in default 16-bit data segment\n- Code32: Allocate in default 32-bit code segment\n- Data32: Allocate in default 32-bit data segment",
       "enum": [
-        [
-          0,
-          "Explicit"
-        ],
-        [
-          1,
-          "Far Code (CODE16)"
-        ],
-        [
-          2,
-          "Far Data (DATA16)"
-        ],
-        [
-          3,
-          "Code32"
-        ],
-        [
-          4,
-          "Data32"
-        ]
+        "Explicit",
+        "Far Code (CODE16)",
+        "Far Data (DATA16)",
+        "Code32",
+        "Data32"
       ],
       "title": "ComdatAllocation",
-      "type": "array"
+      "type": "string"
     },
     "ComdatSelection": {
       "description": "COMDAT selection attribute (high-order 4 bits of attribute byte).\n\n- No Match: Only one instance allowed; duplicate definitions are errors\n- Pick Any: Pick any instance; all definitions assumed identical\n- Same Size: Pick any, but all definitions must have same size\n- Exact Match: Pick any, but all definitions must have matching checksums",
       "enum": [
-        [
-          0,
-          "No Match"
-        ],
-        [
-          1,
-          "Pick Any"
-        ],
-        [
-          2,
-          "Same Size"
-        ],
-        [
-          3,
-          "Exact Match"
-        ]
+        "No Match",
+        "Pick Any",
+        "Same Size",
+        "Exact Match"
       ],
       "title": "ComdatSelection",
-      "type": "array"
+      "type": "string"
     },
     "ComdefType": {
       "description": "COMDEF data type codes.\n\n- FAR: FAR data with element count and size\n- NEAR: NEAR data with byte size",
       "enum": [
-        [
-          97,
-          "FAR"
-        ],
-        [
-          98,
-          "NEAR"
-        ]
+        "FAR",
+        "NEAR"
       ],
       "title": "ComdefType",
-      "type": "array"
+      "type": "string"
     },
     "Coment32BitLinker": {
       "description": "32-bit linker extension.",
@@ -1330,6 +1246,42 @@
       "title": "ComentWkExt",
       "type": "object"
     },
+    "CommentClass": {
+      "description": "COMENT record class types.\n\nNote: Different vendors may use overlapping class numbers.",
+      "enum": [
+        "Translator",
+        "Intel Copyright",
+        "Library Specifier (obsolete)",
+        "Watcom Processor/Model",
+        "MS-DOS Version (obsolete)",
+        "MS Processor/Model",
+        "DOSSEG",
+        "Default Library Search",
+        "OMF Extensions",
+        "New OMF Extension",
+        "Link Pass Separator",
+        "LIBMOD",
+        "EXESTR",
+        "INCERR",
+        "NOPAD",
+        "WKEXT",
+        "LZEXT",
+        "Easy OMF",
+        "32-bit Linker Extension",
+        "32-bit Linker Extension (alt)",
+        "Comment",
+        "Compiler",
+        "Date",
+        "Timestamp",
+        "User",
+        "Dependency File (Borland)",
+        "Watcom Disassembler Directive",
+        "Watcom Linker Directive",
+        "Command Line (QuickC)"
+      ],
+      "title": "CommentClass",
+      "type": "string"
+    },
     "DictEntry": {
       "description": "Library dictionary entry.",
       "properties": {
@@ -1362,17 +1314,11 @@
     "DisasmDirectiveSubtype": {
       "description": "Watcom disassembler directive subtypes (COMENT class 0xFD).\n\nMarks non-executable data regions within code segments for disassemblers.\n\n- SCAN_TABLE_16: 16-bit scan table ('s', 0x73) - uses 16-bit offsets\n- SCAN_TABLE_32: 32-bit scan table ('S', 0x53) - uses 32-bit offsets",
       "enum": [
-        [
-          "s",
-          "DDIR_SCAN_TABLE"
-        ],
-        [
-          "S",
-          "DDIR_SCAN_TABLE_32"
-        ]
+        "DDIR_SCAN_TABLE",
+        "DDIR_SCAN_TABLE_32"
       ],
       "title": "DisasmDirectiveSubtype",
-      "type": "array"
+      "type": "string"
     },
     "ExtDefEntry": {
       "description": "External definition entry.",
@@ -1423,55 +1369,22 @@
       "type": "object"
     },
     "FixupLocation": {
-      "description": "FIXUPP location types. Some values differ between TIS and PharLap variants.\n\nTIS standard locations:\n- 0: Byte(8) - Low-order byte (8-bit displacement or low byte of 16-bit offset)\n- 1: Offset(16) - 16-bit offset\n- 2: Segment(16) - 16-bit base/selector\n- 3: Ptr(16:16) - 32-bit far pointer (16-bit segment:16-bit offset)\n- 4: HiByte(8) - High-order byte of 16-bit offset\n- 5: Loader-resolved Offset(16) - 16-bit loader-resolved offset\n- 9: Offset(32) - 32-bit offset\n- 11: Ptr(16:32) - 48-bit far pointer (16-bit segment:32-bit offset)\n- 13: Loader-resolved Offset(32) - 32-bit loader-resolved offset\n\nPharLap Easy OMF-386 differences:\n- 5: 32-bit offset (PHARLAP_OFFSET_32, synthetic int_val=105)\n- 6: 48-bit pointer (16:32) (TIS: reserved)",
+      "description": "FIXUPP location types. Some values differ between TIS and PharLap variants.\n\nTIS standard locations:\n- 0: Byte(8) - Low-order byte (8-bit displacement or low byte of 16-bit offset)\n- 1: Offset(16) - 16-bit offset\n- 2: Segment(16) - 16-bit base/selector\n- 3: Ptr(16:16) - 32-bit far pointer (16-bit segment:16-bit offset)\n- 4: HiByte(8) - High-order byte of 16-bit offset\n- 5: Loader-resolved Offset(16) - 16-bit loader-resolved offset\n- 9: Offset(32) - 32-bit offset\n- 11: Ptr(16:32) - 48-bit far pointer (16-bit segment:32-bit offset)\n- 13: Loader-resolved Offset(32) - 32-bit loader-resolved offset\n\nPharLap Easy OMF-386 differences:\n- 5: 32-bit offset (PHARLAP_OFFSET_32)\n- 6: 48-bit pointer (16:32) (TIS: reserved)",
       "enum": [
-        [
-          0,
-          "Byte(8)"
-        ],
-        [
-          1,
-          "Offset(16)"
-        ],
-        [
-          2,
-          "Segment(16)"
-        ],
-        [
-          3,
-          "Ptr(16:16)"
-        ],
-        [
-          4,
-          "HiByte(8)"
-        ],
-        [
-          5,
-          "Loader-resolved Offset(16)"
-        ],
-        [
-          105,
-          "Offset(32) [loc 5]"
-        ],
-        [
-          6,
-          "Ptr(16:32) [loc 6]"
-        ],
-        [
-          9,
-          "Offset(32)"
-        ],
-        [
-          11,
-          "Ptr(16:32)"
-        ],
-        [
-          13,
-          "Loader-resolved Offset(32)"
-        ]
+        "Byte(8)",
+        "Offset(16)",
+        "Segment(16)",
+        "Ptr(16:16)",
+        "HiByte(8)",
+        "Loader-resolved Offset(16)",
+        "Offset(32) [PharLap loc 5]",
+        "Ptr(16:32) [PharLap loc 6]",
+        "Offset(32)",
+        "Ptr(16:32)",
+        "Loader-resolved Offset(32)"
       ],
       "title": "FixupLocation",
-      "type": "array"
+      "type": "string"
     },
     "FixupMode": {
       "description": "FIXUPP fixup mode.",
@@ -1485,37 +1398,16 @@
     "FrameMethod": {
       "description": "FIXUPP frame determination methods.\n\n- F0:SEGDEF: Frame specified by SEGDEF index\n- F1:GRPDEF: Frame specified by GRPDEF index\n- F2:EXTDEF: Frame specified by EXTDEF index\n- F3:FrameNum: Explicit frame number (not supported by linkers)\n- F4:Location: Frame from previous LEDATA/LIDATA segment\n- F5:Target: Frame determined by target\n- F6:Invalid: Invalid/reserved",
       "enum": [
-        [
-          0,
-          "F0:SEGDEF"
-        ],
-        [
-          1,
-          "F1:GRPDEF"
-        ],
-        [
-          2,
-          "F2:EXTDEF"
-        ],
-        [
-          3,
-          "F3:FrameNum"
-        ],
-        [
-          4,
-          "F4:Location"
-        ],
-        [
-          5,
-          "F5:Target"
-        ],
-        [
-          6,
-          "F6:Invalid"
-        ]
+        "F0:SEGDEF",
+        "F1:GRPDEF",
+        "F2:EXTDEF",
+        "F3:FrameNum",
+        "F4:Location",
+        "F5:Target",
+        "F6:Invalid"
       ],
       "title": "FrameMethod",
-      "type": "array"
+      "type": "string"
     },
     "LazyExternEntry": {
       "description": "Lazy extern definition entry.",
@@ -1914,49 +1806,19 @@
     "LinkerDirectiveCode": {
       "description": "Watcom linker directive codes (COMENT class 0xFE).\n\nValues from Watcom documentation, captured in coment/watcom.py.",
       "enum": [
-        [
-          "D",
-          "Source Language"
-        ],
-        [
-          "L",
-          "Default Library"
-        ],
-        [
-          "O",
-          "Optimize Far Calls"
-        ],
-        [
-          "U",
-          "Optimization Unsafe"
-        ],
-        [
-          "V",
-          "VF Table Definition"
-        ],
-        [
-          "P",
-          "VF Pure Definition"
-        ],
-        [
-          "R",
-          "VF Reference"
-        ],
-        [
-          "7",
-          "Pack Far Data"
-        ],
-        [
-          "F",
-          "Flat Addresses"
-        ],
-        [
-          "T",
-          "Object Timestamp"
-        ]
+        "Source Language",
+        "Default Library",
+        "Optimize Far Calls",
+        "Optimization Unsafe",
+        "VF Table Definition",
+        "VF Pure Definition",
+        "VF Reference",
+        "Pack Far Data",
+        "Flat Addresses",
+        "Object Timestamp"
       ],
       "title": "LinkerDirectiveCode",
-      "type": "array"
+      "type": "string"
     },
     "NamedBackpatchRecord": {
       "description": "NBKPAT named backpatch record entry.",
@@ -2119,6 +1981,9 @@
             },
             {
               "$ref": "#/$defs/ParsedComent"
+            },
+            {
+              "$ref": "#/$defs/ParsedUnknownComent"
             },
             {
               "$ref": "#/$defs/ParsedRheadr"
@@ -2523,7 +2388,7 @@
       "type": "object"
     },
     "ParsedComent": {
-      "description": "COMENT - Comment record.",
+      "description": "COMENT - Comment record with known class.",
       "properties": {
         "warnings": {
           "items": {
@@ -2533,8 +2398,7 @@
           "type": "array"
         },
         "comment_class": {
-          "title": "Comment Class",
-          "type": "integer"
+          "$ref": "#/$defs/CommentClass"
         },
         "no_purge": {
           "title": "No Purge",
@@ -2633,31 +2497,12 @@
           ],
           "default": null,
           "title": "Content"
-        },
-        "raw_data": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Raw Data"
-        },
-        "class_name": {
-          "description": "Derive class name from comment_class value.",
-          "readOnly": true,
-          "title": "Class Name",
-          "type": "string"
         }
       },
       "required": [
         "comment_class",
         "no_purge",
-        "no_list",
-        "class_name"
+        "no_list"
       ],
       "title": "ParsedComent",
       "type": "object"
@@ -4058,6 +3903,49 @@
       "title": "ParsedTypDef",
       "type": "object"
     },
+    "ParsedUnknownComent": {
+      "description": "COMENT - Comment record with unknown class.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "comment_class": {
+          "title": "Comment Class",
+          "type": "integer"
+        },
+        "no_purge": {
+          "title": "No Purge",
+          "type": "boolean"
+        },
+        "no_list": {
+          "title": "No List",
+          "type": "boolean"
+        },
+        "raw_data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Data"
+        }
+      },
+      "required": [
+        "comment_class",
+        "no_purge",
+        "no_list"
+      ],
+      "title": "ParsedUnknownComent",
+      "type": "object"
+    },
     "ParsedVendExt": {
       "description": "VENDEXT - Vendor extension.",
       "properties": {
@@ -4217,138 +4105,57 @@
     "RegisterType": {
       "description": "8086 register types for REGINT record (obsolete 70H).\n\nPer TIS OMF 1.1 Appendix 3, the REGINT record provides information\nabout register/register-pairs: CS and IP, SS and SP, DS and ES.",
       "enum": [
-        [
-          0,
-          "CS"
-        ],
-        [
-          1,
-          "DS"
-        ],
-        [
-          2,
-          "SS"
-        ],
-        [
-          3,
-          "ES"
-        ],
-        [
-          4,
-          "IP"
-        ],
-        [
-          5,
-          "SP"
-        ]
+        "CS",
+        "DS",
+        "SS",
+        "ES",
+        "IP",
+        "SP"
       ],
       "title": "RegisterType",
-      "type": "array"
+      "type": "string"
     },
     "SegAccess": {
       "description": "SEGDEF access types (AT field in PharLap access byte).\n\nPer PharLap Easy OMF-386 specification, the access byte contains a 2-bit\nAT field specifying the segment's access type.\n\n- RO: Read only (0)\n- EO: Execute only (1)\n- ER: Execute/read (2)\n- RW: Read/write (3)",
       "enum": [
-        [
-          0,
-          "Read only"
-        ],
-        [
-          1,
-          "Execute only"
-        ],
-        [
-          2,
-          "Execute/read"
-        ],
-        [
-          3,
-          "Read/write"
-        ]
+        "Read only",
+        "Execute only",
+        "Execute/read",
+        "Read/write"
       ],
       "title": "SegAccess",
-      "type": "array"
+      "type": "string"
     },
     "SegAlignment": {
       "description": "SEGDEF alignment values (A field in ACBP byte).\n\n- Absolute: Absolute segment (frame number and offset follow)\n- Byte: Relocatable, byte aligned\n- Word: Relocatable, word (2-byte) aligned\n- Paragraph: Relocatable, paragraph (16-byte) aligned\n- Page: Relocatable, page aligned (256-byte Intel / 4K IBM)\n- DWord: Relocatable, dword (4-byte) aligned\n- LTL(6): Not supported (Intel: LTL paragraph aligned) [PharLap: 4K page]\n- Undefined(7): Not defined",
       "enum": [
-        [
-          0,
-          "Absolute"
-        ],
-        [
-          1,
-          "Byte"
-        ],
-        [
-          2,
-          "Word"
-        ],
-        [
-          3,
-          "Paragraph"
-        ],
-        [
-          4,
-          "Page (256-byte Intel / 4K IBM)"
-        ],
-        [
-          5,
-          "DWord"
-        ],
-        [
-          6,
-          "LTL(6)"
-        ],
-        [
-          106,
-          "Page (4K) [align 6]"
-        ],
-        [
-          7,
-          "Undefined(7)"
-        ]
+        "Absolute",
+        "Byte",
+        "Word",
+        "Paragraph",
+        "Page (256-byte Intel / 4K IBM)",
+        "DWord",
+        "LTL(6)",
+        "Page (4K) [PharLap]",
+        "Undefined(7)"
       ],
       "title": "SegAlignment",
-      "type": "array"
+      "type": "string"
     },
     "SegCombine": {
       "description": "SEGDEF combine values (C field in ACBP byte).\n\n- Private: Do not combine with any other segment\n- Reserved(1) [Intel: Common]: Reserved (Intel 8086 used this for Common)\n- Public: Combine by appending at alignment boundary\n- Reserved(3): Reserved\n- Public(4): Same as Public\n- Stack: Combine as Public, forces byte alignment\n- Common: Combine by overlay using maximum size\n- Public(7): Same as Public",
       "enum": [
-        [
-          0,
-          "Private"
-        ],
-        [
-          1,
-          "Reserved(1) [Intel: Common]"
-        ],
-        [
-          2,
-          "Public"
-        ],
-        [
-          3,
-          "Reserved(3)"
-        ],
-        [
-          4,
-          "Public(4)"
-        ],
-        [
-          5,
-          "Stack"
-        ],
-        [
-          6,
-          "Common"
-        ],
-        [
-          7,
-          "Public(7)"
-        ]
+        "Private",
+        "Reserved(1) [Intel: Common]",
+        "Public",
+        "Reserved(3)",
+        "Public(4)",
+        "Stack",
+        "Common",
+        "Public(7)"
       ],
       "title": "SegCombine",
-      "type": "array"
+      "type": "string"
     },
     "StartAddress": {
       "description": "MODEND start address information.",
@@ -4406,37 +4213,16 @@
     "TargetMethod": {
       "description": "FIXUPP target determination methods.\n\n- T0:SEGDEF: Target specified by SEGDEF index with displacement\n- T1:GRPDEF: Target specified by GRPDEF index with displacement\n- T2:EXTDEF: Target specified by EXTDEF index with displacement\n- T3:FrameNum: Explicit frame number (not supported)\n- T4:SEGDEF(0): Target specified by SEGDEF index, displacement assumed 0\n- T5:GRPDEF(0): Target specified by GRPDEF index, displacement assumed 0\n- T6:EXTDEF(0): Target specified by EXTDEF index, displacement assumed 0",
       "enum": [
-        [
-          0,
-          "T0:SEGDEF"
-        ],
-        [
-          1,
-          "T1:GRPDEF"
-        ],
-        [
-          2,
-          "T2:EXTDEF"
-        ],
-        [
-          3,
-          "T3:FrameNum"
-        ],
-        [
-          4,
-          "T4:SEGDEF(0)"
-        ],
-        [
-          5,
-          "T5:GRPDEF(0)"
-        ],
-        [
-          6,
-          "T6:EXTDEF(0)"
-        ]
+        "T0:SEGDEF",
+        "T1:GRPDEF",
+        "T2:EXTDEF",
+        "T3:FrameNum",
+        "T4:SEGDEF(0)",
+        "T5:GRPDEF(0)",
+        "T6:EXTDEF(0)"
       ],
       "title": "TargetMethod",
-      "type": "array"
+      "type": "string"
     },
     "ThreadKind": {
       "description": "FIXUPP thread type.",
@@ -4587,90 +4373,45 @@
     "TypDefVarType": {
       "description": "TYPDEF variable type values for NEAR/FAR leaves.\n\nPer TIS OMF 1.1 Appendix 3, the variable type field must contain one\nof these three values. The specific value is ignored by most linkers.\n\n- Array: Array type (0x77)\n- Structure: Structure type (0x79)\n- Scalar: Scalar type (0x7B)",
       "enum": [
-        [
-          119,
-          "Array"
-        ],
-        [
-          121,
-          "Structure"
-        ],
-        [
-          123,
-          "Scalar"
-        ]
+        "Array",
+        "Structure",
+        "Scalar"
       ],
       "title": "TypDefVarType",
-      "type": "array"
+      "type": "string"
     },
     "WatcomFPMode": {
       "description": "Watcom floating point mode (COMENT 0x9B/0x9D fourth byte).\n\nValues from Watcom compiler processor/memory model string.",
       "enum": [
-        [
-          "e",
-          "Emulated inline"
-        ],
-        [
-          "c",
-          "Emulator calls"
-        ],
-        [
-          "p",
-          "80x87 inline"
-        ]
+        "Emulated inline",
+        "Emulator calls",
+        "80x87 inline"
       ],
       "title": "WatcomFPMode",
-      "type": "array"
+      "type": "string"
     },
     "WatcomMemModel": {
       "description": "Watcom memory model (COMENT 0x9B/0x9D second byte).\n\nValues from Watcom compiler processor/memory model string.",
       "enum": [
-        [
-          "s",
-          "Small"
-        ],
-        [
-          "m",
-          "Medium"
-        ],
-        [
-          "c",
-          "Compact"
-        ],
-        [
-          "l",
-          "Large"
-        ],
-        [
-          "h",
-          "Huge"
-        ],
-        [
-          "f",
-          "Flat"
-        ]
+        "Small",
+        "Medium",
+        "Compact",
+        "Large",
+        "Huge",
+        "Flat"
       ],
       "title": "WatcomMemModel",
-      "type": "array"
+      "type": "string"
     },
     "WatcomProcessor": {
       "description": "Watcom processor type (COMENT 0x9B/0x9D first byte).\n\nValues from Watcom compiler processor/memory model string.",
       "enum": [
-        [
-          "0",
-          "8086"
-        ],
-        [
-          "2",
-          "80286"
-        ],
-        [
-          "3",
-          "80386+"
-        ]
+        "8086",
+        "80286",
+        "80386+"
       ],
       "title": "WatcomProcessor",
-      "type": "array"
+      "type": "string"
     },
     "WeakExternEntry": {
       "description": "Weak extern definition entry.",

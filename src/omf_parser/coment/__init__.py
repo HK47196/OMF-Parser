@@ -6,7 +6,7 @@ from typing import TypedDict, Callable
 from ..protocols import OMFFileProtocol
 from ..parsing import RecordParser
 from ..models import AnyComentContent
-from ..constants import LabeledEnum, CommentClass
+from ..constants import CommentClass
 
 ComentHandler = Callable[[OMFFileProtocol, RecordParser, int, bytes], AnyComentContent | None]
 
@@ -50,7 +50,7 @@ def coment_class(
 
     def decorator(fn: ComentHandler) -> ComentHandler:
         for cls in classes:
-            key = cls.int_val if isinstance(cls, LabeledEnum) else cls
+            key = CommentClass.to_raw(cls) if isinstance(cls, CommentClass) else cls
             for existing in COMENT_CLASS_HANDLERS[key]:
                 if existing['features'] == required_features:
                     raise DuplicateHandlerError(

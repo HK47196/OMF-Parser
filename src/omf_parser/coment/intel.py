@@ -146,7 +146,7 @@ def handle_omf_extensions(omf: OMFFileProtocol, sub: RecordParser, flags: int, t
     if not text:
         return None
 
-    subtype = A0Subtype(text[0])
+    subtype = A0Subtype.from_raw(text[0], omf.variant.omf_variant)
 
     result = ComentOmfExtensions(subtype=subtype)
 

@@ -50,9 +50,10 @@ def handle_modend(omf: OMFFileProtocol, record: RecordInfo) -> ParsedModEnd | No
                 disp_size = sub.get_offset_field_size(is_32bit)
                 target_displacement = sub.parse_numeric(disp_size)
 
+            variant = omf.variant.omf_variant
             result.start_address = StartAddress(
-                frame_method=FrameMethod(frame_method),
-                target_method=TargetMethod(target_method),
+                frame_method=FrameMethod.from_raw(frame_method, variant),
+                target_method=TargetMethod.from_raw(target_method, variant),
                 frame_datum=frame_datum,
                 target_datum=target_datum,
                 target_displacement=target_displacement

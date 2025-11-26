@@ -1,7 +1,7 @@
 """COMDEF and LCOMDEF record handlers."""
 
 from . import omf_record
-from ..constants import RecordType, ComdefType, COMDEF_BORLAND_MAX
+from ..constants import RecordType, ComdefType, COMDEF_BORLAND_MAX, COMDEF_TYPE_FAR, COMDEF_TYPE_NEAR
 from ..models import (
     ParsedComDef,
     ComDefFarDefinition, ComDefNearDefinition,
@@ -31,7 +31,7 @@ def handle_comdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComDef:
             break
 
         defn: ComDefFarDefinition | ComDefNearDefinition | ComDefBorlandDefinition | ComDefUnknownDefinition
-        if data_type == ComdefType.FAR.int_val:
+        if data_type == COMDEF_TYPE_FAR:
             num_elements = sub.parse_variable_length_int()
             element_size = sub.parse_variable_length_int()
             total = num_elements * element_size
@@ -43,7 +43,7 @@ def handle_comdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComDef:
                 element_size=element_size,
                 total_size=total
             )
-        elif data_type == ComdefType.NEAR.int_val:
+        elif data_type == COMDEF_TYPE_NEAR:
             size = sub.parse_variable_length_int()
             defn = ComDefNearDefinition(
                 name=name,

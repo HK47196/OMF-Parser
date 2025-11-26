@@ -170,7 +170,7 @@ class Scanner:
 
         comment_class = record.content[1]
 
-        if comment_class == CommentClass.EASY_OMF.int_val:
+        if comment_class == CommentClass.to_raw(CommentClass.EASY_OMF):
             self.variant = PHARLAP
             self._module_variant = PHARLAP
             self.features.add('easy_omf')

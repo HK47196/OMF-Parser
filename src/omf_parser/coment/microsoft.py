@@ -34,7 +34,7 @@ def handle_dos_version(omf: OMFFileProtocol, sub: RecordParser, flags: int, text
 def handle_ms_proc_model(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentProcModel:
     """MS Processor/Model - same format as Watcom 0x9B."""
     from .watcom import parse_proc_model
-    return parse_proc_model(text)
+    return parse_proc_model(text, omf.variant.omf_variant)
 
 
 @coment_class(CommentClass.DEFAULT_LIBRARY)

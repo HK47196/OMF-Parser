@@ -50,11 +50,12 @@ def handle_fixupp(omf: OMFFileProtocol, record: RecordInfo) -> ParsedFixupp:
             kind = ThreadKind.FRAME if is_frame else ThreadKind.TARGET
 
             method: FrameMethod | TargetMethod
+            variant = omf.variant.omf_variant
             if is_frame:
-                method = FrameMethod(method_val)
+                method = FrameMethod.from_raw(method_val, variant)
                 frame_threads[thred] = (method, idx)
             else:
-                method = TargetMethod(method_val)
+                method = TargetMethod.from_raw(method_val, variant)
                 target_threads[thred] = (method, idx)
 
             thread = ParsedThread(
@@ -92,11 +93,8 @@ def handle_fixupp(omf: OMFFileProtocol, record: RecordInfo) -> ParsedFixupp:
             data_offset = ((b1 & FixuppFlags.OFFSET_HIGH_MASK) << 8) | b2
 
             mode_enum = FixupMode.SEGMENT_RELATIVE if mode else FixupMode.SELF_RELATIVE
-            # PharLap loc 5 is 32-bit offset, not loader-resolved 16-bit
-            if loc_type_val == 5 and omf.variant.omf_variant == OMFVariant.PHARLAP:
-                location = FixupLocation.PHARLAP_OFFSET_32
-            else:
-                location = FixupLocation(loc_type_val)
+            variant = omf.variant.omf_variant
+            location = FixupLocation.from_raw(loc_type_val, variant)
 
             fix_dat = sub.read_byte()
             if fix_dat is None:
@@ -117,7 +115,7 @@ def handle_fixupp(omf: OMFFileProtocol, record: RecordInfo) -> ParsedFixupp:
                 frame_method, frame_datum = thread_data if thread_data else (FrameMethod.SEGDEF, None)
                 frame_src = f"Thread#{thread_num}"
             else:
-                frame_method = FrameMethod(frame_field)
+                frame_method = FrameMethod.from_raw(frame_field, variant)
                 frame_datum = None
                 if frame_field < 3:
                     frame_datum = sub.parse_index()
@@ -128,20 +126,20 @@ def handle_fixupp(omf: OMFFileProtocol, record: RecordInfo) -> ParsedFixupp:
                 target_thread_data = target_threads[thread_num]
                 if target_thread_data:
                     base_method, target_datum = target_thread_data
-                    target_method_val = (base_method.int_val & FixuppFlags.TARGET_MASK) | (p_bit << FixuppFlags.P_BIT_SHIFT)
+                    target_method_val = (TargetMethod.to_raw(base_method) & FixuppFlags.TARGET_MASK) | (p_bit << FixuppFlags.P_BIT_SHIFT)
                 else:
                     target_method_val = p_bit << FixuppFlags.P_BIT_SHIFT
                     target_datum = None
-                target_method = TargetMethod(target_method_val)
+                target_method = TargetMethod.from_raw(target_method_val, variant)
                 target_src = f"Thread#{thread_num}"
             else:
                 target_method_val = targt_field | (p_bit << FixuppFlags.P_BIT_SHIFT)
-                target_method = TargetMethod(target_method_val)
+                target_method = TargetMethod.from_raw(target_method_val, variant)
                 target_datum = sub.parse_index()
                 target_src = "Explicit"
 
             disp = None
-            if target_method.int_val < 4:
+            if target_method.has_displacement():
                 disp_size = sub.get_offset_field_size(is_32bit)
                 disp = sub.parse_numeric(disp_size)
 

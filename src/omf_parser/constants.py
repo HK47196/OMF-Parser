@@ -1,10 +1,9 @@
 """OMF constants and record type definitions."""
 
-from enum import Enum, IntEnum, IntFlag, unique
-from typing import NamedTuple, overload
+from enum import IntEnum, IntFlag, StrEnum, unique
 
 
-class OMFVariant(str, Enum):
+class OMFVariant(StrEnum):
     """OMF format variant.
 
     Variants change how records are parsed (field sizes, extra fields, etc.).
@@ -17,107 +16,6 @@ class OMFVariant(str, Enum):
     TIS_STANDARD = "TIS Standard"
     PHARLAP = "PharLap Easy OMF-386"
     IBM_LINK386 = "IBM LINK386"
-
-
-class EnumValue(NamedTuple):
-    """Value for LabeledEnum members."""
-    int_val: int
-    label: str
-
-
-class CharEnumValue(NamedTuple):
-    """Value for CharLabeledEnum members (character-keyed)."""
-    char_val: str
-    label: str
-
-
-class LabeledEnum(Enum):
-    """Enum with both integer value and string label.
-
-    Allows construction from int (for parsing) while keeping unique tuple values
-    (avoiding Union collision in Pydantic).
-    """
-
-    int_val: int
-    label: str
-
-    @overload
-    def __new__(cls, int_val: int, label: str) -> "LabeledEnum": ...
-    @overload
-    def __new__(cls, int_val: int) -> "LabeledEnum": ...
-
-    def __new__(cls, int_val: int, label: str | None = None) -> "LabeledEnum":
-        if label is None:
-            # Lookup by int value - will be handled by _missing_
-            raise ValueError("Use enum lookup")
-        obj = object.__new__(cls)
-        obj._value_ = EnumValue(int_val, label)
-        obj.int_val = int_val
-        obj.label = label
-        return obj
-
-    def __init_subclass__(cls, **kwargs: object) -> None:
-        super().__init_subclass__(**kwargs)
-        int_vals = [m.int_val for m in cls]
-        if len(int_vals) != len(set(int_vals)):
-            dupes = [v for v in int_vals if int_vals.count(v) > 1]
-            raise ValueError(f"{cls.__name__} has duplicate int values: {set(dupes)}")
-
-    @classmethod
-    def _missing_(cls, value: object) -> "LabeledEnum | None":
-        if isinstance(value, int):
-            if value < 0:
-                raise ValueError(f"Invalid {cls.__name__} value: {value}")
-            for member in cls:
-                if member.int_val == value:
-                    return member
-        return None
-
-    def __str__(self) -> str:
-        return self.label
-
-
-class CharLabeledEnum(Enum):
-    """Enum with character value and string label.
-
-    Similar to LabeledEnum but for character-keyed enums (e.g., Watcom fields).
-    Allows construction from char (for parsing) while keeping unique tuple values.
-    """
-
-    char_val: str
-    label: str
-
-    @overload
-    def __new__(cls, char_val: str, label: str) -> "CharLabeledEnum": ...
-    @overload
-    def __new__(cls, char_val: str) -> "CharLabeledEnum": ...
-
-    def __new__(cls, char_val: str, label: str | None = None) -> "CharLabeledEnum":
-        if label is None:
-            raise ValueError("Use enum lookup")
-        obj = object.__new__(cls)
-        obj._value_ = CharEnumValue(char_val, label)
-        obj.char_val = char_val
-        obj.label = label
-        return obj
-
-    def __init_subclass__(cls, **kwargs: object) -> None:
-        super().__init_subclass__(**kwargs)
-        char_vals = [m.char_val for m in cls]
-        if len(char_vals) != len(set(char_vals)):
-            dupes = [v for v in char_vals if char_vals.count(v) > 1]
-            raise ValueError(f"{cls.__name__} has duplicate char values: {set(dupes)}")
-
-    @classmethod
-    def _missing_(cls, value: object) -> "CharLabeledEnum | None":
-        if isinstance(value, str):
-            for member in cls:
-                if member.char_val == value:
-                    return member
-        return None
-
-    def __str__(self) -> str:
-        return self.label
 
 
 @unique
@@ -208,52 +106,137 @@ class RecordType(IntEnum):
         return self
 
 
-class CommentClass(LabeledEnum):
+class CommentClass(StrEnum):
     """COMENT record class types.
 
     Note: Different vendors may use overlapping class numbers.
-    Unknown class values remain as raw int with "Unknown" label.
     """
-    TRANSLATOR = (0x00, "Translator")
-    COPYRIGHT = (0x01, "Intel Copyright")
-    LIBSPEC = (0x81, "Library Specifier (obsolete)")
-    WAT_PROC_MODEL = (0x9B, "Watcom Processor/Model")
-    MSDOS_VERSION = (0x9C, "MS-DOS Version (obsolete)")
-    MS_PROC_MODEL = (0x9D, "MS Processor/Model")
-    DOSSEG = (0x9E, "DOSSEG")
-    DEFAULT_LIBRARY = (0x9F, "Default Library Search")
-    OMF_EXTENSIONS = (0xA0, "OMF Extensions")
-    NEW_OMF = (0xA1, "New OMF Extension")
-    LINK_PASS = (0xA2, "Link Pass Separator")
-    LIBMOD = (0xA3, "LIBMOD")
-    EXESTR = (0xA4, "EXESTR")
-    INCERR = (0xA6, "INCERR")
-    NOPAD = (0xA7, "NOPAD")
-    WKEXT = (0xA8, "WKEXT")
-    LZEXT = (0xA9, "LZEXT")
-    EASY_OMF = (0xAA, "Easy OMF")
-    LINKER_32BIT = (0xB0, "32-bit Linker Extension")
-    LINKER_32BIT_ALT = (0xB1, "32-bit Linker Extension")
-    COMMENT = (0xDA, "Comment")
-    COMPILER = (0xDB, "Compiler")
-    DATE = (0xDC, "Date")
-    TIMESTAMP = (0xDD, "Timestamp")
-    USER = (0xDF, "User")
-    DEPENDENCY = (0xE9, "Dependency File (Borland)")
-    DISASM_DIRECTIVE = (0xFD, "Watcom Disassembler Directive")
-    LINKER_DIRECTIVE = (0xFE, "Watcom Linker Directive")
-    COMMANDLINE = (0xFF, "Command Line (QuickC)")
+    TRANSLATOR = "Translator"
+    COPYRIGHT = "Intel Copyright"
+    LIBSPEC = "Library Specifier (obsolete)"
+    WAT_PROC_MODEL = "Watcom Processor/Model"
+    MSDOS_VERSION = "MS-DOS Version (obsolete)"
+    MS_PROC_MODEL = "MS Processor/Model"
+    DOSSEG = "DOSSEG"
+    DEFAULT_LIBRARY = "Default Library Search"
+    OMF_EXTENSIONS = "OMF Extensions"
+    NEW_OMF = "New OMF Extension"
+    LINK_PASS = "Link Pass Separator"
+    LIBMOD = "LIBMOD"
+    EXESTR = "EXESTR"
+    INCERR = "INCERR"
+    NOPAD = "NOPAD"
+    WKEXT = "WKEXT"
+    LZEXT = "LZEXT"
+    EASY_OMF = "Easy OMF"
+    LINKER_32BIT = "32-bit Linker Extension"
+    LINKER_32BIT_ALT = "32-bit Linker Extension (alt)"
+    COMMENT = "Comment"
+    COMPILER = "Compiler"
+    DATE = "Date"
+    TIMESTAMP = "Timestamp"
+    USER = "User"
+    DEPENDENCY = "Dependency File (Borland)"
+    DISASM_DIRECTIVE = "Watcom Disassembler Directive"
+    LINKER_DIRECTIVE = "Watcom Linker Directive"
+    COMMANDLINE = "Command Line (QuickC)"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "CommentClass":
+        """Look up comment class from raw byte value."""
+        match (value, variant):
+            case (0x00, _): return cls.TRANSLATOR
+            case (0x01, _): return cls.COPYRIGHT
+            case (0x81, _): return cls.LIBSPEC
+            case (0x9B, _): return cls.WAT_PROC_MODEL
+            case (0x9C, _): return cls.MSDOS_VERSION
+            case (0x9D, _): return cls.MS_PROC_MODEL
+            case (0x9E, _): return cls.DOSSEG
+            case (0x9F, _): return cls.DEFAULT_LIBRARY
+            case (0xA0, _): return cls.OMF_EXTENSIONS
+            case (0xA1, _): return cls.NEW_OMF
+            case (0xA2, _): return cls.LINK_PASS
+            case (0xA3, _): return cls.LIBMOD
+            case (0xA4, _): return cls.EXESTR
+            case (0xA6, _): return cls.INCERR
+            case (0xA7, _): return cls.NOPAD
+            case (0xA8, _): return cls.WKEXT
+            case (0xA9, _): return cls.LZEXT
+            case (0xAA, _): return cls.EASY_OMF
+            case (0xB0, _): return cls.LINKER_32BIT
+            case (0xB1, _): return cls.LINKER_32BIT_ALT
+            case (0xDA, _): return cls.COMMENT
+            case (0xDB, _): return cls.COMPILER
+            case (0xDC, _): return cls.DATE
+            case (0xDD, _): return cls.TIMESTAMP
+            case (0xDF, _): return cls.USER
+            case (0xE9, _): return cls.DEPENDENCY
+            case (0xFD, _): return cls.DISASM_DIRECTIVE
+            case (0xFE, _): return cls.LINKER_DIRECTIVE
+            case (0xFF, _): return cls.COMMANDLINE
+            case _: raise ValueError(f"Unknown {cls.__name__} value: 0x{value:02X}")
+
+    @classmethod
+    def to_raw(cls, member: "CommentClass") -> int:
+        """Get raw byte value for a CommentClass member."""
+        return _COMMENT_CLASS_TO_RAW[member]
 
 
-class A0Subtype(LabeledEnum):
+_COMMENT_CLASS_TO_RAW: dict[CommentClass, int] = {
+    CommentClass.TRANSLATOR: 0x00,
+    CommentClass.COPYRIGHT: 0x01,
+    CommentClass.LIBSPEC: 0x81,
+    CommentClass.WAT_PROC_MODEL: 0x9B,
+    CommentClass.MSDOS_VERSION: 0x9C,
+    CommentClass.MS_PROC_MODEL: 0x9D,
+    CommentClass.DOSSEG: 0x9E,
+    CommentClass.DEFAULT_LIBRARY: 0x9F,
+    CommentClass.OMF_EXTENSIONS: 0xA0,
+    CommentClass.NEW_OMF: 0xA1,
+    CommentClass.LINK_PASS: 0xA2,
+    CommentClass.LIBMOD: 0xA3,
+    CommentClass.EXESTR: 0xA4,
+    CommentClass.INCERR: 0xA6,
+    CommentClass.NOPAD: 0xA7,
+    CommentClass.WKEXT: 0xA8,
+    CommentClass.LZEXT: 0xA9,
+    CommentClass.EASY_OMF: 0xAA,
+    CommentClass.LINKER_32BIT: 0xB0,
+    CommentClass.LINKER_32BIT_ALT: 0xB1,
+    CommentClass.COMMENT: 0xDA,
+    CommentClass.COMPILER: 0xDB,
+    CommentClass.DATE: 0xDC,
+    CommentClass.TIMESTAMP: 0xDD,
+    CommentClass.USER: 0xDF,
+    CommentClass.DEPENDENCY: 0xE9,
+    CommentClass.DISASM_DIRECTIVE: 0xFD,
+    CommentClass.LINKER_DIRECTIVE: 0xFE,
+    CommentClass.COMMANDLINE: 0xFF,
+}
+
+
+class A0Subtype(StrEnum):
     """OMF Extensions (A0) comment subtypes."""
-    IMPDEF = (0x01, "IMPDEF")
-    EXPDEF = (0x02, "EXPDEF")
-    INCDEF = (0x03, "INCDEF")
-    PROTECTED_MEMORY = (0x04, "Protected Memory Library")
-    LNKDIR = (0x05, "LNKDIR")
-    BIG_ENDIAN = (0x06, "Big-endian")
-    PRECOMP = (0x07, "PRECOMP")
+    IMPDEF = "IMPDEF"
+    EXPDEF = "EXPDEF"
+    INCDEF = "INCDEF"
+    PROTECTED_MEMORY = "Protected Memory Library"
+    LNKDIR = "LNKDIR"
+    BIG_ENDIAN = "Big-endian"
+    PRECOMP = "PRECOMP"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "A0Subtype":
+        """Look up A0 subtype from raw byte value."""
+        match (value, variant):
+            case (0x01, _): return cls.IMPDEF
+            case (0x02, _): return cls.EXPDEF
+            case (0x03, _): return cls.INCDEF
+            case (0x04, _): return cls.PROTECTED_MEMORY
+            case (0x05, _): return cls.LNKDIR
+            case (0x06, _): return cls.BIG_ENDIAN
+            case (0x07, _): return cls.PRECOMP
+            case _: raise ValueError(f"Unknown {cls.__name__} value: 0x{value:02X}")
 
 
 @unique
@@ -266,14 +249,27 @@ class GrpdefComponent(IntEnum):
     ABSOLUTE = 0xFA
 
 
-class ComdefType(LabeledEnum):
+class ComdefType(StrEnum):
     """COMDEF data type codes.
 
     - FAR: FAR data with element count and size
     - NEAR: NEAR data with byte size
     """
-    FAR = EnumValue(0x61, "FAR")
-    NEAR = EnumValue(0x62, "NEAR")
+    FAR = "FAR"
+    NEAR = "NEAR"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "ComdefType":
+        """Look up COMDEF type from raw byte value."""
+        match (value, variant):
+            case (0x61, _): return cls.FAR
+            case (0x62, _): return cls.NEAR
+            case _: raise ValueError(f"Unknown {cls.__name__} value: 0x{value:02X}")
+
+
+# Raw byte values for COMDEF types (used in parsing comparisons)
+COMDEF_TYPE_FAR = 0x61
+COMDEF_TYPE_NEAR = 0x62
 
 
 @unique
@@ -283,7 +279,7 @@ class TypdefLeaf(IntEnum):
     NEAR = 0x62
 
 
-class SegAlignment(LabeledEnum):
+class SegAlignment(StrEnum):
     """SEGDEF alignment values (A field in ACBP byte).
 
     - Absolute: Absolute segment (frame number and offset follow)
@@ -295,18 +291,33 @@ class SegAlignment(LabeledEnum):
     - LTL(6): Not supported (Intel: LTL paragraph aligned) [PharLap: 4K page]
     - Undefined(7): Not defined
     """
-    ABSOLUTE = EnumValue(0, "Absolute")
-    BYTE = EnumValue(1, "Byte")
-    WORD = EnumValue(2, "Word")
-    PARAGRAPH = EnumValue(3, "Paragraph")
-    PAGE = EnumValue(4, "Page (256-byte Intel / 4K IBM)")
-    DWORD = EnumValue(5, "DWord")
-    LTL = EnumValue(6, "LTL(6)")
-    PHARLAP_PAGE_4K = EnumValue(106, "Page (4K) [align 6]")  # PharLap align 6
-    UNDEFINED = EnumValue(7, "Undefined(7)")
+    ABSOLUTE = "Absolute"
+    BYTE = "Byte"
+    WORD = "Word"
+    PARAGRAPH = "Paragraph"
+    PAGE = "Page (256-byte Intel / 4K IBM)"
+    DWORD = "DWord"
+    LTL = "LTL(6)"
+    PHARLAP_PAGE_4K = "Page (4K) [PharLap]"
+    UNDEFINED = "Undefined(7)"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "SegAlignment":
+        """Look up segment alignment from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.ABSOLUTE
+            case (1, _): return cls.BYTE
+            case (2, _): return cls.WORD
+            case (3, _): return cls.PARAGRAPH
+            case (4, _): return cls.PAGE
+            case (5, _): return cls.DWORD
+            case (6, OMFVariant.PHARLAP): return cls.PHARLAP_PAGE_4K
+            case (6, _): return cls.LTL
+            case (7, _): return cls.UNDEFINED
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
 
 
-class SegCombine(LabeledEnum):
+class SegCombine(StrEnum):
     """SEGDEF combine values (C field in ACBP byte).
 
     - Private: Do not combine with any other segment
@@ -318,17 +329,31 @@ class SegCombine(LabeledEnum):
     - Common: Combine by overlay using maximum size
     - Public(7): Same as Public
     """
-    PRIVATE = EnumValue(0, "Private")
-    RESERVED_1 = EnumValue(1, "Reserved(1) [Intel: Common]")
-    PUBLIC = EnumValue(2, "Public")
-    RESERVED_3 = EnumValue(3, "Reserved(3)")
-    PUBLIC_4 = EnumValue(4, "Public(4)")
-    STACK = EnumValue(5, "Stack")
-    COMMON = EnumValue(6, "Common")
-    PUBLIC_7 = EnumValue(7, "Public(7)")
+    PRIVATE = "Private"
+    RESERVED_1 = "Reserved(1) [Intel: Common]"
+    PUBLIC = "Public"
+    RESERVED_3 = "Reserved(3)"
+    PUBLIC_4 = "Public(4)"
+    STACK = "Stack"
+    COMMON = "Common"
+    PUBLIC_7 = "Public(7)"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "SegCombine":
+        """Look up segment combine from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.PRIVATE
+            case (1, _): return cls.RESERVED_1
+            case (2, _): return cls.PUBLIC
+            case (3, _): return cls.RESERVED_3
+            case (4, _): return cls.PUBLIC_4
+            case (5, _): return cls.STACK
+            case (6, _): return cls.COMMON
+            case (7, _): return cls.PUBLIC_7
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
 
 
-class SegAccess(LabeledEnum):
+class SegAccess(StrEnum):
     """SEGDEF access types (AT field in PharLap access byte).
 
     Per PharLap Easy OMF-386 specification, the access byte contains a 2-bit
@@ -339,13 +364,23 @@ class SegAccess(LabeledEnum):
     - ER: Execute/read (2)
     - RW: Read/write (3)
     """
-    RO = EnumValue(0, "Read only")
-    EO = EnumValue(1, "Execute only")
-    ER = EnumValue(2, "Execute/read")
-    RW = EnumValue(3, "Read/write")
+    RO = "Read only"
+    EO = "Execute only"
+    ER = "Execute/read"
+    RW = "Read/write"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "SegAccess":
+        """Look up segment access from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.RO
+            case (1, _): return cls.EO
+            case (2, _): return cls.ER
+            case (3, _): return cls.RW
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
 
 
-class FixupLocation(LabeledEnum):
+class FixupLocation(StrEnum):
     """FIXUPP location types. Some values differ between TIS and PharLap variants.
 
     TIS standard locations:
@@ -360,23 +395,40 @@ class FixupLocation(LabeledEnum):
     - 13: Loader-resolved Offset(32) - 32-bit loader-resolved offset
 
     PharLap Easy OMF-386 differences:
-    - 5: 32-bit offset (PHARLAP_OFFSET_32, synthetic int_val=105)
+    - 5: 32-bit offset (PHARLAP_OFFSET_32)
     - 6: 48-bit pointer (16:32) (TIS: reserved)
     """
-    BYTE = EnumValue(0, "Byte(8)")
-    OFFSET_16 = EnumValue(1, "Offset(16)")
-    SEGMENT_16 = EnumValue(2, "Segment(16)")
-    PTR_16_16 = EnumValue(3, "Ptr(16:16)")
-    HIBYTE = EnumValue(4, "HiByte(8)")
-    LOADER_OFFSET_16 = EnumValue(5, "Loader-resolved Offset(16)")
-    PHARLAP_OFFSET_32 = EnumValue(105, "Offset(32) [loc 5]")  # PharLap loc 5
-    PHARLAP_PTR_16_32 = EnumValue(6, "Ptr(16:32) [loc 6]")
-    OFFSET_32 = EnumValue(9, "Offset(32)")
-    PTR_16_32 = EnumValue(11, "Ptr(16:32)")
-    LOADER_OFFSET_32 = EnumValue(13, "Loader-resolved Offset(32)")
+    BYTE = "Byte(8)"
+    OFFSET_16 = "Offset(16)"
+    SEGMENT_16 = "Segment(16)"
+    PTR_16_16 = "Ptr(16:16)"
+    HIBYTE = "HiByte(8)"
+    LOADER_OFFSET_16 = "Loader-resolved Offset(16)"
+    PHARLAP_OFFSET_32 = "Offset(32) [PharLap loc 5]"
+    PHARLAP_PTR_16_32 = "Ptr(16:32) [PharLap loc 6]"
+    OFFSET_32 = "Offset(32)"
+    PTR_16_32 = "Ptr(16:32)"
+    LOADER_OFFSET_32 = "Loader-resolved Offset(32)"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "FixupLocation":
+        """Look up fixup location from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.BYTE
+            case (1, _): return cls.OFFSET_16
+            case (2, _): return cls.SEGMENT_16
+            case (3, _): return cls.PTR_16_16
+            case (4, _): return cls.HIBYTE
+            case (5, OMFVariant.PHARLAP): return cls.PHARLAP_OFFSET_32
+            case (5, _): return cls.LOADER_OFFSET_16
+            case (6, OMFVariant.PHARLAP): return cls.PHARLAP_PTR_16_32
+            case (9, _): return cls.OFFSET_32
+            case (11, _): return cls.PTR_16_32
+            case (13, _): return cls.LOADER_OFFSET_32
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
 
 
-class FrameMethod(LabeledEnum):
+class FrameMethod(StrEnum):
     """FIXUPP frame determination methods.
 
     - F0:SEGDEF: Frame specified by SEGDEF index
@@ -387,16 +439,45 @@ class FrameMethod(LabeledEnum):
     - F5:Target: Frame determined by target
     - F6:Invalid: Invalid/reserved
     """
-    SEGDEF = EnumValue(0, "F0:SEGDEF")
-    GRPDEF = EnumValue(1, "F1:GRPDEF")
-    EXTDEF = EnumValue(2, "F2:EXTDEF")
-    FRAME_NUM = EnumValue(3, "F3:FrameNum")
-    LOCATION = EnumValue(4, "F4:Location")
-    TARGET = EnumValue(5, "F5:Target")
-    INVALID = EnumValue(6, "F6:Invalid")
+    SEGDEF = "F0:SEGDEF"
+    GRPDEF = "F1:GRPDEF"
+    EXTDEF = "F2:EXTDEF"
+    FRAME_NUM = "F3:FrameNum"
+    LOCATION = "F4:Location"
+    TARGET = "F5:Target"
+    INVALID = "F6:Invalid"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "FrameMethod":
+        """Look up frame method from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.SEGDEF
+            case (1, _): return cls.GRPDEF
+            case (2, _): return cls.EXTDEF
+            case (3, _): return cls.FRAME_NUM
+            case (4, _): return cls.LOCATION
+            case (5, _): return cls.TARGET
+            case (6, _): return cls.INVALID
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
+
+    @classmethod
+    def to_raw(cls, member: "FrameMethod") -> int:
+        """Get raw byte value for a FrameMethod member."""
+        return _FRAME_METHOD_TO_RAW[member]
 
 
-class TargetMethod(LabeledEnum):
+_FRAME_METHOD_TO_RAW: dict[FrameMethod, int] = {
+    FrameMethod.SEGDEF: 0,
+    FrameMethod.GRPDEF: 1,
+    FrameMethod.EXTDEF: 2,
+    FrameMethod.FRAME_NUM: 3,
+    FrameMethod.LOCATION: 4,
+    FrameMethod.TARGET: 5,
+    FrameMethod.INVALID: 6,
+}
+
+
+class TargetMethod(StrEnum):
     """FIXUPP target determination methods.
 
     - T0:SEGDEF: Target specified by SEGDEF index with displacement
@@ -407,16 +488,49 @@ class TargetMethod(LabeledEnum):
     - T5:GRPDEF(0): Target specified by GRPDEF index, displacement assumed 0
     - T6:EXTDEF(0): Target specified by EXTDEF index, displacement assumed 0
     """
-    SEGDEF = EnumValue(0, "T0:SEGDEF")
-    GRPDEF = EnumValue(1, "T1:GRPDEF")
-    EXTDEF = EnumValue(2, "T2:EXTDEF")
-    FRAME_NUM = EnumValue(3, "T3:FrameNum")
-    SEGDEF_NO_DISP = EnumValue(4, "T4:SEGDEF(0)")
-    GRPDEF_NO_DISP = EnumValue(5, "T5:GRPDEF(0)")
-    EXTDEF_NO_DISP = EnumValue(6, "T6:EXTDEF(0)")
+    SEGDEF = "T0:SEGDEF"
+    GRPDEF = "T1:GRPDEF"
+    EXTDEF = "T2:EXTDEF"
+    FRAME_NUM = "T3:FrameNum"
+    SEGDEF_NO_DISP = "T4:SEGDEF(0)"
+    GRPDEF_NO_DISP = "T5:GRPDEF(0)"
+    EXTDEF_NO_DISP = "T6:EXTDEF(0)"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "TargetMethod":
+        """Look up target method from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.SEGDEF
+            case (1, _): return cls.GRPDEF
+            case (2, _): return cls.EXTDEF
+            case (3, _): return cls.FRAME_NUM
+            case (4, _): return cls.SEGDEF_NO_DISP
+            case (5, _): return cls.GRPDEF_NO_DISP
+            case (6, _): return cls.EXTDEF_NO_DISP
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
+
+    @classmethod
+    def to_raw(cls, member: "TargetMethod") -> int:
+        """Get raw byte value for a TargetMethod member."""
+        return _TARGET_METHOD_TO_RAW[member]
+
+    def has_displacement(self) -> bool:
+        """Check if this target method includes a displacement field."""
+        return TargetMethod.to_raw(self) < 4
 
 
-class ComdatSelection(LabeledEnum):
+_TARGET_METHOD_TO_RAW: dict[TargetMethod, int] = {
+    TargetMethod.SEGDEF: 0,
+    TargetMethod.GRPDEF: 1,
+    TargetMethod.EXTDEF: 2,
+    TargetMethod.FRAME_NUM: 3,
+    TargetMethod.SEGDEF_NO_DISP: 4,
+    TargetMethod.GRPDEF_NO_DISP: 5,
+    TargetMethod.EXTDEF_NO_DISP: 6,
+}
+
+
+class ComdatSelection(StrEnum):
     """COMDAT selection attribute (high-order 4 bits of attribute byte).
 
     - No Match: Only one instance allowed; duplicate definitions are errors
@@ -424,13 +538,23 @@ class ComdatSelection(LabeledEnum):
     - Same Size: Pick any, but all definitions must have same size
     - Exact Match: Pick any, but all definitions must have matching checksums
     """
-    NO_MATCH = EnumValue(0, "No Match")
-    PICK_ANY = EnumValue(1, "Pick Any")
-    SAME_SIZE = EnumValue(2, "Same Size")
-    EXACT_MATCH = EnumValue(3, "Exact Match")
+    NO_MATCH = "No Match"
+    PICK_ANY = "Pick Any"
+    SAME_SIZE = "Same Size"
+    EXACT_MATCH = "Exact Match"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "ComdatSelection":
+        """Look up COMDAT selection from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.NO_MATCH
+            case (1, _): return cls.PICK_ANY
+            case (2, _): return cls.SAME_SIZE
+            case (3, _): return cls.EXACT_MATCH
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
 
 
-class ComdatAllocation(LabeledEnum):
+class ComdatAllocation(StrEnum):
     """COMDAT allocation attribute (low-order 4 bits of attribute byte).
 
     - Explicit: Allocate in segment specified by SEGDEF index
@@ -439,14 +563,25 @@ class ComdatAllocation(LabeledEnum):
     - Code32: Allocate in default 32-bit code segment
     - Data32: Allocate in default 32-bit data segment
     """
-    EXPLICIT = EnumValue(0, "Explicit")
-    FAR_CODE = EnumValue(1, "Far Code (CODE16)")
-    FAR_DATA = EnumValue(2, "Far Data (DATA16)")
-    CODE32 = EnumValue(3, "Code32")
-    DATA32 = EnumValue(4, "Data32")
+    EXPLICIT = "Explicit"
+    FAR_CODE = "Far Code (CODE16)"
+    FAR_DATA = "Far Data (DATA16)"
+    CODE32 = "Code32"
+    DATA32 = "Data32"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "ComdatAllocation":
+        """Look up COMDAT allocation from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.EXPLICIT
+            case (1, _): return cls.FAR_CODE
+            case (2, _): return cls.FAR_DATA
+            case (3, _): return cls.CODE32
+            case (4, _): return cls.DATA32
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
 
 
-class ComdatAlign(LabeledEnum):
+class ComdatAlign(StrEnum):
     """COMDAT alignment values. Values 0-5 correspond to SEGDEF alignment.
 
     - FromSEGDEF: Use alignment from associated SEGDEF record
@@ -456,15 +591,27 @@ class ComdatAlign(LabeledEnum):
     - Page: Page aligned
     - DWord: DWord (4-byte) aligned
     """
-    FROM_SEGDEF = EnumValue(0, "FromSEGDEF")
-    BYTE = EnumValue(1, "Byte")
-    WORD = EnumValue(2, "Word")
-    PARAGRAPH = EnumValue(3, "Para")
-    PAGE = EnumValue(4, "Page")
-    DWORD = EnumValue(5, "DWord")
+    FROM_SEGDEF = "FromSEGDEF"
+    BYTE = "Byte"
+    WORD = "Word"
+    PARAGRAPH = "Para"
+    PAGE = "Page"
+    DWORD = "DWord"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "ComdatAlign":
+        """Look up COMDAT alignment from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.FROM_SEGDEF
+            case (1, _): return cls.BYTE
+            case (2, _): return cls.WORD
+            case (3, _): return cls.PARAGRAPH
+            case (4, _): return cls.PAGE
+            case (5, _): return cls.DWORD
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
 
 
-class BackpatchLocation(LabeledEnum):
+class BackpatchLocation(StrEnum):
     """BAKPAT/NBKPAT location types.
 
     - Byte(8): 8-bit value
@@ -472,63 +619,119 @@ class BackpatchLocation(LabeledEnum):
     - DWord(32): 32-bit value
     - DWord(32-IBM): 32-bit value (IBM LINK386 extension)
     """
-    BYTE = EnumValue(0, "Byte(8)")
-    WORD = EnumValue(1, "Word(16)")
-    DWORD = EnumValue(2, "DWord(32)")
-    DWORD_IBM = EnumValue(9, "DWord(32-IBM)")
+    BYTE = "Byte(8)"
+    WORD = "Word(16)"
+    DWORD = "DWord(32)"
+    DWORD_IBM = "DWord(32-IBM)"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "BackpatchLocation":
+        """Look up backpatch location from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.BYTE
+            case (1, _): return cls.WORD
+            case (2, _): return cls.DWORD
+            case (9, _): return cls.DWORD_IBM
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
 
 
-class WatcomProcessor(CharLabeledEnum):
+class WatcomProcessor(StrEnum):
     """Watcom processor type (COMENT 0x9B/0x9D first byte).
 
     Values from Watcom compiler processor/memory model string.
     """
-    I8086 = CharEnumValue('0', "8086")
-    I80286 = CharEnumValue('2', "80286")
-    I80386_PLUS = CharEnumValue('3', "80386+")
+    I8086 = "8086"
+    I80286 = "80286"
+    I80386_PLUS = "80386+"
+
+    @classmethod
+    def from_raw(cls, value: str, variant: OMFVariant) -> "WatcomProcessor":
+        """Look up processor type from raw char value."""
+        match (value, variant):
+            case ('0', _): return cls.I8086
+            case ('2', _): return cls.I80286
+            case ('3', _): return cls.I80386_PLUS
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value!r}")
 
 
-class WatcomMemModel(CharLabeledEnum):
+class WatcomMemModel(StrEnum):
     """Watcom memory model (COMENT 0x9B/0x9D second byte).
 
     Values from Watcom compiler processor/memory model string.
     """
-    SMALL = CharEnumValue('s', "Small")
-    MEDIUM = CharEnumValue('m', "Medium")
-    COMPACT = CharEnumValue('c', "Compact")
-    LARGE = CharEnumValue('l', "Large")
-    HUGE = CharEnumValue('h', "Huge")
-    FLAT = CharEnumValue('f', "Flat")
+    SMALL = "Small"
+    MEDIUM = "Medium"
+    COMPACT = "Compact"
+    LARGE = "Large"
+    HUGE = "Huge"
+    FLAT = "Flat"
+
+    @classmethod
+    def from_raw(cls, value: str, variant: OMFVariant) -> "WatcomMemModel":
+        """Look up memory model from raw char value."""
+        match (value, variant):
+            case ('s', _): return cls.SMALL
+            case ('m', _): return cls.MEDIUM
+            case ('c', _): return cls.COMPACT
+            case ('l', _): return cls.LARGE
+            case ('h', _): return cls.HUGE
+            case ('f', _): return cls.FLAT
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value!r}")
 
 
-class WatcomFPMode(CharLabeledEnum):
+class WatcomFPMode(StrEnum):
     """Watcom floating point mode (COMENT 0x9B/0x9D fourth byte).
 
     Values from Watcom compiler processor/memory model string.
     """
-    EMULATED_INLINE = CharEnumValue('e', "Emulated inline")
-    EMULATOR_CALLS = CharEnumValue('c', "Emulator calls")
-    FP80X87_INLINE = CharEnumValue('p', "80x87 inline")
+    EMULATED_INLINE = "Emulated inline"
+    EMULATOR_CALLS = "Emulator calls"
+    FP80X87_INLINE = "80x87 inline"
+
+    @classmethod
+    def from_raw(cls, value: str, variant: OMFVariant) -> "WatcomFPMode":
+        """Look up FP mode from raw char value."""
+        match (value, variant):
+            case ('e', _): return cls.EMULATED_INLINE
+            case ('c', _): return cls.EMULATOR_CALLS
+            case ('p', _): return cls.FP80X87_INLINE
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value!r}")
 
 
-class LinkerDirectiveCode(CharLabeledEnum):
+class LinkerDirectiveCode(StrEnum):
     """Watcom linker directive codes (COMENT class 0xFE).
 
     Values from Watcom documentation, captured in coment/watcom.py.
     """
-    SOURCE_LANG = CharEnumValue('D', "Source Language")
-    DEFAULT_LIB = CharEnumValue('L', "Default Library")
-    OPT_FAR_CALLS = CharEnumValue('O', "Optimize Far Calls")
-    OPT_UNSAFE = CharEnumValue('U', "Optimization Unsafe")
-    VF_TABLE_DEF = CharEnumValue('V', "VF Table Definition")
-    VF_PURE_DEF = CharEnumValue('P', "VF Pure Definition")
-    VF_REFERENCE = CharEnumValue('R', "VF Reference")
-    PACK_DATA = CharEnumValue('7', "Pack Far Data")
-    FLAT_ADDRS = CharEnumValue('F', "Flat Addresses")
-    TIMESTAMP = CharEnumValue('T', "Object Timestamp")
+    SOURCE_LANG = "Source Language"
+    DEFAULT_LIB = "Default Library"
+    OPT_FAR_CALLS = "Optimize Far Calls"
+    OPT_UNSAFE = "Optimization Unsafe"
+    VF_TABLE_DEF = "VF Table Definition"
+    VF_PURE_DEF = "VF Pure Definition"
+    VF_REFERENCE = "VF Reference"
+    PACK_DATA = "Pack Far Data"
+    FLAT_ADDRS = "Flat Addresses"
+    TIMESTAMP = "Object Timestamp"
+
+    @classmethod
+    def from_raw(cls, value: str, variant: OMFVariant) -> "LinkerDirectiveCode":
+        """Look up linker directive code from raw char value."""
+        match (value, variant):
+            case ('D', _): return cls.SOURCE_LANG
+            case ('L', _): return cls.DEFAULT_LIB
+            case ('O', _): return cls.OPT_FAR_CALLS
+            case ('U', _): return cls.OPT_UNSAFE
+            case ('V', _): return cls.VF_TABLE_DEF
+            case ('P', _): return cls.VF_PURE_DEF
+            case ('R', _): return cls.VF_REFERENCE
+            case ('7', _): return cls.PACK_DATA
+            case ('F', _): return cls.FLAT_ADDRS
+            case ('T', _): return cls.TIMESTAMP
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value!r}")
 
 
-class DisasmDirectiveSubtype(CharLabeledEnum):
+class DisasmDirectiveSubtype(StrEnum):
     """Watcom disassembler directive subtypes (COMENT class 0xFD).
 
     Marks non-executable data regions within code segments for disassemblers.
@@ -536,8 +739,16 @@ class DisasmDirectiveSubtype(CharLabeledEnum):
     - SCAN_TABLE_16: 16-bit scan table ('s', 0x73) - uses 16-bit offsets
     - SCAN_TABLE_32: 32-bit scan table ('S', 0x53) - uses 32-bit offsets
     """
-    SCAN_TABLE_16 = CharEnumValue('s', "DDIR_SCAN_TABLE")
-    SCAN_TABLE_32 = CharEnumValue('S', "DDIR_SCAN_TABLE_32")
+    SCAN_TABLE_16 = "DDIR_SCAN_TABLE"
+    SCAN_TABLE_32 = "DDIR_SCAN_TABLE_32"
+
+    @classmethod
+    def from_raw(cls, value: str, variant: OMFVariant) -> "DisasmDirectiveSubtype":
+        """Look up disasm directive subtype from raw char value."""
+        match (value, variant):
+            case ('s', _): return cls.SCAN_TABLE_16
+            case ('S', _): return cls.SCAN_TABLE_32
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value!r}")
 
 
 class ModEndType(IntFlag):
@@ -748,20 +959,33 @@ RECORD_NAMES: dict[int, str] = {
 RESERVED_SEGMENTS = {"$$TYPES", "$$SYMBOLS", "$$IMPORT"}
 
 
-class RegisterType(LabeledEnum):
+class RegisterType(StrEnum):
     """8086 register types for REGINT record (obsolete 70H).
 
     Per TIS OMF 1.1 Appendix 3, the REGINT record provides information
     about register/register-pairs: CS and IP, SS and SP, DS and ES.
     """
-    CS = EnumValue(0, "CS")
-    DS = EnumValue(1, "DS")
-    SS = EnumValue(2, "SS")
-    ES = EnumValue(3, "ES")
-    IP = EnumValue(4, "IP")
-    SP = EnumValue(5, "SP")
+    CS = "CS"
+    DS = "DS"
+    SS = "SS"
+    ES = "ES"
+    IP = "IP"
+    SP = "SP"
 
-class TypDefVarType(LabeledEnum):
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "RegisterType":
+        """Look up register type from raw byte value."""
+        match (value, variant):
+            case (0, _): return cls.CS
+            case (1, _): return cls.DS
+            case (2, _): return cls.SS
+            case (3, _): return cls.ES
+            case (4, _): return cls.IP
+            case (5, _): return cls.SP
+            case _: raise ValueError(f"Unknown {cls.__name__} value: {value}")
+
+
+class TypDefVarType(StrEnum):
     """TYPDEF variable type values for NEAR/FAR leaves.
 
     Per TIS OMF 1.1 Appendix 3, the variable type field must contain one
@@ -771,9 +995,18 @@ class TypDefVarType(LabeledEnum):
     - Structure: Structure type (0x79)
     - Scalar: Scalar type (0x7B)
     """
-    ARRAY = EnumValue(0x77, "Array")
-    STRUCTURE = EnumValue(0x79, "Structure")
-    SCALAR = EnumValue(0x7B, "Scalar")
+    ARRAY = "Array"
+    STRUCTURE = "Structure"
+    SCALAR = "Scalar"
+
+    @classmethod
+    def from_raw(cls, value: int, variant: OMFVariant) -> "TypDefVarType":
+        """Look up variable type from raw byte value."""
+        match (value, variant):
+            case (0x77, _): return cls.ARRAY
+            case (0x79, _): return cls.STRUCTURE
+            case (0x7B, _): return cls.SCALAR
+            case _: raise ValueError(f"Unknown {cls.__name__} value: 0x{value:02X}")
 
 
 KNOWN_VENDORS: dict[int, str] = {

@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from . import coment_class
-from ..constants import CommentClass, WatcomProcessor, WatcomMemModel, WatcomFPMode, LinkerDirectiveCode, DisasmDirectiveSubtype
+from ..constants import CommentClass, WatcomProcessor, WatcomMemModel, WatcomFPMode, LinkerDirectiveCode, DisasmDirectiveSubtype, OMFVariant
 from ..models import (
     ComentProcModel, ComentLinkerDirective, ComentDisasmDirective,
     LinkerDirSourceLang, LinkerDirDefaultLib, LinkerDirOptFarCalls,
@@ -14,7 +14,7 @@ from ..parsing import RecordParser
 from ..protocols import OMFFileProtocol
 
 
-def parse_proc_model(text: bytes) -> ComentProcModel:
+def parse_proc_model(text: bytes, variant: OMFVariant) -> ComentProcModel:
     """Parse processor/model string (shared by 0x9B and 0x9D)."""
     if not text or len(text) < 4:
         return ComentProcModel(
@@ -31,9 +31,9 @@ def parse_proc_model(text: bytes) -> ComentProcModel:
     fp_char = chr(text[3])
     pic = len(text) >= 5 and chr(text[4]) == 'i'
 
-    processor = WatcomProcessor(proc_char)
-    mem_model = WatcomMemModel(model_char)
-    fp_mode = WatcomFPMode(fp_char)
+    processor = WatcomProcessor.from_raw(proc_char, variant)
+    mem_model = WatcomMemModel.from_raw(model_char, variant)
+    fp_mode = WatcomFPMode.from_raw(fp_char, variant)
 
     return ComentProcModel(
         processor=processor,
@@ -47,7 +47,7 @@ def parse_proc_model(text: bytes) -> ComentProcModel:
 @coment_class(CommentClass.WAT_PROC_MODEL)
 def handle_wat_proc_model(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentProcModel:
     """Watcom Processor & Model info (0x9B)."""
-    return parse_proc_model(text)
+    return parse_proc_model(text, omf.variant.omf_variant)
 
 
 
@@ -69,7 +69,7 @@ def handle_linker_directive(omf: OMFFileProtocol, sub: RecordParser, flags: int,
     directive_char = chr(directive_byte)
 
     try:
-        code = LinkerDirectiveCode(directive_char)
+        code = LinkerDirectiveCode.from_raw(directive_char, omf.variant.omf_variant)
     except ValueError:
         raise ValueError(f"Unknown linker directive code: 0x{directive_byte:02X} ({directive_char!r})") from None
 
@@ -261,7 +261,7 @@ def handle_disasm_directive(omf: OMFFileProtocol, sub: RecordParser, flags: int,
         return None
 
     try:
-        subtype = DisasmDirectiveSubtype(chr(subtype_byte))
+        subtype = DisasmDirectiveSubtype.from_raw(chr(subtype_byte), omf.variant.omf_variant)
     except ValueError:
         raise ValueError(f"Unknown disasm directive subtype: 0x{subtype_byte:02X}") from None
 

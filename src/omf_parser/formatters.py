@@ -20,11 +20,12 @@ from .models import (
     ParsedRheadr, ParsedRegInt, ParsedReDataPeData, ParsedRiDataPiData,
     ParsedOvlDef, ParsedEndRec, ParsedBlkDef, ParsedBlkEnd,
     ParsedDebSym, ParsedObsoleteLib,
-    ParsedComent,
+    ParsedComent, ParsedUnknownComent,
     ComDefFarDefinition, ComDefNearDefinition,
     ComDefBorlandDefinition, ComDefUnknownDefinition,
 )
 from .parsing import format_hex_with_ascii
+from .constants import FrameMethod, CommentClass
 
 
 def _bytes_to_hex(data: bytes | None) -> str | None:
@@ -115,8 +116,8 @@ class HumanFormatter:
     def _format_ParsedSegDef(self, p: ParsedSegDef) -> str:
         lines = [
             f"  ACBP: 0x{p.acbp:02X}",
-            f"    Alignment: {p.alignment.label}",
-            f"    Combine: {p.combine.label}",
+            f"    Alignment: {p.alignment}",
+            f"    Combine: {p.combine}",
             f"    Big: {p.big} (segment is {'64K/4GB' if p.big else 'smaller'})",
             f"    Use32: {p.use32} ({'Use32' if p.use32 else 'Use16'})"
         ]
@@ -259,7 +260,7 @@ class HumanFormatter:
 
             if leaf.type == 'NEAR':
                 lines.append(f"{indent}NEAR Variable")
-                lines.append(f"{indent}  Type: {leaf.var_type.label}")
+                lines.append(f"{indent}  Type: {leaf.var_type}")
                 lines.append(f"{indent}  Size: {leaf.size_bits} bits ({leaf.size_bytes} bytes)")
             elif leaf.type == 'FAR':
                 lines.append(f"{indent}FAR Variable (Array)")
@@ -315,9 +316,9 @@ class HumanFormatter:
         for sub in p.subrecords:
             if isinstance(sub, ParsedThread):
                 kind_str = sub.kind.value if isinstance(sub.kind, Enum) else sub.kind
-                out = f"    THREAD {kind_str}#{sub.thread_num} Method={sub.method.label}"
+                out = f"    THREAD {kind_str}#{sub.thread_num} Method={sub.method}"
                 if sub.index is not None:
-                    label = "FrameNum" if sub.method.int_val == 3 else "Index"
+                    label = "FrameNum" if sub.method == FrameMethod.FRAME_NUM else "Index"
                     out += f" {label}={sub.index}"
                 lines.append(out)
                 for warn in sub.warnings:
@@ -325,12 +326,12 @@ class HumanFormatter:
             elif isinstance(sub, ParsedFixup):
                 lines.append(f"    FIXUP @{sub.data_offset:03X}")
                 mode_str = sub.mode.value if isinstance(sub.mode, Enum) else sub.mode
-                lines.append(f"      Location: {sub.location.label}, Mode: {mode_str}")
-                frame_line = f"      Frame: Method={sub.frame_method.label} ({sub.frame_source})"
+                lines.append(f"      Location: {sub.location}, Mode: {mode_str}")
+                frame_line = f"      Frame: Method={sub.frame_method} ({sub.frame_source})"
                 if sub.frame_datum is not None:
                     frame_line += f" Datum={sub.frame_datum}"
                 lines.append(frame_line)
-                target_line = f"      Target: Method={sub.target_method.label} ({sub.target_source})"
+                target_line = f"      Target: Method={sub.target_method} ({sub.target_source})"
                 if sub.target_datum is not None:
                     target_line += f" Datum={sub.target_datum}"
                 lines.append(target_line)
@@ -361,9 +362,9 @@ class HumanFormatter:
             f"    Iterated Data: {p.iterated}",
             f"    Local (LCOMDAT): {p.local}",
             f"    Data in Code Seg: {p.data_in_code}",
-            f"  Selection: {p.selection.label}",
-            f"  Allocation: {p.allocation.label}",
-            f"  Alignment: {p.alignment.label}",
+            f"  Selection: {p.selection}",
+            f"  Allocation: {p.allocation}",
+            f"  Alignment: {p.alignment}",
             f"  Enum Offset: 0x{p.enum_offset:X}",
             f"  Type Index: {p.type_index}"
         ]
@@ -402,7 +403,7 @@ class HumanFormatter:
             lines.append(f"    [!] Warning: {warn}")
         for rec in p.records:
             lines.append(f"    Segment: {rec.segment}")
-            lines.append(f"    Location Type: {rec.location.label}")
+            lines.append(f"    Location Type: {rec.location}")
             lines.append(f"    Offset: 0x{rec.offset:X}")
             lines.append(f"    Value: 0x{rec.value:X}")
         return "\n".join(lines)
@@ -411,7 +412,7 @@ class HumanFormatter:
         lines = ["  Named Backpatch Records:"]
         for rec in p.records:
             lines.append(f"    Symbol: '{rec.symbol}'")
-            lines.append(f"    Location Type: {rec.location.label}")
+            lines.append(f"    Location Type: {rec.location}")
             lines.append(f"    Offset: 0x{rec.offset:X}")
             lines.append(f"    Value: 0x{rec.value:X}")
         return "\n".join(lines)
@@ -480,7 +481,7 @@ class HumanFormatter:
             "    Provides initial values for 8086 registers"
         ]
         for reg in p.registers:
-            lines.append(f"    {reg.reg_type.label}: 0x{reg.value:04X}")
+            lines.append(f"    {reg.reg_type}: 0x{reg.value:04X}")
         return "\n".join(lines)
 
     def _format_ParsedReDataPeData(self, p: ParsedReDataPeData) -> str:
@@ -573,8 +574,9 @@ class HumanFormatter:
         return "\n".join(lines)
 
     def _format_ParsedComent(self, p: ParsedComent) -> str:
+        raw = CommentClass.to_raw(p.comment_class)
         lines = [
-            f"  Comment Class: {p.class_name} (0x{p.comment_class:02X})",
+            f"  Comment Class: {p.comment_class} (0x{raw:02X})",
             f"  Flags: NoPurge={int(p.no_purge)}, NoList={int(p.no_list)}"
         ]
         for warn in p.warnings:
@@ -583,7 +585,16 @@ class HumanFormatter:
             content_lines = self._format_coment_content(p.content)
             if content_lines:
                 lines.append(content_lines)
-        elif p.raw_data:
+        return "\n".join(lines)
+
+    def _format_ParsedUnknownComent(self, p: ParsedUnknownComent) -> str:
+        lines = [
+            f"  Comment Class: Unknown (0x{p.comment_class:02X})",
+            f"  Flags: NoPurge={int(p.no_purge)}, NoList={int(p.no_list)}"
+        ]
+        for warn in p.warnings:
+            lines.append(f"  [!] WARNING: {warn}")
+        if p.raw_data:
             lines.append(f"  Data: {_bytes_to_hex(p.raw_data)}")
         return "\n".join(lines)
 
@@ -629,9 +640,9 @@ class HumanFormatter:
             return "  [Obsolete] MS-DOS Version"
 
         if name == 'ComentProcModel':
-            proc = content.processor.label if content.processor else "Unknown"
-            mem = content.mem_model.label if content.mem_model else "Unknown"
-            fp = content.fp_mode.label if content.fp_mode else "Unknown"
+            proc = content.processor if content.processor else "Unknown"
+            mem = content.mem_model if content.mem_model else "Unknown"
+            fp = content.fp_mode if content.fp_mode else "Unknown"
             lines = [
                 f"  Processor: {proc}",
                 f"  Memory Model: {mem}",
@@ -680,7 +691,7 @@ class HumanFormatter:
             return "\n".join(lines)
 
         if name == 'ComentDisasmDirective':
-            lines = [f"  Subtype: '{content.subtype.char_val}' ({content.subtype.label})"]
+            lines = [f"  Subtype: {content.subtype}"]
             for warn in content.warnings:
                 lines.append(f"    [!] WARNING: {warn}")
             if content.segment_index > 0:
@@ -697,7 +708,7 @@ class HumanFormatter:
             return "\n".join(lines)
 
         if name == 'ComentLinkerDirective':
-            lines = [f"  Directive: '{content.directive_code.char_val}' ({content.directive_code.label})"]
+            lines = [f"  Directive: {content.directive_code}"]
             for warn in content.warnings:
                 lines.append(f"    [!] WARNING: {warn}")
             if content.content:
@@ -707,7 +718,7 @@ class HumanFormatter:
             return "\n".join(lines)
 
         if name == 'ComentOmfExtensions':
-            lines = [f"  A0 Subtype: {content.subtype.label}"]
+            lines = [f"  A0 Subtype: {content.subtype}"]
             for warn in content.warnings:
                 lines.append(f"    [!] {warn}")
             if content.content:

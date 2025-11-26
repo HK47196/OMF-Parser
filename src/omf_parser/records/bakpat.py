@@ -26,7 +26,7 @@ def handle_bakpat(omf: OMFFileProtocol, record: RecordInfo) -> ParsedBackpatch:
             result.warnings.append("Truncated BAKPAT record")
             break
 
-        location = BackpatchLocation(loc_type_val)
+        location = BackpatchLocation.from_raw(loc_type_val, omf.variant.omf_variant)
 
         if loc_type_val == 2 and record.type == RecordType.BAKPAT:
             result.warnings.append("Location type 2 (DWord) only valid for B3H records")
@@ -69,7 +69,7 @@ def handle_nbkpat(omf: OMFFileProtocol, record: RecordInfo) -> ParsedNamedBackpa
             name_idx = sub.parse_index()
             symbol = omf.get_lname(name_idx)
 
-        location = BackpatchLocation(loc_type_val)
+        location = BackpatchLocation.from_raw(loc_type_val, omf.variant.omf_variant)
 
         val_size = sub.get_offset_field_size(is_32bit)
         offset = sub.parse_numeric(val_size)

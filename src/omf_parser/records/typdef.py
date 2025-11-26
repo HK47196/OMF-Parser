@@ -46,7 +46,7 @@ def handle_typdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedTypDef | No
             result.leaves.append(TypDefLeafNear(
                 type='NEAR',
                 leaf_type=leaf_type,
-                var_type=TypDefVarType(var_type),
+                var_type=TypDefVarType.from_raw(var_type, omf.variant.omf_variant),
                 size_bits=size_bits,
                 size_bytes=size_bits // 8
             ))
@@ -97,7 +97,7 @@ def handle_typdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedTypDef | No
                     type='NEAR',
                     leaf_index=leaf_idx + 1,
                     leaf_type=leaf_type,
-                    var_type=TypDefVarType(var_type),
+                    var_type=TypDefVarType.from_raw(var_type, omf.variant.omf_variant),
                     size_bits=size_bits,
                     size_bytes=size_bits // 8
                 ))
