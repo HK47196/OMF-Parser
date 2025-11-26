@@ -83,9 +83,8 @@ class StartAddress(BaseModel):
     """MODEND start address information."""
     model_config = ConfigDict(strict=True)
 
-    frame_method: int
-    p_bit: int
-    target_method: int
+    frame_method: FrameMethod
+    target_method: TargetMethod
     frame_datum: Optional[int] = None
     target_datum: Optional[int] = None
     target_displacement: Optional[int] = None
