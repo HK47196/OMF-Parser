@@ -6,6 +6,7 @@ from typing import TypedDict, Callable
 from ..protocols import OMFFileProtocol
 from ..parsing import RecordParser
 from ..models import AnyComentContent
+from ..constants import LabeledEnum, CommentClass
 
 ComentHandler = Callable[[OMFFileProtocol, RecordParser, int, bytes], AnyComentContent | None]
 
@@ -24,12 +25,12 @@ class DuplicateHandlerError(Exception):
 
 
 def coment_class(
-    *classes: int, features: set[str] | None = None
+    *classes: CommentClass | int, features: set[str] | None = None
 ) -> Callable[[ComentHandler], ComentHandler]:
     """Register a handler for one or more COMENT classes.
 
     Args:
-        *classes: Comment class bytes (e.g., 0x00, 0xA0)
+        *classes: Comment class values (CommentClass enum or int)
         features: Optional set of feature strings required for this handler
 
     Handlers with more specific features take priority. If two handlers
@@ -49,14 +50,15 @@ def coment_class(
 
     def decorator(fn: ComentHandler) -> ComentHandler:
         for cls in classes:
-            for existing in COMENT_CLASS_HANDLERS[cls]:
+            key = cls.int_val if isinstance(cls, LabeledEnum) else cls
+            for existing in COMENT_CLASS_HANDLERS[key]:
                 if existing['features'] == required_features:
                     raise DuplicateHandlerError(
-                        f"Duplicate COMENT handler for class 0x{cls:02X} "
+                        f"Duplicate COMENT handler for class 0x{key:02X} "
                         f"with features {required_features or '(none)'}: "
                         f"{existing['handler'].__name__} and {fn.__name__}"
                     )
-            COMENT_CLASS_HANDLERS[cls].append({
+            COMENT_CLASS_HANDLERS[key].append({
                 'handler': fn,
                 'features': required_features,
             })

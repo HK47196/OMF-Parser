@@ -208,40 +208,41 @@ class RecordType(IntEnum):
         return self
 
 
-class CommentClass(IntEnum):
+class CommentClass(LabeledEnum):
     """COMENT record class types.
 
-    Note: No @unique - different vendors may use overlapping class numbers.
+    Note: Different vendors may use overlapping class numbers.
+    Unknown class values remain as raw int with "Unknown" label.
     """
-    TRANSLATOR = 0x00
-    COPYRIGHT = 0x01
-    LIBSPEC = 0x81
-    WAT_PROC_MODEL = 0x9B
-    MSDOS_VERSION = 0x9C
-    MS_PROC_MODEL = 0x9D
-    DOSSEG = 0x9E
-    DEFAULT_LIBRARY = 0x9F
-    OMF_EXTENSIONS = 0xA0
-    NEW_OMF = 0xA1
-    LINK_PASS = 0xA2
-    LIBMOD = 0xA3
-    EXESTR = 0xA4
-    INCERR = 0xA6
-    NOPAD = 0xA7
-    WKEXT = 0xA8
-    LZEXT = 0xA9
-    EASY_OMF = 0xAA
-    LINKER_32BIT = 0xB0
-    LINKER_32BIT_ALT = 0xB1
-    COMMENT = 0xDA
-    COMPILER = 0xDB
-    DATE = 0xDC
-    TIMESTAMP = 0xDD
-    USER = 0xDF
-    DEPENDENCY = 0xE9
-    DISASM_DIRECTIVE = 0xFD
-    LINKER_DIRECTIVE = 0xFE
-    COMMANDLINE = 0xFF
+    TRANSLATOR = (0x00, "Translator")
+    COPYRIGHT = (0x01, "Intel Copyright")
+    LIBSPEC = (0x81, "Library Specifier (obsolete)")
+    WAT_PROC_MODEL = (0x9B, "Watcom Processor/Model")
+    MSDOS_VERSION = (0x9C, "MS-DOS Version (obsolete)")
+    MS_PROC_MODEL = (0x9D, "MS Processor/Model")
+    DOSSEG = (0x9E, "DOSSEG")
+    DEFAULT_LIBRARY = (0x9F, "Default Library Search")
+    OMF_EXTENSIONS = (0xA0, "OMF Extensions")
+    NEW_OMF = (0xA1, "New OMF Extension")
+    LINK_PASS = (0xA2, "Link Pass Separator")
+    LIBMOD = (0xA3, "LIBMOD")
+    EXESTR = (0xA4, "EXESTR")
+    INCERR = (0xA6, "INCERR")
+    NOPAD = (0xA7, "NOPAD")
+    WKEXT = (0xA8, "WKEXT")
+    LZEXT = (0xA9, "LZEXT")
+    EASY_OMF = (0xAA, "Easy OMF")
+    LINKER_32BIT = (0xB0, "32-bit Linker Extension")
+    LINKER_32BIT_ALT = (0xB1, "32-bit Linker Extension")
+    COMMENT = (0xDA, "Comment")
+    COMPILER = (0xDB, "Compiler")
+    DATE = (0xDC, "Date")
+    TIMESTAMP = (0xDD, "Timestamp")
+    USER = (0xDF, "User")
+    DEPENDENCY = (0xE9, "Dependency File (Borland)")
+    DISASM_DIRECTIVE = (0xFD, "Watcom Disassembler Directive")
+    LINKER_DIRECTIVE = (0xFE, "Watcom Linker Directive")
+    COMMANDLINE = (0xFF, "Command Line (QuickC)")
 
 
 class A0Subtype(LabeledEnum):
@@ -718,37 +719,6 @@ RECORD_NAMES: dict[int, str] = {
     RecordType.LIBEND: "LIBEND",
 }
 
-COMMENT_CLASSES: dict[int, str] = {
-    CommentClass.TRANSLATOR: "Translator",
-    CommentClass.COPYRIGHT: "Intel Copyright",
-    CommentClass.LIBSPEC: "Library Specifier (obsolete)",
-    CommentClass.WAT_PROC_MODEL: "Watcom Processor/Model",
-    CommentClass.MSDOS_VERSION: "MS-DOS Version (obsolete)",
-    CommentClass.MS_PROC_MODEL: "MS Processor/Model",
-    CommentClass.DOSSEG: "DOSSEG",
-    CommentClass.DEFAULT_LIBRARY: "Default Library Search",
-    CommentClass.OMF_EXTENSIONS: "OMF Extensions",
-    CommentClass.NEW_OMF: "New OMF Extension",
-    CommentClass.LINK_PASS: "Link Pass Separator",
-    CommentClass.LIBMOD: "LIBMOD",
-    CommentClass.EXESTR: "EXESTR",
-    CommentClass.INCERR: "INCERR",
-    CommentClass.NOPAD: "NOPAD",
-    CommentClass.WKEXT: "WKEXT",
-    CommentClass.LZEXT: "LZEXT",
-    CommentClass.EASY_OMF: "Easy OMF",
-    CommentClass.LINKER_32BIT: "32-bit Linker Extension",
-    CommentClass.LINKER_32BIT_ALT: "32-bit Linker Extension",
-    CommentClass.COMMENT: "Comment",
-    CommentClass.COMPILER: "Compiler",
-    CommentClass.DATE: "Date",
-    CommentClass.TIMESTAMP: "Timestamp",
-    CommentClass.USER: "User",
-    CommentClass.DEPENDENCY: "Dependency File (Borland)",
-    CommentClass.DISASM_DIRECTIVE: "Watcom Disassembler Directive",
-    CommentClass.LINKER_DIRECTIVE: "Watcom Linker Directive",
-    CommentClass.COMMANDLINE: "Command Line (QuickC)",
-}
 
 
 

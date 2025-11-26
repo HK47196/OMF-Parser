@@ -29,6 +29,7 @@ from omf_parser.constants import (
     DisasmDirectiveSubtype,
     ComdefType,
     A0Subtype,
+    CommentClass,
 )
 
 # Bytes serialize as hex string
@@ -643,11 +644,19 @@ class ParsedObsoleteLib(ParsedRecord):
 class ParsedComent(ParsedRecord):
     """COMENT - Comment record."""
     comment_class: int
-    class_name: str
     no_purge: bool
     no_list: bool
     content: Optional["AnyComentContent"] = None
     raw_data: Optional[BytesField] = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def class_name(self) -> str:
+        """Derive class name from comment_class value."""
+        try:
+            return CommentClass(self.comment_class).label
+        except ValueError:
+            return "Unknown"
 
 
 class ComentTranslator(ParsedComentContent):

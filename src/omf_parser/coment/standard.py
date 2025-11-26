@@ -1,7 +1,7 @@
 """Standard COMENT record handler."""
 
 from ..records import omf_record
-from ..constants import RecordType, ComentFlags, COMMENT_CLASSES
+from ..constants import RecordType, ComentFlags, CommentClass
 from ..models import ParsedComent
 from ..protocols import OMFFileProtocol
 from ..scanner import RecordInfo
@@ -22,11 +22,8 @@ def handle_coment(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComent | No
     np = (flags & ComentFlags.NP) != 0
     nl = (flags & ComentFlags.NL) != 0
 
-    cls_name = COMMENT_CLASSES.get(cls, "Unknown")
-
     result = ParsedComent(
         comment_class=cls,
-        class_name=cls_name,
         no_purge=np,
         no_list=nl
     )
@@ -38,10 +35,11 @@ def handle_coment(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComent | No
         content = handler(omf, sub, flags, text)
         result.content = content
     else:
-        if cls not in COMMENT_CLASSES:
+        try:
+            known_class = CommentClass(cls)
+            warning = f"No handler for comment class 0x{cls:02X} ({known_class.label})"
+        except ValueError:
             warning = f"Unknown comment class 0x{cls:02X}"
-        else:
-            warning = f"No handler for comment class 0x{cls:02X} ({cls_name})"
         result.warnings.append(warning)
         if text:
             result.raw_data = text
