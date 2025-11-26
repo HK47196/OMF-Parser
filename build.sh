@@ -16,7 +16,6 @@ PYTHONPATH=src uv run python -m nuitka \
     --include-package=omf_parser \
     --assume-yes-for-downloads \
     --deployment \
-    --lto=yes \
     build_entry.py
 
 echo ""

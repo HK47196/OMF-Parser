@@ -645,7 +645,7 @@ class ParsedComent(ParsedRecord):
     class_name: str
     no_purge: bool
     no_list: bool
-    content: Optional["ParsedComentContent"] = None
+    content: Optional["AnyComentContent"] = None
     raw_data: Optional[BytesField] = None
 
 
@@ -718,7 +718,7 @@ class ComentOmfExtensions(ParsedComentContent):
     """OMF Extensions (A0 subtypes)."""
     subtype: int
     subtype_name: str
-    content: Optional["ParsedA0Content"] = None
+    content: Optional["AnyA0Content"] = None
 
 
 class A0ImpDef(ParsedA0Content):
@@ -896,7 +896,7 @@ class ComentLinkerDirective(ParsedComentContent):
     """Watcom Linker Directive (COMENT class 0xFE)."""
     directive_code: str
     directive_name: str
-    content: Optional[ParsedComentContent] = None
+    content: Optional["AnyLinkerDirContent"] = None
 
 
 class ComentDisasmDirective(ParsedComentContent):
@@ -994,6 +994,60 @@ class ParsedOMFFile(BaseModel):
     errors: List[str] = []
 
 
+# Union types for nested content fields to ensure proper serialization
+AnyA0Content = (
+    A0ImpDef
+    | A0ExpDef
+    | A0IncDef
+    | A0ProtectedMemory
+    | A0LnkDir
+    | A0BigEndian
+    | A0PreComp
+)
+
+AnyLinkerDirContent = (
+    LinkerDirSourceLang
+    | LinkerDirDefaultLib
+    | LinkerDirOptFarCalls
+    | LinkerDirOptUnsafe
+    | LinkerDirVFTableDef
+    | LinkerDirVFReference
+    | LinkerDirPackData
+    | LinkerDirFlatAddrs
+    | LinkerDirTimestamp
+)
+
+AnyComentContent = (
+    ComentTranslator
+    | ComentCopyright
+    | ComentLibSpec
+    | ComentDosseg
+    | ComentNewOmf
+    | ComentLinkPass
+    | ComentLibMod
+    | ComentExeStr
+    | ComentIncErr
+    | ComentNoPad
+    | ComentWkExt
+    | ComentLzExt
+    | ComentEasyOmf
+    | ComentOmfExtensions
+    | ComentDosVersion
+    | ComentProcModel
+    | ComentDefaultLibrary
+    | ComentComment
+    | ComentCompiler
+    | ComentDate
+    | ComentTimestamp
+    | ComentUser
+    | ComentDependencyFile
+    | ComentCmdLine
+    | Coment32BitLinker
+    | ComentLinkerDirective
+    | ComentDisasmDirective
+)
+
 ParsedLIDataBlock.model_rebuild()
 ParsedComent.model_rebuild()
 ComentOmfExtensions.model_rebuild()
+ComentLinkerDirective.model_rebuild()

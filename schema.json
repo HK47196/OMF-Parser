@@ -1,5 +1,224 @@
 {
   "$defs": {
+    "A0BigEndian": {
+      "description": "Big-endian marker.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "A0BigEndian",
+      "type": "object"
+    },
+    "A0ExpDef": {
+      "description": "EXPDEF - Export definition.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "exported_name": {
+          "title": "Exported Name",
+          "type": "string"
+        },
+        "internal_name": {
+          "title": "Internal Name",
+          "type": "string"
+        },
+        "by_ordinal": {
+          "title": "By Ordinal",
+          "type": "boolean"
+        },
+        "resident": {
+          "title": "Resident",
+          "type": "boolean"
+        },
+        "no_data": {
+          "title": "No Data",
+          "type": "boolean"
+        },
+        "parm_count": {
+          "title": "Parm Count",
+          "type": "integer"
+        },
+        "ordinal": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ordinal"
+        }
+      },
+      "required": [
+        "exported_name",
+        "internal_name",
+        "by_ordinal",
+        "resident",
+        "no_data",
+        "parm_count"
+      ],
+      "title": "A0ExpDef",
+      "type": "object"
+    },
+    "A0ImpDef": {
+      "description": "IMPDEF - Import definition.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "by_ordinal": {
+          "title": "By Ordinal",
+          "type": "boolean"
+        },
+        "internal_name": {
+          "title": "Internal Name",
+          "type": "string"
+        },
+        "module_name": {
+          "title": "Module Name",
+          "type": "string"
+        },
+        "entry_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entry Name"
+        },
+        "ordinal": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ordinal"
+        }
+      },
+      "required": [
+        "by_ordinal",
+        "internal_name",
+        "module_name"
+      ],
+      "title": "A0ImpDef",
+      "type": "object"
+    },
+    "A0IncDef": {
+      "description": "INCDEF - Incremental definition.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "extdef_delta": {
+          "title": "Extdef Delta",
+          "type": "integer"
+        },
+        "linnum_delta": {
+          "title": "Linnum Delta",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "extdef_delta",
+        "linnum_delta"
+      ],
+      "title": "A0IncDef",
+      "type": "object"
+    },
+    "A0LnkDir": {
+      "description": "LNKDIR - Linker directive.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "bit_flags": {
+          "title": "Bit Flags",
+          "type": "integer"
+        },
+        "flags_meanings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Flags Meanings",
+          "type": "array"
+        },
+        "pcode_version": {
+          "default": 0,
+          "title": "Pcode Version",
+          "type": "integer"
+        },
+        "cv_version": {
+          "default": 0,
+          "title": "Cv Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "bit_flags"
+      ],
+      "title": "A0LnkDir",
+      "type": "object"
+    },
+    "A0PreComp": {
+      "description": "Precompiled types marker.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "A0PreComp",
+      "type": "object"
+    },
+    "A0ProtectedMemory": {
+      "description": "Protected memory library.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "A0ProtectedMemory",
+      "type": "object"
+    },
     "AliasEntry": {
       "description": "Alias definition entry.",
       "properties": {
@@ -335,6 +554,769 @@
       "title": "ComdatSelection",
       "type": "array"
     },
+    "Coment32BitLinker": {
+      "description": "32-bit linker extension.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data"
+        }
+      },
+      "title": "Coment32BitLinker",
+      "type": "object"
+    },
+    "ComentCmdLine": {
+      "description": "Command line (QuickC).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "cmdline": {
+          "title": "Cmdline",
+          "type": "string"
+        }
+      },
+      "required": [
+        "cmdline"
+      ],
+      "title": "ComentCmdLine",
+      "type": "object"
+    },
+    "ComentComment": {
+      "description": "Comment text.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "comment": {
+          "title": "Comment",
+          "type": "string"
+        }
+      },
+      "required": [
+        "comment"
+      ],
+      "title": "ComentComment",
+      "type": "object"
+    },
+    "ComentCompiler": {
+      "description": "Compiler identification.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "compiler": {
+          "title": "Compiler",
+          "type": "string"
+        }
+      },
+      "required": [
+        "compiler"
+      ],
+      "title": "ComentCompiler",
+      "type": "object"
+    },
+    "ComentCopyright": {
+      "description": "Copyright notice.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "copyright": {
+          "title": "Copyright",
+          "type": "string"
+        }
+      },
+      "required": [
+        "copyright"
+      ],
+      "title": "ComentCopyright",
+      "type": "object"
+    },
+    "ComentDate": {
+      "description": "Date stamp.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "date": {
+          "title": "Date",
+          "type": "string"
+        }
+      },
+      "required": [
+        "date"
+      ],
+      "title": "ComentDate",
+      "type": "object"
+    },
+    "ComentDefaultLibrary": {
+      "description": "Default library search.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "library": {
+          "title": "Library",
+          "type": "string"
+        }
+      },
+      "required": [
+        "library"
+      ],
+      "title": "ComentDefaultLibrary",
+      "type": "object"
+    },
+    "ComentDependencyFile": {
+      "description": "Dependency file (Borland).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "dependency": {
+          "title": "Dependency",
+          "type": "string"
+        }
+      },
+      "required": [
+        "dependency"
+      ],
+      "title": "ComentDependencyFile",
+      "type": "object"
+    },
+    "ComentDisasmDirective": {
+      "description": "Watcom Disassembler Directive (COMENT class 0xFD).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "subtype": {
+          "title": "Subtype",
+          "type": "string"
+        },
+        "subtype_name": {
+          "title": "Subtype Name",
+          "type": "string"
+        },
+        "is_32bit": {
+          "title": "Is 32Bit",
+          "type": "boolean"
+        },
+        "segment_index": {
+          "title": "Segment Index",
+          "type": "integer"
+        },
+        "segment_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Segment Name"
+        },
+        "lname_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lname Index"
+        },
+        "comdat_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comdat Name"
+        },
+        "start_offset": {
+          "title": "Start Offset",
+          "type": "integer"
+        },
+        "end_offset": {
+          "title": "End Offset",
+          "type": "integer"
+        },
+        "region_size": {
+          "title": "Region Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "subtype",
+        "subtype_name",
+        "is_32bit",
+        "segment_index",
+        "start_offset",
+        "end_offset",
+        "region_size"
+      ],
+      "title": "ComentDisasmDirective",
+      "type": "object"
+    },
+    "ComentDosVersion": {
+      "description": "MS-DOS version (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "major": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Major"
+        },
+        "minor": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Minor"
+        }
+      },
+      "title": "ComentDosVersion",
+      "type": "object"
+    },
+    "ComentDosseg": {
+      "description": "DOSSEG ordering.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "ComentDosseg",
+      "type": "object"
+    },
+    "ComentEasyOmf": {
+      "description": "Easy OMF-386 marker.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "marker": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Marker"
+        }
+      },
+      "title": "ComentEasyOmf",
+      "type": "object"
+    },
+    "ComentExeStr": {
+      "description": "Executable string.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "exe_string": {
+          "title": "Exe String",
+          "type": "string"
+        }
+      },
+      "required": [
+        "exe_string"
+      ],
+      "title": "ComentExeStr",
+      "type": "object"
+    },
+    "ComentIncErr": {
+      "description": "Incremental compilation error.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "ComentIncErr",
+      "type": "object"
+    },
+    "ComentLibMod": {
+      "description": "Library module name.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "module_name": {
+          "title": "Module Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "module_name"
+      ],
+      "title": "ComentLibMod",
+      "type": "object"
+    },
+    "ComentLibSpec": {
+      "description": "Library specifier (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "library": {
+          "title": "Library",
+          "type": "string"
+        }
+      },
+      "required": [
+        "library"
+      ],
+      "title": "ComentLibSpec",
+      "type": "object"
+    },
+    "ComentLinkPass": {
+      "description": "Link pass separator.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "pass_num": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pass Num"
+        }
+      },
+      "title": "ComentLinkPass",
+      "type": "object"
+    },
+    "ComentLinkerDirective": {
+      "description": "Watcom Linker Directive (COMENT class 0xFE).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "directive_code": {
+          "title": "Directive Code",
+          "type": "string"
+        },
+        "directive_name": {
+          "title": "Directive Name",
+          "type": "string"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LinkerDirSourceLang"
+            },
+            {
+              "$ref": "#/$defs/LinkerDirDefaultLib"
+            },
+            {
+              "$ref": "#/$defs/LinkerDirOptFarCalls"
+            },
+            {
+              "$ref": "#/$defs/LinkerDirOptUnsafe"
+            },
+            {
+              "$ref": "#/$defs/LinkerDirVFTableDef"
+            },
+            {
+              "$ref": "#/$defs/LinkerDirVFReference"
+            },
+            {
+              "$ref": "#/$defs/LinkerDirPackData"
+            },
+            {
+              "$ref": "#/$defs/LinkerDirFlatAddrs"
+            },
+            {
+              "$ref": "#/$defs/LinkerDirTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content"
+        }
+      },
+      "required": [
+        "directive_code",
+        "directive_name"
+      ],
+      "title": "ComentLinkerDirective",
+      "type": "object"
+    },
+    "ComentLzExt": {
+      "description": "Lazy extern definitions.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/LazyExternEntry"
+          },
+          "title": "Entries",
+          "type": "array"
+        }
+      },
+      "title": "ComentLzExt",
+      "type": "object"
+    },
+    "ComentNewOmf": {
+      "description": "New OMF extension marker.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data"
+        }
+      },
+      "title": "ComentNewOmf",
+      "type": "object"
+    },
+    "ComentNoPad": {
+      "description": "No segment padding.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "ComentNoPad",
+      "type": "object"
+    },
+    "ComentOmfExtensions": {
+      "description": "OMF Extensions (A0 subtypes).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "subtype": {
+          "title": "Subtype",
+          "type": "integer"
+        },
+        "subtype_name": {
+          "title": "Subtype Name",
+          "type": "string"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/A0ImpDef"
+            },
+            {
+              "$ref": "#/$defs/A0ExpDef"
+            },
+            {
+              "$ref": "#/$defs/A0IncDef"
+            },
+            {
+              "$ref": "#/$defs/A0ProtectedMemory"
+            },
+            {
+              "$ref": "#/$defs/A0LnkDir"
+            },
+            {
+              "$ref": "#/$defs/A0BigEndian"
+            },
+            {
+              "$ref": "#/$defs/A0PreComp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content"
+        }
+      },
+      "required": [
+        "subtype",
+        "subtype_name"
+      ],
+      "title": "ComentOmfExtensions",
+      "type": "object"
+    },
+    "ComentProcModel": {
+      "description": "Processor and memory model info (Watcom 0x9B / MS 0x9D).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "processor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WatcomProcessor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mem_model": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WatcomMemModel"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "optimized": {
+          "title": "Optimized",
+          "type": "boolean"
+        },
+        "fp_mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WatcomFPMode"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pic": {
+          "title": "Pic",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "processor",
+        "mem_model",
+        "optimized",
+        "fp_mode",
+        "pic"
+      ],
+      "title": "ComentProcModel",
+      "type": "object"
+    },
+    "ComentTimestamp": {
+      "description": "Timestamp.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "timestamp": {
+          "title": "Timestamp",
+          "type": "string"
+        }
+      },
+      "required": [
+        "timestamp"
+      ],
+      "title": "ComentTimestamp",
+      "type": "object"
+    },
+    "ComentTranslator": {
+      "description": "Translator identification.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "translator": {
+          "title": "Translator",
+          "type": "string"
+        }
+      },
+      "required": [
+        "translator"
+      ],
+      "title": "ComentTranslator",
+      "type": "object"
+    },
+    "ComentUser": {
+      "description": "User-defined comment.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "user": {
+          "title": "User",
+          "type": "string"
+        }
+      },
+      "required": [
+        "user"
+      ],
+      "title": "ComentUser",
+      "type": "object"
+    },
+    "ComentWkExt": {
+      "description": "Weak extern definitions.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/WeakExternEntry"
+          },
+          "title": "Entries",
+          "type": "array"
+        }
+      },
+      "title": "ComentWkExt",
+      "type": "object"
+    },
     "DictEntry": {
       "description": "Library dictionary entry.",
       "properties": {
@@ -503,6 +1485,25 @@
       "title": "FrameMethod",
       "type": "array"
     },
+    "LazyExternEntry": {
+      "description": "Lazy extern definition entry.",
+      "properties": {
+        "lazy_extdef_index": {
+          "title": "Lazy Extdef Index",
+          "type": "integer"
+        },
+        "default_resolution_index": {
+          "title": "Default Resolution Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "lazy_extdef_index",
+        "default_resolution_index"
+      ],
+      "title": "LazyExternEntry",
+      "type": "object"
+    },
     "LibLocEntry": {
       "description": "Library location entry (obsolete).",
       "properties": {
@@ -549,6 +1550,333 @@
         "is_end_of_function"
       ],
       "title": "LineEntry",
+      "type": "object"
+    },
+    "LinkerDirDefaultLib": {
+      "description": "Watcom Linker Directive 'L' - Default Library.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "priority": {
+          "title": "Priority",
+          "type": "integer"
+        },
+        "library_name": {
+          "title": "Library Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "priority",
+        "library_name"
+      ],
+      "title": "LinkerDirDefaultLib",
+      "type": "object"
+    },
+    "LinkerDirFlatAddrs": {
+      "description": "Watcom Linker Directive 'F' - Flat Addresses.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "LinkerDirFlatAddrs",
+      "type": "object"
+    },
+    "LinkerDirOptFarCalls": {
+      "description": "Watcom Linker Directive 'O' - Optimize Far Calls.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "segment_index": {
+          "title": "Segment Index",
+          "type": "integer"
+        },
+        "segment_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Segment Name"
+        }
+      },
+      "required": [
+        "segment_index"
+      ],
+      "title": "LinkerDirOptFarCalls",
+      "type": "object"
+    },
+    "LinkerDirOptUnsafe": {
+      "description": "Watcom Linker Directive 'U' - Optimization Unsafe.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "LinkerDirOptUnsafe",
+      "type": "object"
+    },
+    "LinkerDirPackData": {
+      "description": "Watcom Linker Directive '7' - Pack Far Data.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "pack_limit": {
+          "title": "Pack Limit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "pack_limit"
+      ],
+      "title": "LinkerDirPackData",
+      "type": "object"
+    },
+    "LinkerDirSourceLang": {
+      "description": "Watcom Linker Directive 'D' - Source Language.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "major_version": {
+          "title": "Major Version",
+          "type": "integer"
+        },
+        "minor_version": {
+          "title": "Minor Version",
+          "type": "integer"
+        },
+        "language": {
+          "title": "Language",
+          "type": "string"
+        }
+      },
+      "required": [
+        "major_version",
+        "minor_version",
+        "language"
+      ],
+      "title": "LinkerDirSourceLang",
+      "type": "object"
+    },
+    "LinkerDirTimestamp": {
+      "description": "Watcom Linker Directive 'T' - Object Timestamp.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "timestamp": {
+          "title": "Timestamp",
+          "type": "integer"
+        },
+        "timestamp_readable": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timestamp Readable"
+        }
+      },
+      "required": [
+        "timestamp"
+      ],
+      "title": "LinkerDirTimestamp",
+      "type": "object"
+    },
+    "LinkerDirVFReference": {
+      "description": "Watcom Linker Directive 'R' - VF Reference.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "ext_index": {
+          "title": "Ext Index",
+          "type": "integer"
+        },
+        "ext_symbol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ext Symbol"
+        },
+        "is_comdat": {
+          "title": "Is Comdat",
+          "type": "boolean"
+        },
+        "segment_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Segment Index"
+        },
+        "segment_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Segment Name"
+        },
+        "lname_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lname Index"
+        },
+        "comdat_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comdat Name"
+        }
+      },
+      "required": [
+        "ext_index",
+        "is_comdat"
+      ],
+      "title": "LinkerDirVFReference",
+      "type": "object"
+    },
+    "LinkerDirVFTableDef": {
+      "description": "Watcom Linker Directive 'V'/'P' - VF Table Definition.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_pure": {
+          "title": "Is Pure",
+          "type": "boolean"
+        },
+        "vf_table_ext_index": {
+          "title": "Vf Table Ext Index",
+          "type": "integer"
+        },
+        "default_ext_index": {
+          "title": "Default Ext Index",
+          "type": "integer"
+        },
+        "lname_indices": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Lname Indices",
+          "type": "array"
+        },
+        "vf_table_symbol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vf Table Symbol"
+        },
+        "default_symbol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default Symbol"
+        },
+        "function_names": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Function Names",
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_pure",
+        "vf_table_ext_index",
+        "default_ext_index"
+      ],
+      "title": "LinkerDirVFTableDef",
       "type": "object"
     },
     "NamedBackpatchRecord": {
@@ -1144,13 +2472,92 @@
         "content": {
           "anyOf": [
             {
-              "$ref": "#/$defs/ParsedComentContent"
+              "$ref": "#/$defs/ComentTranslator"
+            },
+            {
+              "$ref": "#/$defs/ComentCopyright"
+            },
+            {
+              "$ref": "#/$defs/ComentLibSpec"
+            },
+            {
+              "$ref": "#/$defs/ComentDosseg"
+            },
+            {
+              "$ref": "#/$defs/ComentNewOmf"
+            },
+            {
+              "$ref": "#/$defs/ComentLinkPass"
+            },
+            {
+              "$ref": "#/$defs/ComentLibMod"
+            },
+            {
+              "$ref": "#/$defs/ComentExeStr"
+            },
+            {
+              "$ref": "#/$defs/ComentIncErr"
+            },
+            {
+              "$ref": "#/$defs/ComentNoPad"
+            },
+            {
+              "$ref": "#/$defs/ComentWkExt"
+            },
+            {
+              "$ref": "#/$defs/ComentLzExt"
+            },
+            {
+              "$ref": "#/$defs/ComentEasyOmf"
+            },
+            {
+              "$ref": "#/$defs/ComentOmfExtensions"
+            },
+            {
+              "$ref": "#/$defs/ComentDosVersion"
+            },
+            {
+              "$ref": "#/$defs/ComentProcModel"
+            },
+            {
+              "$ref": "#/$defs/ComentDefaultLibrary"
+            },
+            {
+              "$ref": "#/$defs/ComentComment"
+            },
+            {
+              "$ref": "#/$defs/ComentCompiler"
+            },
+            {
+              "$ref": "#/$defs/ComentDate"
+            },
+            {
+              "$ref": "#/$defs/ComentTimestamp"
+            },
+            {
+              "$ref": "#/$defs/ComentUser"
+            },
+            {
+              "$ref": "#/$defs/ComentDependencyFile"
+            },
+            {
+              "$ref": "#/$defs/ComentCmdLine"
+            },
+            {
+              "$ref": "#/$defs/Coment32BitLinker"
+            },
+            {
+              "$ref": "#/$defs/ComentLinkerDirective"
+            },
+            {
+              "$ref": "#/$defs/ComentDisasmDirective"
             },
             {
               "type": "null"
             }
           ],
-          "default": null
+          "default": null,
+          "title": "Content"
         },
         "raw_data": {
           "anyOf": [
@@ -1172,20 +2579,6 @@
         "no_list"
       ],
       "title": "ParsedComent",
-      "type": "object"
-    },
-    "ParsedComentContent": {
-      "description": "Base class for COMENT content.",
-      "properties": {
-        "warnings": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Warnings",
-          "type": "array"
-        }
-      },
-      "title": "ParsedComentContent",
       "type": "object"
     },
     "ParsedDebSym": {
@@ -2725,13 +4118,8 @@
     "RegisterEntry": {
       "description": "Register initialization entry (obsolete).",
       "properties": {
-        "reg_name": {
-          "title": "Reg Name",
-          "type": "string"
-        },
         "reg_type": {
-          "title": "Reg Type",
-          "type": "integer"
+          "$ref": "#/$defs/RegisterType"
         },
         "value": {
           "title": "Value",
@@ -2739,12 +4127,42 @@
         }
       },
       "required": [
-        "reg_name",
         "reg_type",
         "value"
       ],
       "title": "RegisterEntry",
       "type": "object"
+    },
+    "RegisterType": {
+      "description": "8086 register types for REGINT record (obsolete 70H).\n\nPer TIS OMF 1.1 Appendix 3, the REGINT record provides information\nabout register/register-pairs: CS and IP, SS and SP, DS and ES.",
+      "enum": [
+        [
+          0,
+          "CS"
+        ],
+        [
+          1,
+          "DS"
+        ],
+        [
+          2,
+          "SS"
+        ],
+        [
+          3,
+          "ES"
+        ],
+        [
+          4,
+          "IP"
+        ],
+        [
+          5,
+          "SP"
+        ]
+      ],
+      "title": "RegisterType",
+      "type": "array"
     },
     "SegAccess": {
       "enum": [
@@ -2837,16 +4255,10 @@
       "description": "MODEND start address information.",
       "properties": {
         "frame_method": {
-          "title": "Frame Method",
-          "type": "integer"
-        },
-        "p_bit": {
-          "title": "P Bit",
-          "type": "integer"
+          "$ref": "#/$defs/FrameMethod"
         },
         "target_method": {
-          "title": "Target Method",
-          "type": "integer"
+          "$ref": "#/$defs/TargetMethod"
         },
         "frame_datum": {
           "anyOf": [
@@ -2887,7 +4299,6 @@
       },
       "required": [
         "frame_method",
-        "p_bit",
         "target_method"
       ],
       "title": "StartAddress",
@@ -3009,12 +4420,7 @@
           "type": "integer"
         },
         "var_type": {
-          "title": "Var Type",
-          "type": "string"
-        },
-        "var_type_raw": {
-          "title": "Var Type Raw",
-          "type": "integer"
+          "$ref": "#/$defs/TypDefVarType"
         },
         "size_bits": {
           "title": "Size Bits",
@@ -3029,7 +4435,6 @@
         "type",
         "leaf_type",
         "var_type",
-        "var_type_raw",
         "size_bits",
         "size_bytes"
       ],
@@ -3078,6 +4483,113 @@
         "leaf_type"
       ],
       "title": "TypDefLeafUnknown",
+      "type": "object"
+    },
+    "TypDefVarType": {
+      "description": "TYPDEF variable type values for NEAR/FAR leaves.\n\nPer TIS OMF 1.1 Appendix 3, the variable type field must contain one\nof these three values. The specific value is ignored by most linkers.\n\n- Array: Array type (0x77)\n- Structure: Structure type (0x79)\n- Scalar: Scalar type (0x7B)",
+      "enum": [
+        [
+          119,
+          "Array"
+        ],
+        [
+          121,
+          "Structure"
+        ],
+        [
+          123,
+          "Scalar"
+        ]
+      ],
+      "title": "TypDefVarType",
+      "type": "array"
+    },
+    "WatcomFPMode": {
+      "description": "Watcom floating point mode (COMENT 0x9B/0x9D fourth byte).\n\nValues from Watcom compiler processor/memory model string.",
+      "enum": [
+        [
+          "e",
+          "Emulated inline"
+        ],
+        [
+          "c",
+          "Emulator calls"
+        ],
+        [
+          "p",
+          "80x87 inline"
+        ]
+      ],
+      "title": "WatcomFPMode",
+      "type": "array"
+    },
+    "WatcomMemModel": {
+      "description": "Watcom memory model (COMENT 0x9B/0x9D second byte).\n\nValues from Watcom compiler processor/memory model string.",
+      "enum": [
+        [
+          "s",
+          "Small"
+        ],
+        [
+          "m",
+          "Medium"
+        ],
+        [
+          "c",
+          "Compact"
+        ],
+        [
+          "l",
+          "Large"
+        ],
+        [
+          "h",
+          "Huge"
+        ],
+        [
+          "f",
+          "Flat"
+        ]
+      ],
+      "title": "WatcomMemModel",
+      "type": "array"
+    },
+    "WatcomProcessor": {
+      "description": "Watcom processor type (COMENT 0x9B/0x9D first byte).\n\nValues from Watcom compiler processor/memory model string.",
+      "enum": [
+        [
+          "0",
+          "8086"
+        ],
+        [
+          "2",
+          "80286"
+        ],
+        [
+          "3",
+          "80386+"
+        ]
+      ],
+      "title": "WatcomProcessor",
+      "type": "array"
+    },
+    "WeakExternEntry": {
+      "description": "Weak extern definition entry.",
+      "properties": {
+        "weak_extdef_index": {
+          "title": "Weak Extdef Index",
+          "type": "integer"
+        },
+        "default_resolution_index": {
+          "title": "Default Resolution Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "weak_extdef_index",
+        "default_resolution_index"
+      ],
+      "title": "WeakExternEntry",
       "type": "object"
     }
   },

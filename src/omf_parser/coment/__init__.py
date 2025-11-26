@@ -5,9 +5,9 @@ from typing import TypedDict, Callable
 
 from ..protocols import OMFFileProtocol
 from ..parsing import RecordParser
-from ..models import ParsedComentContent
+from ..models import AnyComentContent
 
-ComentHandler = Callable[[OMFFileProtocol, RecordParser, int, bytes], ParsedComentContent | None]
+ComentHandler = Callable[[OMFFileProtocol, RecordParser, int, bytes], AnyComentContent | None]
 
 
 class ComentHandlerEntry(TypedDict):
