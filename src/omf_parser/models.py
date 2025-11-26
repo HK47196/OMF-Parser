@@ -7,7 +7,7 @@ They provide runtime type validation and are serializable to JSON.
 from enum import Enum
 from typing import List, Optional, Union, Literal, Tuple, Annotated
 
-from pydantic import BaseModel, Field, ConfigDict, PlainSerializer
+from pydantic import BaseModel, Field, ConfigDict, PlainSerializer, computed_field
 
 from omf_parser.constants import (
     SegAlignment,
@@ -254,7 +254,7 @@ class TypDefLeafUnknown(BaseModel):
     type: Literal["Unknown"]
     leaf_index: Optional[int] = None
     leaf_type: int
-    remaining: Optional[bytes] = None
+    remaining: Optional[BytesField] = None
 
 
 TypDefLeaf = Union[TypDefLeafNear, TypDefLeafFar, TypDefLeafUnknown]
@@ -275,15 +275,21 @@ class ParsedRecord(BaseModel):
     """Base class for all parsed record data."""
     model_config = ConfigDict(strict=True, arbitrary_types_allowed=True)
 
+    warnings: List[str] = Field(default_factory=list)
+
 
 class ParsedComentContent(BaseModel):
     """Base class for COMENT content."""
     model_config = ConfigDict(strict=True, arbitrary_types_allowed=True)
 
+    warnings: List[str] = Field(default_factory=list)
+
 
 class ParsedA0Content(BaseModel):
     """Base for A0 subtype content."""
     model_config = ConfigDict(strict=True, arbitrary_types_allowed=True)
+
+    warnings: List[str] = Field(default_factory=list)
 
 
 class ParsedTheadr(ParsedRecord):
@@ -326,7 +332,6 @@ class ParsedGrpDef(ParsedRecord):
     name_index: int
     is_flat: bool = False
     components: List[str] = Field(default_factory=list)
-    warnings: List[str] = Field(default_factory=list)
 
 
 class ParsedPubDef(ParsedRecord):
@@ -358,7 +363,6 @@ class ParsedModEnd(ParsedRecord):
     has_start: bool
     is_relocatable: bool
     start_address: Optional[StartAddress] = None
-    warnings: List[str] = Field(default_factory=list)
 
 
 class ParsedLinNum(ParsedRecord):
@@ -367,7 +371,6 @@ class ParsedLinNum(ParsedRecord):
     base_group: str
     base_segment: str
     entries: List[LineEntry] = Field(default_factory=list)
-    warnings: List[str] = Field(default_factory=list)
 
 
 class ParsedVerNum(ParsedRecord):
@@ -377,15 +380,13 @@ class ParsedVerNum(ParsedRecord):
     vendor_num: Optional[str] = None
     vendor_ver: Optional[str] = None
     vendor_name: Optional[str] = None
-    warnings: List[str] = Field(default_factory=list)
 
 
 class ParsedVendExt(ParsedRecord):
     """VENDEXT - Vendor extension."""
     vendor_num: int
     vendor_name: Optional[str] = None
-    extension_data: Optional[bytes] = None
-    warnings: List[str] = Field(default_factory=list)
+    extension_data: Optional[BytesField] = None
 
 
 class ParsedLocSym(ParsedRecord):
@@ -412,7 +413,7 @@ class ParsedLEData(ParsedRecord):
     segment_index: int
     offset: int
     data_length: int
-    data_preview: Optional[bytes] = None
+    data_preview: Optional[BytesField] = None
 
 
 class ParsedLIDataBlock(BaseModel):
@@ -421,7 +422,7 @@ class ParsedLIDataBlock(BaseModel):
 
     repeat_count: int
     block_count: int
-    content: Optional[bytes] = None
+    content: Optional[BytesField] = None
     nested_blocks: List["ParsedLIDataBlock"] = Field(default_factory=list)
     expanded_size: int = 0
 
@@ -444,7 +445,6 @@ class ParsedLIData(ParsedRecord):
     offset: int
     blocks: List[ParsedLIDataBlock] = Field(default_factory=list)
     total_expanded_size: int = 0
-    warnings: List[str] = Field(default_factory=list)
 
 
 class ParsedThread(BaseModel):
@@ -512,7 +512,6 @@ class ParsedBackpatch(ParsedRecord):
     """BAKPAT - Backpatch record."""
     is_32bit: bool
     records: List[BackpatchRecord] = Field(default_factory=list)
-    warnings: List[str] = Field(default_factory=list)
 
 
 class ParsedNamedBackpatch(ParsedRecord):
@@ -564,7 +563,7 @@ class ParsedExtDict(ParsedRecord):
 class ParsedRheadr(ParsedRecord):
     """RHEADR - R-Module header (obsolete)."""
     name: Optional[str] = None
-    attributes: Optional[bytes] = None
+    attributes: Optional[BytesField] = None
 
 
 class ParsedRegInt(ParsedRecord):
@@ -581,7 +580,7 @@ class ParsedReDataPeData(ParsedRecord):
     offset: int = 0
     physical_address: Optional[int] = None
     data_length: int = 0
-    data_preview: Optional[bytes] = None
+    data_preview: Optional[BytesField] = None
 
 
 class ParsedRiDataPiData(ParsedRecord):
@@ -600,7 +599,7 @@ class ParsedOvlDef(ParsedRecord):
     overlay_name: str
     attribute: Optional[int] = None
     file_location: Optional[int] = None
-    additional_data: Optional[bytes] = None
+    additional_data: Optional[BytesField] = None
 
 
 class ParsedEndRec(ParsedRecord):
@@ -616,7 +615,7 @@ class ParsedBlkDef(ParsedRecord):
     block_name: str = ""
     offset: int = 0
     debug_length: Optional[int] = None
-    debug_data: Optional[bytes] = None
+    debug_data: Optional[BytesField] = None
 
 
 class ParsedBlkEnd(ParsedRecord):
@@ -626,13 +625,13 @@ class ParsedBlkEnd(ParsedRecord):
 
 class ParsedDebSym(ParsedRecord):
     """DEBSYM - Debug symbols (obsolete)."""
-    data: Optional[bytes] = None
+    data: Optional[BytesField] = None
 
 
 class ParsedObsoleteLib(ParsedRecord):
     """Obsolete Intel library records."""
     record_type: Literal["LIBHED", "LIBNAM", "LIBLOC", "LIBDIC"]
-    data: Optional[bytes] = None
+    data: Optional[BytesField] = None
     modules: List[str] = Field(default_factory=list)
     locations: List[LibLocEntry] = Field(default_factory=list)
 
@@ -644,8 +643,7 @@ class ParsedComent(ParsedRecord):
     no_purge: bool
     no_list: bool
     content: Optional["ParsedComentContent"] = None
-    raw_data: Optional[bytes] = None
-    warnings: List[str] = Field(default_factory=list)
+    raw_data: Optional[BytesField] = None
 
 
 class ComentTranslator(ParsedComentContent):
@@ -670,7 +668,7 @@ class ComentDosseg(ParsedComentContent):
 
 class ComentNewOmf(ParsedComentContent):
     """New OMF extension marker."""
-    data: Optional[bytes] = None
+    data: Optional[BytesField] = None
 
 
 class ComentLinkPass(ParsedComentContent):
@@ -711,7 +709,6 @@ class ComentLzExt(ParsedComentContent):
 class ComentEasyOmf(ParsedComentContent):
     """Easy OMF-386 marker."""
     marker: Optional[str] = None
-    warnings: List[str] = Field(default_factory=list)
 
 
 class ComentOmfExtensions(ParsedComentContent):
@@ -719,7 +716,6 @@ class ComentOmfExtensions(ParsedComentContent):
     subtype: int
     subtype_name: str
     content: Optional["ParsedA0Content"] = None
-    warnings: List[str] = Field(default_factory=list)
 
 
 class A0ImpDef(ParsedA0Content):
@@ -831,7 +827,7 @@ class ComentCmdLine(ParsedComentContent):
 
 class Coment32BitLinker(ParsedComentContent):
     """32-bit linker extension."""
-    data: Optional[bytes] = None
+    data: Optional[BytesField] = None
 
 
 class LinkerDirSourceLang(ParsedComentContent):
@@ -901,7 +897,6 @@ class ComentLinkerDirective(ParsedComentContent):
     directive_code: str
     directive_name: str
     content: Optional[ParsedComentContent] = None
-    warnings: List[str] = Field(default_factory=list)
 
 
 class ComentDisasmDirective(ParsedComentContent):
@@ -916,22 +911,87 @@ class ComentDisasmDirective(ParsedComentContent):
     start_offset: int
     end_offset: int
     region_size: int
-    warnings: List[str] = Field(default_factory=list)
+
+
+AnyParsedRecord = (
+    ParsedTheadr
+    | ParsedLNames
+    | ParsedSegDef
+    | ParsedGrpDef
+    | ParsedPubDef
+    | ParsedExtDef
+    | ParsedCExtDef
+    | ParsedModEnd
+    | ParsedLinNum
+    | ParsedVerNum
+    | ParsedVendExt
+    | ParsedLocSym
+    | ParsedTypDef
+    | ParsedLEData
+    | ParsedLIData
+    | ParsedFixupp
+    | ParsedComDef
+    | ParsedComDat
+    | ParsedBackpatch
+    | ParsedNamedBackpatch
+    | ParsedLinSym
+    | ParsedAlias
+    | ParsedLibHdr
+    | ParsedLibEnd
+    | ParsedLibDict
+    | ParsedExtDict
+    | ParsedComent
+    | ParsedRheadr
+    | ParsedRegInt
+    | ParsedReDataPeData
+    | ParsedRiDataPiData
+    | ParsedOvlDef
+    | ParsedEndRec
+    | ParsedBlkDef
+    | ParsedBlkEnd
+    | ParsedDebSym
+    | ParsedObsoleteLib
+)
 
 
 class ParseResult(BaseModel):
     """Container for a parsed record result."""
-    model_config = ConfigDict(strict=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        strict=True,
+        arbitrary_types_allowed=True,
+        populate_by_name=True
+    )
 
-    record_type: int
-    record_name: str
+    record_type: int = Field(serialization_alias='type')
+    record_name: str = Field(serialization_alias='name')
     offset: int
     length: int
     checksum: Optional[int]
     checksum_valid: Optional[bool]
-    parsed: Optional[ParsedRecord] = None
+    parsed: Optional[AnyParsedRecord] = None
     error: Optional[str] = None
-    raw_content: Optional[bytes] = None
+    raw_content: Optional[BytesField] = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def type_hex(self) -> str:
+        return f"0x{self.record_type:02X}"
+
+
+class ParsedOMFFile(BaseModel):
+    """Complete parsed OMF file."""
+    model_config = ConfigDict(strict=True)
+
+    filepath: str
+    file_size: int
+    is_library: bool
+    variant: str
+    mixed_variants: bool
+    seen_variants: Optional[List[str]]
+    features: List[str]
+    records: List[ParseResult]
+    warnings: List[str] = []
+    errors: List[str] = []
 
 
 ParsedLIDataBlock.model_rebuild()

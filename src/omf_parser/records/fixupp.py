@@ -7,10 +7,12 @@ from ..constants import (
 from ..models import (
     ParsedFixupp, ParsedThread, ParsedFixup, ThreadKind, FixupMode
 )
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.FIXUPP, RecordType.FIXUPP32)
-def handle_fixupp(omf, record):
+def handle_fixupp(omf: OMFFileProtocol, record: RecordInfo) -> ParsedFixupp:
     """Handle FIXUPP (9CH/9DH)."""
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.FIXUPP32)
@@ -23,15 +25,23 @@ def handle_fixupp(omf, record):
     while sub.bytes_remaining() > 0:
         peek = sub.peek_byte()
         if peek is None:
+            # Per TIS OMF 1.1: Record Length declares expected size.
+            # Missing data indicates malformed record.
+            result.warnings.append("Truncated FIXUPP record")
             break
 
         if (peek & FixuppFlags.IS_FIXUP) == 0:
             b = sub.read_byte()
+            if b is None:
+                # Per TIS OMF 1.1: Record Length declares expected size.
+                # Missing data indicates malformed record.
+                result.warnings.append("Truncated FIXUPP thread subrecord")
+                break
             is_frame = (b & FixuppFlags.THREAD_IS_FRAME) != 0
             method_val = (b >> FixuppFlags.THREAD_METHOD_SHIFT) & FixuppFlags.THREAD_METHOD_MASK
             thred = b & FixuppFlags.THREAD_NUM_MASK
 
-            idx = None
+            idx: int | None = None
             if method_val == 3:
                 idx = sub.parse_numeric(2)
             elif method_val < 3:
@@ -39,6 +49,7 @@ def handle_fixupp(omf, record):
 
             kind = ThreadKind.FRAME if is_frame else ThreadKind.TARGET
 
+            method: FrameMethod | TargetMethod
             if is_frame:
                 method = FrameMethod(method_val)
                 frame_threads[thred] = (method, idx)
@@ -71,6 +82,9 @@ def handle_fixupp(omf, record):
             b2 = sub.read_byte()
 
             if b1 is None or b2 is None:
+                # Per TIS OMF 1.1: Record Length declares expected size.
+                # Missing data indicates malformed record.
+                result.warnings.append("Truncated FIXUPP fixup subrecord")
                 break
 
             mode = (b1 >> FixuppFlags.MODE_SHIFT) & 0x01
@@ -82,6 +96,9 @@ def handle_fixupp(omf, record):
 
             fix_dat = sub.read_byte()
             if fix_dat is None:
+                # Per TIS OMF 1.1: Record Length declares expected size.
+                # Missing data indicates malformed record.
+                result.warnings.append("Truncated FIXUPP fixup data")
                 break
 
             f_bit = (fix_dat & FixuppFlags.F_BIT) != 0
@@ -104,9 +121,9 @@ def handle_fixupp(omf, record):
 
             if t_bit:
                 thread_num = targt_field
-                thread_data = target_threads[thread_num]
-                if thread_data:
-                    base_method, target_datum = thread_data
+                target_thread_data = target_threads[thread_num]
+                if target_thread_data:
+                    base_method, target_datum = target_thread_data
                     target_method_val = (base_method.int_val & FixuppFlags.TARGET_MASK) | (p_bit << FixuppFlags.P_BIT_SHIFT)
                 else:
                     target_method_val = p_bit << FixuppFlags.P_BIT_SHIFT

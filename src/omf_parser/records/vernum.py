@@ -3,10 +3,12 @@
 from . import omf_record
 from ..constants import RecordType, KNOWN_VENDORS
 from ..models import ParsedVerNum
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.VERNUM)
-def handle_vernum(omf, record):
+def handle_vernum(omf: OMFFileProtocol, record: RecordInfo) -> ParsedVerNum:
     """Handle VERNUM (CCH)."""
     sub = omf.make_parser(record)
     version = sub.parse_name()

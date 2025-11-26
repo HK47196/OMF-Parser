@@ -5,15 +5,22 @@ from ..constants import RecordType, TypdefLeaf, VAR_TYPE_NAMES
 from ..models import (
     ParsedTypDef, TypDefLeafNear, TypDefLeafFar, TypDefLeafUnknown
 )
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.TYPDEF)
-def handle_typdef(omf, record):
+def handle_typdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedTypDef | None:
     """Handle TYPDEF (8EH)."""
     sub = omf.make_parser(record)
 
     name = sub.parse_name()
     en_byte = sub.read_byte()
+    if en_byte is None:
+        # Per TIS OMF 1.1: Record Length declares expected size.
+        # Missing data indicates malformed record.
+        omf.typdefs.append(f"TYPDEF#{len(omf.typdefs)}")
+        return None
 
     result = ParsedTypDef(name=name if name else None, en_byte=en_byte)
 
@@ -24,9 +31,17 @@ def handle_typdef(omf, record):
             return result
 
         leaf_type = sub.read_byte()
+        if leaf_type is None:
+            omf.typdefs.append(f"TYPDEF#{len(omf.typdefs)}")
+            return result
 
         if leaf_type == TypdefLeaf.NEAR:
             var_type = sub.read_byte()
+            if var_type is None:
+                # Per TIS OMF 1.1: Record Length declares expected size.
+                # Missing data indicates malformed record.
+                omf.typdefs.append(f"TYPDEF#{len(omf.typdefs)}")
+                return result
             size_bits = sub.parse_variable_length_int()
             result.leaves.append(TypDefLeafNear(
                 type='NEAR',
@@ -39,6 +54,11 @@ def handle_typdef(omf, record):
 
         elif leaf_type == TypdefLeaf.FAR:
             var_type = sub.read_byte()
+            if var_type is None:
+                # Per TIS OMF 1.1: Record Length declares expected size.
+                # Missing data indicates malformed record.
+                omf.typdefs.append(f"TYPDEF#{len(omf.typdefs)}")
+                return result
             num_elements = sub.parse_variable_length_int()
             element_type_idx = sub.parse_index()
             result.leaves.append(TypDefLeafFar(
@@ -64,9 +84,15 @@ def handle_typdef(omf, record):
                 break
 
             leaf_type = sub.read_byte()
+            if leaf_type is None:
+                break
 
             if leaf_type == TypdefLeaf.NEAR:
                 var_type = sub.read_byte()
+                if var_type is None:
+                    # Per TIS OMF 1.1: Record Length declares expected size.
+                    # Missing data indicates malformed record.
+                    break
                 size_bits = sub.parse_variable_length_int()
                 result.leaves.append(TypDefLeafNear(
                     type='NEAR',
@@ -80,6 +106,10 @@ def handle_typdef(omf, record):
 
             elif leaf_type == TypdefLeaf.FAR:
                 var_type = sub.read_byte()
+                if var_type is None:
+                    # Per TIS OMF 1.1: Record Length declares expected size.
+                    # Missing data indicates malformed record.
+                    break
                 num_elements = sub.parse_variable_length_int()
                 element_type_idx = sub.parse_index()
                 result.leaves.append(TypDefLeafFar(

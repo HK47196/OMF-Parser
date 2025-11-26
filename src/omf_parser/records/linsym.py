@@ -3,15 +3,21 @@
 from . import omf_record
 from ..constants import RecordType, ComdatFlags
 from ..models import ParsedLinSym, LineEntry
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.LINSYM, RecordType.LINSYM32)
-def handle_linsym(omf, record):
+def handle_linsym(omf: OMFFileProtocol, record: RecordInfo) -> ParsedLinSym | None:
     """Handle LINSYM (C4H/C5H)."""
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.LINSYM32)
 
     flags = sub.read_byte()
+    if flags is None:
+        # Per TIS OMF 1.1: Record Length declares expected size.
+        # Missing data indicates malformed record.
+        return None
     continuation = (flags & ComdatFlags.CONTINUATION) != 0
 
     if omf.variant.linsym_uses_inline_name():

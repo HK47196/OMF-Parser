@@ -1,12 +1,26 @@
 """OMF record handler registry."""
 
 from collections import defaultdict
+from typing import TypedDict, Callable
+
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
+from ..models import AnyParsedRecord
+
+RecordHandler = Callable[[OMFFileProtocol, RecordInfo], AnyParsedRecord | None]
 
 
-OMF_RECORD_HANDLERS = defaultdict(list)
+class HandlerEntry(TypedDict):
+    handler: RecordHandler
+    features: set[str]
 
 
-def omf_record(*record_types, features=None):
+OMF_RECORD_HANDLERS: defaultdict[int, list[HandlerEntry]] = defaultdict(list)
+
+
+def omf_record(
+    *record_types: int, features: set[str] | None = None
+) -> Callable[[RecordHandler], RecordHandler]:
     """Register a handler for one or more OMF record types.
 
     Args:
@@ -25,7 +39,7 @@ def omf_record(*record_types, features=None):
     """
     required_features = features or set()
 
-    def decorator(fn):
+    def decorator(fn: RecordHandler) -> RecordHandler:
         for rec_type in record_types:
             OMF_RECORD_HANDLERS[rec_type].append({
                 'handler': fn,
@@ -35,7 +49,7 @@ def omf_record(*record_types, features=None):
     return decorator
 
 
-def get_record_handler(rec_type, active_features):
+def get_record_handler(rec_type: int, active_features: set[str]) -> RecordHandler | None:
     """Get the best matching handler for a record type.
 
     Selects the handler with the most specific feature requirements

@@ -2,7 +2,6 @@
 
 import struct
 from dataclasses import dataclass
-from typing import Optional
 
 from .variant import Variant, TIS_STANDARD, PHARLAP, IBM_LINK386
 from .constants import RecordType, CommentClass
@@ -15,9 +14,9 @@ class RecordInfo:
     offset: int
     length: int
     content: bytes
-    checksum: Optional[int]
-    checksum_valid: Optional[bool]
-    module_variant: Optional['Variant'] = None
+    checksum: int | None
+    checksum_valid: bool | None
+    module_variant: Variant | None = None
 
 
 class Scanner:
@@ -31,15 +30,15 @@ class Scanner:
     - Detects extension features
     """
 
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes) -> None:
         self.data = data
         self.offset = 0
-        self.features = set()
+        self.features: set[str] = set()
         self.variant: Variant = TIS_STANDARD
         self.is_library = False
         self.mixed_variants = False
         self._module_variant: Variant = TIS_STANDARD
-        self._seen_variants: set = set()
+        self._seen_variants: set[str] = set()
         self._module_start_idx: int = 0
 
     def scan(self) -> list[RecordInfo]:
@@ -50,7 +49,7 @@ class Scanner:
         Returns:
             List of RecordInfo objects for all records in the file
         """
-        records = []
+        records: list[RecordInfo] = []
 
         if not self.data:
             return records
@@ -82,7 +81,7 @@ class Scanner:
 
         return records
 
-    def _track_module_boundaries(self, record: RecordInfo, records: list[RecordInfo]):
+    def _track_module_boundaries(self, record: RecordInfo, records: list[RecordInfo]) -> None:
         """Track module boundaries and assign variants to completed modules."""
         if record.type in (RecordType.THEADR, RecordType.LHEADR):
             self._finalize_module(records, exclude_last=True)
@@ -91,14 +90,14 @@ class Scanner:
         elif record.type in (RecordType.MODEND, RecordType.MODEND32):
             self._finalize_module(records)
 
-    def _finalize_module(self, records: list[RecordInfo], exclude_last: bool = False):
+    def _finalize_module(self, records: list[RecordInfo], exclude_last: bool = False) -> None:
         """Assign the detected variant to all records in the current module."""
         end_idx = len(records) - 1 if exclude_last else len(records)
         for i in range(self._module_start_idx, end_idx):
             records[i].module_variant = self._module_variant
         self._seen_variants.add(self._module_variant.name)
 
-    def _read_record(self) -> Optional[RecordInfo]:
+    def _read_record(self) -> RecordInfo | None:
         """Read a single record from current offset."""
         if self.offset + 3 > len(self.data):
             return None
@@ -148,14 +147,14 @@ class Scanner:
             return True
         return (sum(record_data) & 0xFF) == 0
 
-    def _detect_features(self, record: RecordInfo):
+    def _detect_features(self, record: RecordInfo) -> None:
         """Detect features from record content."""
         if record.type == RecordType.COMENT:
             self._detect_coment_features(record)
         elif record.type == RecordType.VENDEXT:
             self._detect_vendext_features(record)
 
-    def _detect_coment_features(self, record: RecordInfo):
+    def _detect_coment_features(self, record: RecordInfo) -> None:
         """Detect variant and features from COMENT record."""
         if len(record.content) < 2:
             return
@@ -183,7 +182,7 @@ class Scanner:
             except Exception:
                 pass
 
-    def _detect_vendext_features(self, record: RecordInfo):
+    def _detect_vendext_features(self, record: RecordInfo) -> None:
         """Detect features from VENDEXT record."""
         if len(record.content) >= 2:
             vendor_num = struct.unpack('<H', record.content[:2])[0]

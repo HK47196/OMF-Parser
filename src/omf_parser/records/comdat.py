@@ -6,10 +6,12 @@ from ..constants import (
     RecordType, ComdatFlags, ComdatSelection, ComdatAllocation, ComdatAlign
 )
 from ..models import ParsedComDat
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.COMDAT, RecordType.COMDAT32)
-def handle_comdat(omf, record):
+def handle_comdat(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComDat | None:
     """Handle COMDAT (C2H/C3H)."""
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.COMDAT32)

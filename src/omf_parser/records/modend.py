@@ -3,10 +3,12 @@
 from . import omf_record
 from ..constants import RecordType, ModendFlags
 from ..models import ParsedModEnd, StartAddress
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.MODEND, RecordType.MODEND32)
-def handle_modend(omf, record):
+def handle_modend(omf: OMFFileProtocol, record: RecordInfo) -> ParsedModEnd | None:
     """Handle MODEND (8AH/8BH)."""
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.MODEND32)

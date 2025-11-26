@@ -3,10 +3,12 @@
 from . import omf_record
 from ..constants import RecordType, KNOWN_VENDORS
 from ..models import ParsedVendExt
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.VENDEXT)
-def handle_vendext(omf, record):
+def handle_vendext(omf: OMFFileProtocol, record: RecordInfo) -> ParsedVendExt:
     """Handle VENDEXT (CEH)."""
     sub = omf.make_parser(record)
     vendor_num = sub.parse_numeric(2)

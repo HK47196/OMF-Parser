@@ -7,10 +7,12 @@ from ..models import (
     ComDefFarDefinition, ComDefNearDefinition,
     ComDefBorlandDefinition, ComDefUnknownDefinition
 )
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.COMDEF, RecordType.LCOMDEF)
-def handle_comdef(omf, record):
+def handle_comdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComDef:
     """Handle COMDEF/LCOMDEF (B0H/B8H)."""
     sub = omf.make_parser(record)
     is_local = (record.type == RecordType.LCOMDEF)
@@ -23,8 +25,12 @@ def handle_comdef(omf, record):
         data_type = sub.read_byte()
 
         if data_type is None:
+            # Per TIS OMF 1.1: Record Length declares expected size.
+            # Missing data indicates malformed record.
+            result.warnings.append("Truncated COMDEF record")
             break
 
+        defn: ComDefFarDefinition | ComDefNearDefinition | ComDefBorlandDefinition | ComDefUnknownDefinition
         if data_type == ComdefType.FAR:
             num_elements = sub.parse_variable_length_int()
             element_size = sub.parse_variable_length_int()

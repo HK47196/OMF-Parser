@@ -19,39 +19,39 @@ class RecordParser:
     - Variable-length integers (COMDEF style)
     """
 
-    def __init__(self, data: bytes, variant: 'Variant' = None, big_endian: bool = False):
+    def __init__(self, data: bytes, variant: 'Variant | None' = None, big_endian: bool = False) -> None:
         from .variant import TIS_STANDARD
         self.data = data
         self.offset = 0
         self.variant = variant or TIS_STANDARD
         self.big_endian = big_endian
 
-    def read_byte(self):
+    def read_byte(self) -> int | None:
         if self.offset >= len(self.data):
             return None
         b = self.data[self.offset]
         self.offset += 1
         return b
 
-    def read_bytes(self, n):
+    def read_bytes(self, n: int | None) -> bytes | None:
         if n is None or self.offset + n > len(self.data):
             return None
         b = self.data[self.offset:self.offset + n]
         self.offset += n
         return b
 
-    def peek_byte(self):
+    def peek_byte(self) -> int | None:
         if self.offset >= len(self.data):
             return None
         return self.data[self.offset]
 
-    def bytes_remaining(self):
+    def bytes_remaining(self) -> int:
         return len(self.data) - self.offset
 
-    def at_end(self):
+    def at_end(self) -> bool:
         return self.offset >= len(self.data)
 
-    def parse_index(self):
+    def parse_index(self) -> int:
         """Parse OMF Index field (1 or 2 bytes)."""
         b1 = self.read_byte()
         if b1 is None:
@@ -63,7 +63,7 @@ class RecordParser:
             return ((b1 & IndexFlags.HIGH_MASK) << 8) + b2
         return b1
 
-    def parse_name(self):
+    def parse_name(self) -> str:
         """Parse length-preceded string."""
         length = self.read_byte()
         if length is None or length == 0:
@@ -76,7 +76,7 @@ class RecordParser:
         except Exception:
             return raw.hex()
 
-    def parse_numeric(self, size_bytes):
+    def parse_numeric(self, size_bytes: int) -> int:
         """Parse numeric value of specified size (1-4 bytes)."""
         raw = self.read_bytes(size_bytes)
         if not raw:
@@ -87,31 +87,34 @@ class RecordParser:
         endian = '>' if self.big_endian else '<'
 
         if size_bytes == 2:
-            return struct.unpack(f'{endian}H', raw)[0]
+            result: int = struct.unpack(f'{endian}H', raw)[0]
+            return result
         if size_bytes == 3:
             if self.big_endian:
-                return struct.unpack('>I', b'\x00' + raw)[0]
+                result = struct.unpack('>I', b'\x00' + raw)[0]
             else:
-                return struct.unpack('<I', raw + b'\x00')[0]
+                result = struct.unpack('<I', raw + b'\x00')[0]
+            return result
         if size_bytes == 4:
-            return struct.unpack(f'{endian}I', raw)[0]
+            result = struct.unpack(f'{endian}I', raw)[0]
+            return result
         return 0
 
-    def get_offset_field_size(self, is_32bit):
+    def get_offset_field_size(self, is_32bit: bool) -> int:
         """Determine size for offset/displacement/length fields.
 
         Delegates to variant for proper sizing.
         """
         return self.variant.offset_field_size(is_32bit)
 
-    def get_lidata_repeat_count_size(self, is_32bit):
+    def get_lidata_repeat_count_size(self, is_32bit: bool) -> int:
         """Determine size for LIDATA repeat count fields.
 
         Delegates to variant for proper sizing.
         """
         return self.variant.lidata_repeat_count_size(is_32bit)
 
-    def parse_variable_length_int(self):
+    def parse_variable_length_int(self) -> int:
         """Parse variable-length numeric for COMDEF/TYPDEF."""
         b = self.read_byte()
         if b is None:

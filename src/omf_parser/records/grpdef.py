@@ -3,10 +3,12 @@
 from . import omf_record
 from ..constants import RecordType, GrpdefComponent
 from ..models import ParsedGrpDef
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.GRPDEF)
-def handle_grpdef(omf, record):
+def handle_grpdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedGrpDef:
     """Handle GRPDEF (9AH)."""
     sub = omf.make_parser(record)
     name_idx = sub.parse_index()
@@ -51,6 +53,11 @@ def handle_grpdef(omf, record):
         elif comp_type == GrpdefComponent.LTL:
             if sub.bytes_remaining() >= 5:
                 ltl_data = sub.read_byte()
+                if ltl_data is None:
+                    # Per TIS OMF 1.1: Record Length declares expected size.
+                    # Missing data indicates malformed record.
+                    result.warnings.append("Truncated LTL component")
+                    break
                 max_len = sub.parse_numeric(2)
                 grp_len = sub.parse_numeric(2)
                 result.components.append(f"LTL(data=0x{ltl_data:02X},max={max_len},len={grp_len})")
@@ -61,6 +68,11 @@ def handle_grpdef(omf, record):
             if sub.bytes_remaining() >= 3:
                 frame = sub.parse_numeric(2)
                 offset = sub.read_byte()
+                if offset is None:
+                    # Per TIS OMF 1.1: Record Length declares expected size.
+                    # Missing data indicates malformed record.
+                    result.warnings.append("Truncated ABSOLUTE component")
+                    break
                 result.components.append(f"Abs({frame:04X}:{offset:02X})")
             else:
                 result.components.append("Abs:TRUNCATED")

@@ -3,19 +3,24 @@
 from . import omf_record
 from ..constants import RecordType
 from ..models import ParsedLIData, ParsedLIDataBlock
+from ..parsing import RecordParser
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
-def parse_lidata_blocks(sub, is_32bit):
+def parse_lidata_blocks(
+    sub: RecordParser, is_32bit: bool
+) -> tuple[list[ParsedLIDataBlock], list[str]]:
     """Parse LIDATA-style iterated data blocks from a parser.
 
     Used by both LIDATA records and COMDAT records with iterated data flag.
     Returns tuple of (blocks list, warnings list).
     """
-    blocks = []
-    warnings = []
+    blocks: list[ParsedLIDataBlock] = []
+    warnings: list[str] = []
     truncated = False
 
-    def parse_data_block(depth=0):
+    def parse_data_block(depth: int = 0) -> ParsedLIDataBlock | None:
         nonlocal truncated
         repeat_size = sub.get_lidata_repeat_count_size(is_32bit)
         min_bytes = repeat_size + 2
@@ -75,7 +80,7 @@ def parse_lidata_blocks(sub, is_32bit):
 
 
 @omf_record(RecordType.LIDATA, RecordType.LIDATA32)
-def handle_lidata(omf, record):
+def handle_lidata(omf: OMFFileProtocol, record: RecordInfo) -> ParsedLIData:
     """Handle LIDATA (A2H/A3H)."""
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.LIDATA32)

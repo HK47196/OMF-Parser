@@ -1,13 +1,14 @@
 """Output formatters for parsed OMF data."""
 
-import json
 from enum import Enum
-from typing import List, Any
+from typing import Any, TYPE_CHECKING
 
-from pydantic import BaseModel
+if TYPE_CHECKING:
+    from .file import OMFFile
+    from .models import ParsedComentContent
 
 from .models import (
-    ParseResult, ParsedRecord,
+    ParseResult, ParsedRecord, ParsedOMFFile,
     ParsedTheadr, ParsedLNames, ParsedSegDef, ParsedGrpDef,
     ParsedPubDef, ParsedExtDef, ParsedCExtDef, ParsedModEnd,
     ParsedLinNum, ParsedVerNum, ParsedVendExt, ParsedLocSym, ParsedTypDef,
@@ -24,7 +25,7 @@ from .models import (
 from .parsing import format_hex_with_ascii
 
 
-def _bytes_to_hex(data: bytes) -> str:
+def _bytes_to_hex(data: bytes | None) -> str | None:
     """Convert bytes to hex string with ASCII preview."""
     if data is None:
         return None
@@ -34,13 +35,13 @@ def _bytes_to_hex(data: bytes) -> str:
 class HumanFormatter:
     """Format parsed OMF data as human-readable text."""
 
-    def format_file_header(self, omf) -> str:
+    def format_file_header(self, omf: "OMFFile") -> str:
         """Format file header information."""
         lines = [
             "=" * 60,
             f"OMF Analysis: {omf.filepath}",
             "=" * 60,
-            f"File Size: {len(omf.data)} bytes"
+            f"File Size: {len(omf.data) if omf.data else 0} bytes"
         ]
 
         if omf.is_library:
@@ -94,7 +95,8 @@ class HumanFormatter:
 
         formatter_method = f"_format_{type(parsed).__name__}"
         if hasattr(self, formatter_method):
-            return getattr(self, formatter_method)(parsed)
+            result: str = getattr(self, formatter_method)(parsed)
+            return result
 
         return f"  {type(parsed).__name__}: (no formatter)"
 
@@ -286,7 +288,7 @@ class HumanFormatter:
             "  Iterated Data Blocks:"
         ]
 
-        def format_block(block: ParsedLIDataBlock, indent: int):
+        def format_block(block: ParsedLIDataBlock, indent: int) -> None:
             prefix = " " * indent
             if block.block_count == 0:
                 content_str = _bytes_to_hex(block.content) if block.content else "(empty)"
@@ -373,7 +375,7 @@ class HumanFormatter:
             lines.append(f"  Iterated Expanded Size: {p.iterated_expanded_size} bytes")
             lines.append("  Iterated Data Blocks:")
 
-            def format_block(block: ParsedLIDataBlock, indent: int):
+            def format_block(block: ParsedLIDataBlock, indent: int) -> None:
                 prefix = " " * indent
                 if block.block_count == 0:
                     content_str = _bytes_to_hex(block.content) if block.content else "(empty)"
@@ -561,7 +563,7 @@ class HumanFormatter:
         for mod in p.modules:
             lines.append(f"    Module: {mod}")
         for loc in p.locations:
-            lines.append(f"    Module {loc.module}: Offset 0x{loc.offset:08X}")
+            lines.append(f"    {loc.module}: Block {loc.block_num}, Offset {loc.byte_offset}")
         if p.data:
             lines.append(f"    Data: {_bytes_to_hex(p.data)}")
         return "\n".join(lines)
@@ -581,7 +583,7 @@ class HumanFormatter:
             lines.append(f"  Data: {_bytes_to_hex(p.raw_data)}")
         return "\n".join(lines)
 
-    def _format_coment_content(self, content) -> str:
+    def _format_coment_content(self, content: Any) -> str:
         """Format COMENT content objects."""
         name = type(content).__name__
 
@@ -709,7 +711,7 @@ class HumanFormatter:
 
         return f"  {name}: (no formatter)"
 
-    def _format_a0_content(self, content) -> str:
+    def _format_a0_content(self, content: Any) -> str:
         """Format A0 subtype content."""
         name = type(content).__name__
 
@@ -749,7 +751,7 @@ class HumanFormatter:
 
         return ""
 
-    def _format_linker_directive_content(self, content) -> str:
+    def _format_linker_directive_content(self, content: Any) -> str:
         """Format Watcom linker directive content."""
         name = type(content).__name__
 
@@ -812,7 +814,7 @@ class HumanFormatter:
 
         return ""
 
-    def format_summary(self, omf) -> str:
+    def format_summary(self, omf: "OMFFile") -> str:
         """Format the end-of-parse summary."""
         lines = [
             "",
@@ -846,9 +848,9 @@ class HumanFormatter:
 
         return "\n".join(lines)
 
-    def _collect_warnings(self, parsed) -> list:
+    def _collect_warnings(self, parsed: ParsedRecord) -> list[str]:
         """Collect warnings from a parsed record and its nested content."""
-        warnings = []
+        warnings: list[str] = []
         if hasattr(parsed, 'warnings'):
             warnings.extend(parsed.warnings)
         if hasattr(parsed, 'content') and parsed.content and hasattr(parsed.content, 'warnings'):
@@ -866,62 +868,40 @@ class JSONFormatter:
     def __init__(self, indent: int = 2):
         self.indent = indent
 
-    def _to_serializable(self, obj: Any) -> Any:
-        """Convert object to JSON-serializable form."""
-        if obj is None:
-            return None
-        if isinstance(obj, bytes):
-            return obj.hex()
-        if isinstance(obj, Enum):
-            # Use .label for enums that have it (our IntEnums), otherwise .value
-            if hasattr(obj, 'label'):
-                return obj.label
-            return obj.value
-        if isinstance(obj, BaseModel):
-            result = {}
-            for key, value in obj.model_dump(serialize_as_any=True).items():
-                result[key] = self._to_serializable(value)
-            return result
-        if isinstance(obj, list):
-            return [self._to_serializable(item) for item in obj]
-        if isinstance(obj, dict):
-            return {k: self._to_serializable(v) for k, v in obj.items()}
-        if isinstance(obj, tuple):
-            return list(obj)
-        return obj
-
-    def format_file(self, omf, include_raw: bool = False) -> str:
+    def format_file(self, omf: "OMFFile", include_raw: bool = False) -> str:
         """Format entire parsed file as JSON."""
-        all_warnings = []
-        all_errors = []
+        all_warnings: list[str] = []
+        all_errors: list[str] = []
         for result in omf.parsed_records:
             if result.error:
                 all_errors.append(result.error)
             if result.parsed:
                 all_warnings.extend(self._collect_warnings(result.parsed))
 
-        data = {
-            'filepath': omf.filepath,
-            'file_size': len(omf.data) if omf.data else 0,
-            'is_library': omf.is_library,
-            'variant': omf.variant.name,
-            'mixed_variants': omf.mixed_variants,
-            'seen_variants': sorted(omf.seen_variants) if omf.mixed_variants else None,
-            'features': sorted(omf.features),
-            'records': [],
-            'warnings': all_warnings,
-            'errors': all_errors
-        }
+        parsed_file = ParsedOMFFile(
+            filepath=omf.filepath,
+            file_size=len(omf.data) if omf.data else 0,
+            is_library=omf.is_library,
+            variant=omf.variant.name,
+            mixed_variants=omf.mixed_variants,
+            seen_variants=sorted(omf.seen_variants) if omf.mixed_variants else None,
+            features=sorted(omf.features),
+            records=omf.parsed_records,
+            warnings=all_warnings,
+            errors=all_errors
+        )
 
-        for result in omf.parsed_records:
-            record_data = self._format_result(result, include_raw)
-            data['records'].append(record_data)
+        exclude = None if include_raw else {'records': {'__all__': {'raw_content'}}}
+        return parsed_file.model_dump_json(
+            indent=self.indent,
+            by_alias=True,
+            exclude_none=True,
+            exclude=exclude
+        )
 
-        return json.dumps(data, indent=self.indent)
-
-    def _collect_warnings(self, parsed) -> list:
+    def _collect_warnings(self, parsed: ParsedRecord) -> list[str]:
         """Collect warnings from a parsed record and its nested content."""
-        warnings = []
+        warnings: list[str] = []
         if hasattr(parsed, 'warnings'):
             warnings.extend(parsed.warnings)
         if hasattr(parsed, 'content') and parsed.content and hasattr(parsed.content, 'warnings'):
@@ -931,26 +911,3 @@ class JSONFormatter:
                 if hasattr(sub, 'warnings'):
                     warnings.extend(sub.warnings)
         return warnings
-
-    def _format_result(self, result: ParseResult, include_raw: bool) -> dict:
-        """Format a single parse result as a dict."""
-        data = {
-            'type': result.record_type,
-            'type_hex': f"0x{result.record_type:02X}",
-            'name': result.record_name,
-            'offset': result.offset,
-            'length': result.length,
-            'checksum': result.checksum,
-            'checksum_valid': result.checksum_valid
-        }
-
-        if result.error:
-            data['error'] = result.error
-
-        if result.parsed:
-            data['parsed'] = self._to_serializable(result.parsed)
-
-        if include_raw and result.raw_content:
-            data['raw'] = result.raw_content.hex()
-
-        return data

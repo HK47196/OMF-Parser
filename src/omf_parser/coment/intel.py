@@ -14,86 +14,88 @@ from ..models import (
     A0BigEndian, A0PreComp,
     WeakExternEntry, LazyExternEntry
 )
+from ..protocols import OMFFileProtocol
+from ..parsing import RecordParser
 
 
-def _decode_text(text):
+def _decode_text(text: bytes) -> str | None:
     """Helper to decode text bytes."""
     if text:
         try:
             return text.decode('ascii', errors='replace')
-        except:
+        except Exception:
             return None
     return None
 
 
 @coment_class(CommentClass.TRANSLATOR)
-def handle_translator(omf, sub, flags, text):
+def handle_translator(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentTranslator:
     """Translator - identifies compiler/assembler."""
     decoded = _decode_text(text)
     return ComentTranslator(translator=decoded or text.hex() if text else "")
 
 
 @coment_class(CommentClass.COPYRIGHT)
-def handle_copyright(omf, sub, flags, text):
+def handle_copyright(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentCopyright:
     """Intel Copyright."""
     decoded = _decode_text(text)
     return ComentCopyright(copyright=decoded or text.hex() if text else "")
 
 
 @coment_class(CommentClass.LIBSPEC)
-def handle_libspec(omf, sub, flags, text):
+def handle_libspec(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentLibSpec:
     """Library Specifier (obsolete)."""
     decoded = _decode_text(text)
     return ComentLibSpec(library=decoded or text.hex() if text else "")
 
 
 @coment_class(CommentClass.DOSSEG)
-def handle_dosseg(omf, sub, flags, text):
+def handle_dosseg(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentDosseg:
     """DOSSEG - DOS segment ordering."""
     return ComentDosseg()
 
 
 @coment_class(CommentClass.NEW_OMF)
-def handle_new_omf(omf, sub, flags, text):
+def handle_new_omf(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentNewOmf:
     """New OMF Extension."""
     return ComentNewOmf(data=text if text else None)
 
 
 @coment_class(CommentClass.LINK_PASS)
-def handle_link_pass(omf, sub, flags, text):
+def handle_link_pass(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentLinkPass:
     """Link Pass Separator."""
     pass_num = text[0] if text and len(text) >= 1 else None
     return ComentLinkPass(pass_num=pass_num)
 
 
 @coment_class(CommentClass.LIBMOD)
-def handle_libmod(omf, sub, flags, text):
+def handle_libmod(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentLibMod:
     """LIBMOD - Library Module Name."""
     decoded = _decode_text(text)
     return ComentLibMod(module_name=decoded or text.hex() if text else "")
 
 
 @coment_class(CommentClass.EXESTR)
-def handle_exestr(omf, sub, flags, text):
+def handle_exestr(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentExeStr:
     """EXESTR - Executable String."""
     decoded = _decode_text(text)
     return ComentExeStr(exe_string=decoded or text.hex() if text else "")
 
 
 @coment_class(CommentClass.INCERR)
-def handle_incerr(omf, sub, flags, text):
+def handle_incerr(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentIncErr:
     """INCERR - Incremental Compilation Error."""
     return ComentIncErr()
 
 
 @coment_class(CommentClass.NOPAD)
-def handle_nopad(omf, sub, flags, text):
+def handle_nopad(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentNoPad:
     """NOPAD - No Segment Padding."""
     return ComentNoPad()
 
 
 @coment_class(CommentClass.WKEXT)
-def handle_wkext(omf, sub, flags, text):
+def handle_wkext(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentWkExt:
     """WKEXT - Weak Extern."""
     result = ComentWkExt()
     pos = 0
@@ -109,7 +111,7 @@ def handle_wkext(omf, sub, flags, text):
 
 
 @coment_class(CommentClass.LZEXT)
-def handle_lzext(omf, sub, flags, text):
+def handle_lzext(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentLzExt:
     """LZEXT - Lazy Extern."""
     result = ComentLzExt()
     pos = 0
@@ -125,7 +127,7 @@ def handle_lzext(omf, sub, flags, text):
 
 
 @coment_class(CommentClass.EASY_OMF)
-def handle_easy_omf(omf, sub, flags, text):
+def handle_easy_omf(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentEasyOmf:
     """Easy OMF-386 marker (PharLap)."""
     omf.features.add('easy_omf')
     omf.features.add('pharlap')
@@ -140,7 +142,7 @@ def handle_easy_omf(omf, sub, flags, text):
 
 
 @coment_class(CommentClass.OMF_EXTENSIONS)
-def handle_omf_extensions(omf, sub, flags, text):
+def handle_omf_extensions(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentOmfExtensions | None:
     """OMF Extensions (A0 subtypes)."""
     if not text:
         return None
@@ -173,7 +175,7 @@ def handle_omf_extensions(omf, sub, flags, text):
     return result
 
 
-def _parse_impdef(omf, data):
+def _parse_impdef(omf: OMFFileProtocol, data: bytes) -> A0ImpDef | None:
     """Parse IMPDEF subtype."""
     if len(data) < 3:
         return None
@@ -211,7 +213,7 @@ def _parse_impdef(omf, data):
     return result
 
 
-def _parse_expdef(omf, data):
+def _parse_expdef(omf: OMFFileProtocol, data: bytes) -> A0ExpDef | None:
     """Parse EXPDEF subtype."""
     if len(data) < 2:
         return None
@@ -249,7 +251,7 @@ def _parse_expdef(omf, data):
     return result
 
 
-def _parse_incdef(omf, data):
+def _parse_incdef(omf: OMFFileProtocol, data: bytes) -> A0IncDef | None:
     """Parse INCDEF subtype."""
     if len(data) < 4:
         return None
@@ -265,7 +267,7 @@ def _parse_incdef(omf, data):
     return A0IncDef(extdef_delta=extdef_delta, linnum_delta=linnum_delta)
 
 
-def _parse_lnkdir(omf, data):
+def _parse_lnkdir(omf: OMFFileProtocol, data: bytes) -> A0LnkDir | None:
     """Parse LNKDIR subtype."""
     if len(data) < 3:
         return None

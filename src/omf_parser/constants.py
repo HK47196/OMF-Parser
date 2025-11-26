@@ -1,7 +1,7 @@
 """OMF constants and record type definitions."""
 
 from enum import Enum, IntEnum, IntFlag, unique
-from typing import NamedTuple
+from typing import NamedTuple, overload
 
 
 class EnumValue(NamedTuple):
@@ -16,14 +16,26 @@ class LabeledEnum(Enum):
     Allows construction from int (for parsing) while keeping unique tuple values
     (avoiding Union collision in Pydantic).
     """
-    def __new__(cls, int_val: int, label: str):
+
+    int_val: int
+    label: str
+
+    @overload
+    def __new__(cls, int_val: int, label: str) -> "LabeledEnum": ...
+    @overload
+    def __new__(cls, int_val: int) -> "LabeledEnum": ...
+
+    def __new__(cls, int_val: int, label: str | None = None) -> "LabeledEnum":
+        if label is None:
+            # Lookup by int value - will be handled by _missing_
+            raise ValueError("Use enum lookup")
         obj = object.__new__(cls)
         obj._value_ = EnumValue(int_val, label)
         obj.int_val = int_val
         obj.label = label
         return obj
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
         int_vals = [m.int_val for m in cls]
         if len(int_vals) != len(set(int_vals)):
@@ -31,7 +43,7 @@ class LabeledEnum(Enum):
             raise ValueError(f"{cls.__name__} has duplicate int values: {set(dupes)}")
 
     @classmethod
-    def _missing_(cls, value: object):
+    def _missing_(cls, value: object) -> "LabeledEnum | None":
         if isinstance(value, int):
             if value < 0:
                 raise ValueError(f"Invalid {cls.__name__} value: {value}")

@@ -1,0 +1,3153 @@
+{
+  "$defs": {
+    "AliasEntry": {
+      "description": "Alias definition entry.",
+      "properties": {
+        "alias": {
+          "title": "Alias",
+          "type": "string"
+        },
+        "substitute": {
+          "title": "Substitute",
+          "type": "string"
+        }
+      },
+      "required": [
+        "alias",
+        "substitute"
+      ],
+      "title": "AliasEntry",
+      "type": "object"
+    },
+    "BackpatchLocation": {
+      "description": "BAKPAT/NBKPAT location types.\n\n- Byte(8): 8-bit value\n- Word(16): 16-bit value\n- DWord(32): 32-bit value\n- DWord(32-IBM): 32-bit value (IBM LINK386 extension)",
+      "enum": [
+        [
+          0,
+          "Byte(8)"
+        ],
+        [
+          1,
+          "Word(16)"
+        ],
+        [
+          2,
+          "DWord(32)"
+        ],
+        [
+          9,
+          "DWord(32-IBM)"
+        ]
+      ],
+      "title": "BackpatchLocation",
+      "type": "array"
+    },
+    "BackpatchRecord": {
+      "description": "BAKPAT backpatch record entry.",
+      "properties": {
+        "segment": {
+          "title": "Segment",
+          "type": "string"
+        },
+        "segment_index": {
+          "title": "Segment Index",
+          "type": "integer"
+        },
+        "location": {
+          "$ref": "#/$defs/BackpatchLocation"
+        },
+        "offset": {
+          "title": "Offset",
+          "type": "integer"
+        },
+        "value": {
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "segment",
+        "segment_index",
+        "location",
+        "offset",
+        "value"
+      ],
+      "title": "BackpatchRecord",
+      "type": "object"
+    },
+    "CExtDefEntry": {
+      "description": "COMDAT external definition entry.",
+      "properties": {
+        "index": {
+          "title": "Index",
+          "type": "integer"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type_index": {
+          "title": "Type Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "index",
+        "name",
+        "type_index"
+      ],
+      "title": "CExtDefEntry",
+      "type": "object"
+    },
+    "ComDefBorlandDefinition": {
+      "description": "Borland COMDEF definition.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type_index": {
+          "title": "Type Index",
+          "type": "integer"
+        },
+        "data_type": {
+          "title": "Data Type",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "Borland",
+          "title": "Kind",
+          "type": "string"
+        },
+        "seg_index": {
+          "title": "Seg Index",
+          "type": "integer"
+        },
+        "length": {
+          "title": "Length",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "type_index",
+        "data_type",
+        "kind",
+        "seg_index",
+        "length"
+      ],
+      "title": "ComDefBorlandDefinition",
+      "type": "object"
+    },
+    "ComDefFarDefinition": {
+      "description": "FAR COMDEF definition.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type_index": {
+          "title": "Type Index",
+          "type": "integer"
+        },
+        "data_type": {
+          "title": "Data Type",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "FAR",
+          "title": "Kind",
+          "type": "string"
+        },
+        "num_elements": {
+          "title": "Num Elements",
+          "type": "integer"
+        },
+        "element_size": {
+          "title": "Element Size",
+          "type": "integer"
+        },
+        "total_size": {
+          "title": "Total Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "type_index",
+        "data_type",
+        "kind",
+        "num_elements",
+        "element_size",
+        "total_size"
+      ],
+      "title": "ComDefFarDefinition",
+      "type": "object"
+    },
+    "ComDefNearDefinition": {
+      "description": "NEAR COMDEF definition.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type_index": {
+          "title": "Type Index",
+          "type": "integer"
+        },
+        "data_type": {
+          "title": "Data Type",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "NEAR",
+          "title": "Kind",
+          "type": "string"
+        },
+        "size": {
+          "title": "Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "type_index",
+        "data_type",
+        "kind",
+        "size"
+      ],
+      "title": "ComDefNearDefinition",
+      "type": "object"
+    },
+    "ComDefUnknownDefinition": {
+      "description": "Unknown COMDEF definition.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type_index": {
+          "title": "Type Index",
+          "type": "integer"
+        },
+        "data_type": {
+          "title": "Data Type",
+          "type": "integer"
+        },
+        "kind": {
+          "const": "Unknown",
+          "title": "Kind",
+          "type": "string"
+        },
+        "length": {
+          "title": "Length",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "type_index",
+        "data_type",
+        "kind",
+        "length"
+      ],
+      "title": "ComDefUnknownDefinition",
+      "type": "object"
+    },
+    "ComdatAlign": {
+      "description": "COMDAT alignment values. Values 0-5 correspond to SEGDEF alignment.\n\n- FromSEGDEF: Use alignment from associated SEGDEF record\n- Byte: Byte aligned\n- Word: Word (2-byte) aligned\n- Para: Paragraph (16-byte) aligned\n- Page: Page aligned\n- DWord: DWord (4-byte) aligned",
+      "enum": [
+        [
+          0,
+          "FromSEGDEF"
+        ],
+        [
+          1,
+          "Byte"
+        ],
+        [
+          2,
+          "Word"
+        ],
+        [
+          3,
+          "Para"
+        ],
+        [
+          4,
+          "Page"
+        ],
+        [
+          5,
+          "DWord"
+        ]
+      ],
+      "title": "ComdatAlign",
+      "type": "array"
+    },
+    "ComdatAllocation": {
+      "description": "COMDAT allocation attribute (low-order 4 bits of attribute byte).\n\n- Explicit: Allocate in segment specified by SEGDEF index\n- Far Code (CODE16): Allocate in default 16-bit code segment\n- Far Data (DATA16): Allocate in default 16-bit data segment\n- Code32: Allocate in default 32-bit code segment\n- Data32: Allocate in default 32-bit data segment",
+      "enum": [
+        [
+          0,
+          "Explicit"
+        ],
+        [
+          1,
+          "Far Code (CODE16)"
+        ],
+        [
+          2,
+          "Far Data (DATA16)"
+        ],
+        [
+          3,
+          "Code32"
+        ],
+        [
+          4,
+          "Data32"
+        ]
+      ],
+      "title": "ComdatAllocation",
+      "type": "array"
+    },
+    "ComdatSelection": {
+      "description": "COMDAT selection attribute (high-order 4 bits of attribute byte).\n\n- No Match: Only one instance allowed; duplicate definitions are errors\n- Pick Any: Pick any instance; all definitions assumed identical\n- Same Size: Pick any, but all definitions must have same size\n- Exact Match: Pick any, but all definitions must have matching checksums",
+      "enum": [
+        [
+          0,
+          "No Match"
+        ],
+        [
+          1,
+          "Pick Any"
+        ],
+        [
+          2,
+          "Same Size"
+        ],
+        [
+          3,
+          "Exact Match"
+        ]
+      ],
+      "title": "ComdatSelection",
+      "type": "array"
+    },
+    "DictEntry": {
+      "description": "Library dictionary entry.",
+      "properties": {
+        "block": {
+          "title": "Block",
+          "type": "integer"
+        },
+        "bucket": {
+          "title": "Bucket",
+          "type": "integer"
+        },
+        "symbol": {
+          "title": "Symbol",
+          "type": "string"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "block",
+        "bucket",
+        "symbol",
+        "page"
+      ],
+      "title": "DictEntry",
+      "type": "object"
+    },
+    "ExtDefEntry": {
+      "description": "External definition entry.",
+      "properties": {
+        "index": {
+          "title": "Index",
+          "type": "integer"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "type_index": {
+          "title": "Type Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "index",
+        "name",
+        "type_index"
+      ],
+      "title": "ExtDefEntry",
+      "type": "object"
+    },
+    "ExtDictModule": {
+      "description": "Extended dictionary module entry.",
+      "properties": {
+        "index": {
+          "title": "Index",
+          "type": "integer"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "dep_offset": {
+          "title": "Dep Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "index",
+        "page",
+        "dep_offset"
+      ],
+      "title": "ExtDictModule",
+      "type": "object"
+    },
+    "FixupLocation": {
+      "description": "FIXUPP location types. Some values differ between TIS and PharLap variants.\n\n- Byte(8): Low-order byte (8-bit displacement or low byte of 16-bit offset)\n- Offset(16): 16-bit offset\n- Segment(16): 16-bit base/selector\n- Ptr(16:16): 32-bit far pointer (16-bit segment:16-bit offset) [PharLap: 16:32]\n- HiByte(8): High-order byte of 16-bit offset\n- Loader-resolved Offset(16): 16-bit loader-resolved offset [PharLap: 32-bit offset]\n- Ptr(16:32) [loc 6]: PharLap 48-bit pointer [TIS: reserved]\n- Offset(32): 32-bit offset\n- Ptr(16:32) [loc 11]: 48-bit far pointer (16-bit segment:32-bit offset)\n- Loader-resolved Offset(32): 32-bit loader-resolved offset",
+      "enum": [
+        [
+          0,
+          "Byte(8)"
+        ],
+        [
+          1,
+          "Offset(16)"
+        ],
+        [
+          2,
+          "Segment(16)"
+        ],
+        [
+          3,
+          "Ptr(16:16)"
+        ],
+        [
+          4,
+          "HiByte(8)"
+        ],
+        [
+          5,
+          "Loader-resolved Offset(16)"
+        ],
+        [
+          6,
+          "Ptr(16:32) [loc 6]"
+        ],
+        [
+          9,
+          "Offset(32)"
+        ],
+        [
+          11,
+          "Ptr(16:32)"
+        ],
+        [
+          13,
+          "Loader-resolved Offset(32)"
+        ]
+      ],
+      "title": "FixupLocation",
+      "type": "array"
+    },
+    "FixupMode": {
+      "description": "FIXUPP fixup mode.",
+      "enum": [
+        "Segment-relative",
+        "Self-relative"
+      ],
+      "title": "FixupMode",
+      "type": "string"
+    },
+    "FrameMethod": {
+      "description": "FIXUPP frame determination methods.\n\n- F0:SEGDEF: Frame specified by SEGDEF index\n- F1:GRPDEF: Frame specified by GRPDEF index\n- F2:EXTDEF: Frame specified by EXTDEF index\n- F3:FrameNum: Explicit frame number (not supported by linkers)\n- F4:Location: Frame from previous LEDATA/LIDATA segment\n- F5:Target: Frame determined by target\n- F6:Invalid: Invalid/reserved",
+      "enum": [
+        [
+          0,
+          "F0:SEGDEF"
+        ],
+        [
+          1,
+          "F1:GRPDEF"
+        ],
+        [
+          2,
+          "F2:EXTDEF"
+        ],
+        [
+          3,
+          "F3:FrameNum"
+        ],
+        [
+          4,
+          "F4:Location"
+        ],
+        [
+          5,
+          "F5:Target"
+        ],
+        [
+          6,
+          "F6:Invalid"
+        ]
+      ],
+      "title": "FrameMethod",
+      "type": "array"
+    },
+    "LibLocEntry": {
+      "description": "Library location entry (obsolete).",
+      "properties": {
+        "module": {
+          "title": "Module",
+          "type": "string"
+        },
+        "block_num": {
+          "title": "Block Num",
+          "type": "integer"
+        },
+        "byte_offset": {
+          "title": "Byte Offset",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "module",
+        "block_num",
+        "byte_offset"
+      ],
+      "title": "LibLocEntry",
+      "type": "object"
+    },
+    "LineEntry": {
+      "description": "Line number entry in LINNUM/LINSYM records.",
+      "properties": {
+        "line": {
+          "title": "Line",
+          "type": "integer"
+        },
+        "offset": {
+          "title": "Offset",
+          "type": "integer"
+        },
+        "is_end_of_function": {
+          "title": "Is End Of Function",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "line",
+        "offset",
+        "is_end_of_function"
+      ],
+      "title": "LineEntry",
+      "type": "object"
+    },
+    "NamedBackpatchRecord": {
+      "description": "NBKPAT named backpatch record entry.",
+      "properties": {
+        "location": {
+          "$ref": "#/$defs/BackpatchLocation"
+        },
+        "symbol": {
+          "title": "Symbol",
+          "type": "string"
+        },
+        "offset": {
+          "title": "Offset",
+          "type": "integer"
+        },
+        "value": {
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "location",
+        "symbol",
+        "offset",
+        "value"
+      ],
+      "title": "NamedBackpatchRecord",
+      "type": "object"
+    },
+    "ParseResult": {
+      "description": "Container for a parsed record result.",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "type": "integer"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "offset": {
+          "title": "Offset",
+          "type": "integer"
+        },
+        "length": {
+          "title": "Length",
+          "type": "integer"
+        },
+        "checksum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Checksum"
+        },
+        "checksum_valid": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Checksum Valid"
+        },
+        "parsed": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ParsedTheadr"
+            },
+            {
+              "$ref": "#/$defs/ParsedLNames"
+            },
+            {
+              "$ref": "#/$defs/ParsedSegDef"
+            },
+            {
+              "$ref": "#/$defs/ParsedGrpDef"
+            },
+            {
+              "$ref": "#/$defs/ParsedPubDef"
+            },
+            {
+              "$ref": "#/$defs/ParsedExtDef"
+            },
+            {
+              "$ref": "#/$defs/ParsedCExtDef"
+            },
+            {
+              "$ref": "#/$defs/ParsedModEnd"
+            },
+            {
+              "$ref": "#/$defs/ParsedLinNum"
+            },
+            {
+              "$ref": "#/$defs/ParsedVerNum"
+            },
+            {
+              "$ref": "#/$defs/ParsedVendExt"
+            },
+            {
+              "$ref": "#/$defs/ParsedLocSym"
+            },
+            {
+              "$ref": "#/$defs/ParsedTypDef"
+            },
+            {
+              "$ref": "#/$defs/ParsedLEData"
+            },
+            {
+              "$ref": "#/$defs/ParsedLIData"
+            },
+            {
+              "$ref": "#/$defs/ParsedFixupp"
+            },
+            {
+              "$ref": "#/$defs/ParsedComDef"
+            },
+            {
+              "$ref": "#/$defs/ParsedComDat"
+            },
+            {
+              "$ref": "#/$defs/ParsedBackpatch"
+            },
+            {
+              "$ref": "#/$defs/ParsedNamedBackpatch"
+            },
+            {
+              "$ref": "#/$defs/ParsedLinSym"
+            },
+            {
+              "$ref": "#/$defs/ParsedAlias"
+            },
+            {
+              "$ref": "#/$defs/ParsedLibHdr"
+            },
+            {
+              "$ref": "#/$defs/ParsedLibEnd"
+            },
+            {
+              "$ref": "#/$defs/ParsedLibDict"
+            },
+            {
+              "$ref": "#/$defs/ParsedExtDict"
+            },
+            {
+              "$ref": "#/$defs/ParsedComent"
+            },
+            {
+              "$ref": "#/$defs/ParsedRheadr"
+            },
+            {
+              "$ref": "#/$defs/ParsedRegInt"
+            },
+            {
+              "$ref": "#/$defs/ParsedReDataPeData"
+            },
+            {
+              "$ref": "#/$defs/ParsedRiDataPiData"
+            },
+            {
+              "$ref": "#/$defs/ParsedOvlDef"
+            },
+            {
+              "$ref": "#/$defs/ParsedEndRec"
+            },
+            {
+              "$ref": "#/$defs/ParsedBlkDef"
+            },
+            {
+              "$ref": "#/$defs/ParsedBlkEnd"
+            },
+            {
+              "$ref": "#/$defs/ParsedDebSym"
+            },
+            {
+              "$ref": "#/$defs/ParsedObsoleteLib"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parsed"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "raw_content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Content"
+        },
+        "type_hex": {
+          "readOnly": true,
+          "title": "Type Hex",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "offset",
+        "length",
+        "checksum",
+        "checksum_valid",
+        "type_hex"
+      ],
+      "title": "ParseResult",
+      "type": "object"
+    },
+    "ParsedAlias": {
+      "description": "ALIAS - Alias definitions.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "aliases": {
+          "items": {
+            "$ref": "#/$defs/AliasEntry"
+          },
+          "title": "Aliases",
+          "type": "array"
+        }
+      },
+      "title": "ParsedAlias",
+      "type": "object"
+    },
+    "ParsedBackpatch": {
+      "description": "BAKPAT - Backpatch record.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_32bit": {
+          "title": "Is 32Bit",
+          "type": "boolean"
+        },
+        "records": {
+          "items": {
+            "$ref": "#/$defs/BackpatchRecord"
+          },
+          "title": "Records",
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_32bit"
+      ],
+      "title": "ParsedBackpatch",
+      "type": "object"
+    },
+    "ParsedBlkDef": {
+      "description": "BLKDEF - Block definition (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "base_group": {
+          "title": "Base Group",
+          "type": "string"
+        },
+        "base_segment": {
+          "title": "Base Segment",
+          "type": "string"
+        },
+        "frame": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame"
+        },
+        "block_name": {
+          "default": "",
+          "title": "Block Name",
+          "type": "string"
+        },
+        "offset": {
+          "default": 0,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "debug_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Debug Length"
+        },
+        "debug_data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Debug Data"
+        }
+      },
+      "required": [
+        "base_group",
+        "base_segment"
+      ],
+      "title": "ParsedBlkDef",
+      "type": "object"
+    },
+    "ParsedBlkEnd": {
+      "description": "BLKEND - Block end (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "ParsedBlkEnd",
+      "type": "object"
+    },
+    "ParsedCExtDef": {
+      "description": "CEXTDEF - COMDAT external definitions.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "externals": {
+          "items": {
+            "$ref": "#/$defs/CExtDefEntry"
+          },
+          "title": "Externals",
+          "type": "array"
+        }
+      },
+      "title": "ParsedCExtDef",
+      "type": "object"
+    },
+    "ParsedComDat": {
+      "description": "COMDAT - Initialized communal data.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_32bit": {
+          "title": "Is 32Bit",
+          "type": "boolean"
+        },
+        "flags": {
+          "title": "Flags",
+          "type": "integer"
+        },
+        "continuation": {
+          "title": "Continuation",
+          "type": "boolean"
+        },
+        "iterated": {
+          "title": "Iterated",
+          "type": "boolean"
+        },
+        "local": {
+          "title": "Local",
+          "type": "boolean"
+        },
+        "data_in_code": {
+          "title": "Data In Code",
+          "type": "boolean"
+        },
+        "selection": {
+          "$ref": "#/$defs/ComdatSelection"
+        },
+        "allocation": {
+          "$ref": "#/$defs/ComdatAllocation"
+        },
+        "alignment": {
+          "$ref": "#/$defs/ComdatAlign"
+        },
+        "enum_offset": {
+          "default": 0,
+          "title": "Enum Offset",
+          "type": "integer"
+        },
+        "type_index": {
+          "default": 0,
+          "title": "Type Index",
+          "type": "integer"
+        },
+        "base_group": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Base Group"
+        },
+        "base_segment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Base Segment"
+        },
+        "absolute_frame": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Absolute Frame"
+        },
+        "symbol": {
+          "default": "",
+          "title": "Symbol",
+          "type": "string"
+        },
+        "data_length": {
+          "default": 0,
+          "title": "Data Length",
+          "type": "integer"
+        },
+        "iterated_blocks": {
+          "items": {
+            "$ref": "#/$defs/ParsedLIDataBlock"
+          },
+          "title": "Iterated Blocks",
+          "type": "array"
+        },
+        "iterated_expanded_size": {
+          "default": 0,
+          "title": "Iterated Expanded Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "is_32bit",
+        "flags",
+        "continuation",
+        "iterated",
+        "local",
+        "data_in_code",
+        "selection",
+        "allocation",
+        "alignment"
+      ],
+      "title": "ParsedComDat",
+      "type": "object"
+    },
+    "ParsedComDef": {
+      "description": "COMDEF/LCOMDEF - Communal definitions.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_local": {
+          "title": "Is Local",
+          "type": "boolean"
+        },
+        "definitions": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ComDefFarDefinition"
+              },
+              {
+                "$ref": "#/$defs/ComDefNearDefinition"
+              },
+              {
+                "$ref": "#/$defs/ComDefBorlandDefinition"
+              },
+              {
+                "$ref": "#/$defs/ComDefUnknownDefinition"
+              }
+            ]
+          },
+          "title": "Definitions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_local"
+      ],
+      "title": "ParsedComDef",
+      "type": "object"
+    },
+    "ParsedComent": {
+      "description": "COMENT - Comment record.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "comment_class": {
+          "title": "Comment Class",
+          "type": "integer"
+        },
+        "class_name": {
+          "title": "Class Name",
+          "type": "string"
+        },
+        "no_purge": {
+          "title": "No Purge",
+          "type": "boolean"
+        },
+        "no_list": {
+          "title": "No List",
+          "type": "boolean"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ParsedComentContent"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "raw_data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Raw Data"
+        }
+      },
+      "required": [
+        "comment_class",
+        "class_name",
+        "no_purge",
+        "no_list"
+      ],
+      "title": "ParsedComent",
+      "type": "object"
+    },
+    "ParsedComentContent": {
+      "description": "Base class for COMENT content.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "ParsedComentContent",
+      "type": "object"
+    },
+    "ParsedDebSym": {
+      "description": "DEBSYM - Debug symbols (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data"
+        }
+      },
+      "title": "ParsedDebSym",
+      "type": "object"
+    },
+    "ParsedEndRec": {
+      "description": "ENDREC - End record (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "ParsedEndRec",
+      "type": "object"
+    },
+    "ParsedExtDef": {
+      "description": "EXTDEF/LEXTDEF - External definitions.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_local": {
+          "title": "Is Local",
+          "type": "boolean"
+        },
+        "externals": {
+          "items": {
+            "$ref": "#/$defs/ExtDefEntry"
+          },
+          "title": "Externals",
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_local"
+      ],
+      "title": "ParsedExtDef",
+      "type": "object"
+    },
+    "ParsedExtDict": {
+      "description": "Extended dictionary.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "length": {
+          "title": "Length",
+          "type": "integer"
+        },
+        "num_modules": {
+          "title": "Num Modules",
+          "type": "integer"
+        },
+        "modules": {
+          "items": {
+            "$ref": "#/$defs/ExtDictModule"
+          },
+          "title": "Modules",
+          "type": "array"
+        }
+      },
+      "required": [
+        "length",
+        "num_modules"
+      ],
+      "title": "ParsedExtDict",
+      "type": "object"
+    },
+    "ParsedFixup": {
+      "description": "FIXUPP fixup subrecord.",
+      "properties": {
+        "data_offset": {
+          "title": "Data Offset",
+          "type": "integer"
+        },
+        "location": {
+          "$ref": "#/$defs/FixupLocation"
+        },
+        "mode": {
+          "$ref": "#/$defs/FixupMode"
+        },
+        "frame_method": {
+          "$ref": "#/$defs/FrameMethod"
+        },
+        "frame_source": {
+          "title": "Frame Source",
+          "type": "string"
+        },
+        "target_method": {
+          "$ref": "#/$defs/TargetMethod"
+        },
+        "target_source": {
+          "title": "Target Source",
+          "type": "string"
+        },
+        "frame_datum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame Datum"
+        },
+        "target_datum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Datum"
+        },
+        "displacement": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displacement"
+        }
+      },
+      "required": [
+        "data_offset",
+        "location",
+        "mode",
+        "frame_method",
+        "frame_source",
+        "target_method",
+        "target_source"
+      ],
+      "title": "ParsedFixup",
+      "type": "object"
+    },
+    "ParsedFixupp": {
+      "description": "FIXUPP - Fixup record.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_32bit": {
+          "title": "Is 32Bit",
+          "type": "boolean"
+        },
+        "subrecords": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/ParsedThread"
+              },
+              {
+                "$ref": "#/$defs/ParsedFixup"
+              }
+            ]
+          },
+          "title": "Subrecords",
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_32bit"
+      ],
+      "title": "ParsedFixupp",
+      "type": "object"
+    },
+    "ParsedGrpDef": {
+      "description": "GRPDEF - Group definition.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "name_index": {
+          "title": "Name Index",
+          "type": "integer"
+        },
+        "is_flat": {
+          "default": false,
+          "title": "Is Flat",
+          "type": "boolean"
+        },
+        "components": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Components",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "name_index"
+      ],
+      "title": "ParsedGrpDef",
+      "type": "object"
+    },
+    "ParsedLEData": {
+      "description": "LEDATA - Logical enumerated data.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_32bit": {
+          "title": "Is 32Bit",
+          "type": "boolean"
+        },
+        "segment": {
+          "title": "Segment",
+          "type": "string"
+        },
+        "segment_index": {
+          "title": "Segment Index",
+          "type": "integer"
+        },
+        "offset": {
+          "title": "Offset",
+          "type": "integer"
+        },
+        "data_length": {
+          "title": "Data Length",
+          "type": "integer"
+        },
+        "data_preview": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Preview"
+        }
+      },
+      "required": [
+        "is_32bit",
+        "segment",
+        "segment_index",
+        "offset",
+        "data_length"
+      ],
+      "title": "ParsedLEData",
+      "type": "object"
+    },
+    "ParsedLIData": {
+      "description": "LIDATA - Logical iterated data.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_32bit": {
+          "title": "Is 32Bit",
+          "type": "boolean"
+        },
+        "segment": {
+          "title": "Segment",
+          "type": "string"
+        },
+        "segment_index": {
+          "title": "Segment Index",
+          "type": "integer"
+        },
+        "offset": {
+          "title": "Offset",
+          "type": "integer"
+        },
+        "blocks": {
+          "items": {
+            "$ref": "#/$defs/ParsedLIDataBlock"
+          },
+          "title": "Blocks",
+          "type": "array"
+        },
+        "total_expanded_size": {
+          "default": 0,
+          "title": "Total Expanded Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "is_32bit",
+        "segment",
+        "segment_index",
+        "offset"
+      ],
+      "title": "ParsedLIData",
+      "type": "object"
+    },
+    "ParsedLIDataBlock": {
+      "description": "A single LIDATA block (can be nested).",
+      "properties": {
+        "repeat_count": {
+          "title": "Repeat Count",
+          "type": "integer"
+        },
+        "block_count": {
+          "title": "Block Count",
+          "type": "integer"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Content"
+        },
+        "nested_blocks": {
+          "items": {
+            "$ref": "#/$defs/ParsedLIDataBlock"
+          },
+          "title": "Nested Blocks",
+          "type": "array"
+        },
+        "expanded_size": {
+          "default": 0,
+          "title": "Expanded Size",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "repeat_count",
+        "block_count"
+      ],
+      "title": "ParsedLIDataBlock",
+      "type": "object"
+    },
+    "ParsedLNames": {
+      "description": "LNAMES/LLNAMES - Logical names.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "record_name": {
+          "enum": [
+            "LNAMES",
+            "LLNAMES (Local)"
+          ],
+          "title": "Record Name",
+          "type": "string"
+        },
+        "start_index": {
+          "title": "Start Index",
+          "type": "integer"
+        },
+        "end_index": {
+          "title": "End Index",
+          "type": "integer"
+        },
+        "names": {
+          "items": {
+            "maxItems": 3,
+            "minItems": 3,
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              }
+            ],
+            "type": "array"
+          },
+          "title": "Names",
+          "type": "array"
+        }
+      },
+      "required": [
+        "record_name",
+        "start_index",
+        "end_index",
+        "names"
+      ],
+      "title": "ParsedLNames",
+      "type": "object"
+    },
+    "ParsedLibDict": {
+      "description": "Library dictionary.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/DictEntry"
+          },
+          "title": "Entries",
+          "type": "array"
+        },
+        "total_entries": {
+          "default": 0,
+          "title": "Total Entries",
+          "type": "integer"
+        }
+      },
+      "title": "ParsedLibDict",
+      "type": "object"
+    },
+    "ParsedLibEnd": {
+      "description": "Library end (F1H).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "title": "ParsedLibEnd",
+      "type": "object"
+    },
+    "ParsedLibHdr": {
+      "description": "Library header (F0H).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "dict_offset": {
+          "title": "Dict Offset",
+          "type": "integer"
+        },
+        "dict_blocks": {
+          "title": "Dict Blocks",
+          "type": "integer"
+        },
+        "flags": {
+          "title": "Flags",
+          "type": "integer"
+        },
+        "case_sensitive": {
+          "title": "Case Sensitive",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "page_size",
+        "dict_offset",
+        "dict_blocks",
+        "flags",
+        "case_sensitive"
+      ],
+      "title": "ParsedLibHdr",
+      "type": "object"
+    },
+    "ParsedLinNum": {
+      "description": "LINNUM - Line number information.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_32bit": {
+          "title": "Is 32Bit",
+          "type": "boolean"
+        },
+        "base_group": {
+          "title": "Base Group",
+          "type": "string"
+        },
+        "base_segment": {
+          "title": "Base Segment",
+          "type": "string"
+        },
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/LineEntry"
+          },
+          "title": "Entries",
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_32bit",
+        "base_group",
+        "base_segment"
+      ],
+      "title": "ParsedLinNum",
+      "type": "object"
+    },
+    "ParsedLinSym": {
+      "description": "LINSYM - Line numbers for symbol.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_32bit": {
+          "title": "Is 32Bit",
+          "type": "boolean"
+        },
+        "continuation": {
+          "title": "Continuation",
+          "type": "boolean"
+        },
+        "symbol": {
+          "title": "Symbol",
+          "type": "string"
+        },
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/LineEntry"
+          },
+          "title": "Entries",
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_32bit",
+        "continuation",
+        "symbol"
+      ],
+      "title": "ParsedLinSym",
+      "type": "object"
+    },
+    "ParsedLocSym": {
+      "description": "LOCSYM - Local symbols (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "base_group": {
+          "title": "Base Group",
+          "type": "string"
+        },
+        "base_segment": {
+          "title": "Base Segment",
+          "type": "string"
+        },
+        "absolute_frame": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Absolute Frame"
+        },
+        "frame_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame Note"
+        },
+        "symbols": {
+          "items": {
+            "$ref": "#/$defs/PubDefSymbol"
+          },
+          "title": "Symbols",
+          "type": "array"
+        }
+      },
+      "required": [
+        "base_group",
+        "base_segment"
+      ],
+      "title": "ParsedLocSym",
+      "type": "object"
+    },
+    "ParsedModEnd": {
+      "description": "MODEND - Module end.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "mod_type": {
+          "title": "Mod Type",
+          "type": "integer"
+        },
+        "is_main": {
+          "title": "Is Main",
+          "type": "boolean"
+        },
+        "has_start": {
+          "title": "Has Start",
+          "type": "boolean"
+        },
+        "is_relocatable": {
+          "title": "Is Relocatable",
+          "type": "boolean"
+        },
+        "start_address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StartAddress"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "mod_type",
+        "is_main",
+        "has_start",
+        "is_relocatable"
+      ],
+      "title": "ParsedModEnd",
+      "type": "object"
+    },
+    "ParsedNamedBackpatch": {
+      "description": "NBKPAT - Named backpatch record.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_32bit": {
+          "title": "Is 32Bit",
+          "type": "boolean"
+        },
+        "records": {
+          "items": {
+            "$ref": "#/$defs/NamedBackpatchRecord"
+          },
+          "title": "Records",
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_32bit"
+      ],
+      "title": "ParsedNamedBackpatch",
+      "type": "object"
+    },
+    "ParsedObsoleteLib": {
+      "description": "Obsolete Intel library records.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "record_type": {
+          "enum": [
+            "LIBHED",
+            "LIBNAM",
+            "LIBLOC",
+            "LIBDIC"
+          ],
+          "title": "Record Type",
+          "type": "string"
+        },
+        "data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data"
+        },
+        "modules": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Modules",
+          "type": "array"
+        },
+        "locations": {
+          "items": {
+            "$ref": "#/$defs/LibLocEntry"
+          },
+          "title": "Locations",
+          "type": "array"
+        }
+      },
+      "required": [
+        "record_type"
+      ],
+      "title": "ParsedObsoleteLib",
+      "type": "object"
+    },
+    "ParsedOvlDef": {
+      "description": "OVLDEF - Overlay definition (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "overlay_name": {
+          "title": "Overlay Name",
+          "type": "string"
+        },
+        "attribute": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attribute"
+        },
+        "file_location": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File Location"
+        },
+        "additional_data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Additional Data"
+        }
+      },
+      "required": [
+        "overlay_name"
+      ],
+      "title": "ParsedOvlDef",
+      "type": "object"
+    },
+    "ParsedPubDef": {
+      "description": "PUBDEF/LPUBDEF - Public definitions.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "is_32bit": {
+          "title": "Is 32Bit",
+          "type": "boolean"
+        },
+        "is_local": {
+          "title": "Is Local",
+          "type": "boolean"
+        },
+        "base_group": {
+          "title": "Base Group",
+          "type": "string"
+        },
+        "base_segment": {
+          "title": "Base Segment",
+          "type": "string"
+        },
+        "absolute_frame": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Absolute Frame"
+        },
+        "frame_note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame Note"
+        },
+        "symbols": {
+          "items": {
+            "$ref": "#/$defs/PubDefSymbol"
+          },
+          "title": "Symbols",
+          "type": "array"
+        }
+      },
+      "required": [
+        "is_32bit",
+        "is_local",
+        "base_group",
+        "base_segment"
+      ],
+      "title": "ParsedPubDef",
+      "type": "object"
+    },
+    "ParsedReDataPeData": {
+      "description": "REDATA/PEDATA - Enumerated data (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "record_type": {
+          "enum": [
+            "REDATA",
+            "PEDATA"
+          ],
+          "title": "Record Type",
+          "type": "string"
+        },
+        "segment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Segment"
+        },
+        "segment_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Segment Index"
+        },
+        "frame": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame"
+        },
+        "offset": {
+          "default": 0,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "physical_address": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Physical Address"
+        },
+        "data_length": {
+          "default": 0,
+          "title": "Data Length",
+          "type": "integer"
+        },
+        "data_preview": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Preview"
+        }
+      },
+      "required": [
+        "record_type"
+      ],
+      "title": "ParsedReDataPeData",
+      "type": "object"
+    },
+    "ParsedRegInt": {
+      "description": "REGINT - Register initialization (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "registers": {
+          "items": {
+            "$ref": "#/$defs/RegisterEntry"
+          },
+          "title": "Registers",
+          "type": "array"
+        }
+      },
+      "title": "ParsedRegInt",
+      "type": "object"
+    },
+    "ParsedRheadr": {
+      "description": "RHEADR - R-Module header (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "attributes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attributes"
+        }
+      },
+      "title": "ParsedRheadr",
+      "type": "object"
+    },
+    "ParsedRiDataPiData": {
+      "description": "RIDATA/PIDATA - Iterated data (obsolete).",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "record_type": {
+          "enum": [
+            "RIDATA",
+            "PIDATA"
+          ],
+          "title": "Record Type",
+          "type": "string"
+        },
+        "segment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Segment"
+        },
+        "segment_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Segment Index"
+        },
+        "frame": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame"
+        },
+        "offset": {
+          "default": 0,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "physical_address": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Physical Address"
+        },
+        "remaining_bytes": {
+          "default": 0,
+          "title": "Remaining Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "record_type"
+      ],
+      "title": "ParsedRiDataPiData",
+      "type": "object"
+    },
+    "ParsedSegDef": {
+      "description": "SEGDEF - Segment definition.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "acbp": {
+          "title": "Acbp",
+          "type": "integer"
+        },
+        "alignment": {
+          "$ref": "#/$defs/SegAlignment"
+        },
+        "combine": {
+          "$ref": "#/$defs/SegCombine"
+        },
+        "big": {
+          "title": "Big",
+          "type": "boolean"
+        },
+        "use32": {
+          "title": "Use32",
+          "type": "boolean"
+        },
+        "absolute_frame": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Absolute Frame"
+        },
+        "absolute_offset": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Absolute Offset"
+        },
+        "length": {
+          "default": 0,
+          "title": "Length",
+          "type": "integer"
+        },
+        "segment_name": {
+          "default": "",
+          "title": "Segment Name",
+          "type": "string"
+        },
+        "class_name": {
+          "default": "",
+          "title": "Class Name",
+          "type": "string"
+        },
+        "overlay_name": {
+          "default": "",
+          "title": "Overlay Name",
+          "type": "string"
+        },
+        "access": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SegAccess"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "access_byte": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Access Byte"
+        }
+      },
+      "required": [
+        "acbp",
+        "alignment",
+        "combine",
+        "big",
+        "use32"
+      ],
+      "title": "ParsedSegDef",
+      "type": "object"
+    },
+    "ParsedTheadr": {
+      "description": "THEADR/LHEADR - Module header.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "record_name": {
+          "enum": [
+            "THEADR",
+            "LHEADR"
+          ],
+          "title": "Record Name",
+          "type": "string"
+        },
+        "module_name": {
+          "title": "Module Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "record_name",
+        "module_name"
+      ],
+      "title": "ParsedTheadr",
+      "type": "object"
+    },
+    "ParsedThread": {
+      "description": "FIXUPP thread subrecord.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ThreadKind"
+        },
+        "thread_num": {
+          "title": "Thread Num",
+          "type": "integer"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FrameMethod"
+            },
+            {
+              "$ref": "#/$defs/TargetMethod"
+            }
+          ],
+          "title": "Method"
+        },
+        "index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Index"
+        },
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "thread_num",
+        "method"
+      ],
+      "title": "ParsedThread",
+      "type": "object"
+    },
+    "ParsedTypDef": {
+      "description": "TYPDEF - Type definition.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "en_byte": {
+          "default": 0,
+          "title": "En Byte",
+          "type": "integer"
+        },
+        "format": {
+          "default": "",
+          "enum": [
+            "Microsoft",
+            "Intel",
+            ""
+          ],
+          "title": "Format",
+          "type": "string"
+        },
+        "leaves": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/TypDefLeafNear"
+              },
+              {
+                "$ref": "#/$defs/TypDefLeafFar"
+              },
+              {
+                "$ref": "#/$defs/TypDefLeafUnknown"
+              }
+            ]
+          },
+          "title": "Leaves",
+          "type": "array"
+        }
+      },
+      "title": "ParsedTypDef",
+      "type": "object"
+    },
+    "ParsedVendExt": {
+      "description": "VENDEXT - Vendor extension.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "vendor_num": {
+          "title": "Vendor Num",
+          "type": "integer"
+        },
+        "vendor_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vendor Name"
+        },
+        "extension_data": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Extension Data"
+        }
+      },
+      "required": [
+        "vendor_num"
+      ],
+      "title": "ParsedVendExt",
+      "type": "object"
+    },
+    "ParsedVerNum": {
+      "description": "VERNUM - Version number.",
+      "properties": {
+        "warnings": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Warnings",
+          "type": "array"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        },
+        "tis_base": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tis Base"
+        },
+        "vendor_num": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vendor Num"
+        },
+        "vendor_ver": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vendor Ver"
+        },
+        "vendor_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vendor Name"
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "title": "ParsedVerNum",
+      "type": "object"
+    },
+    "PubDefSymbol": {
+      "description": "Symbol entry in PUBDEF/LPUBDEF records.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "offset": {
+          "title": "Offset",
+          "type": "integer"
+        },
+        "type_index": {
+          "title": "Type Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "offset",
+        "type_index"
+      ],
+      "title": "PubDefSymbol",
+      "type": "object"
+    },
+    "RegisterEntry": {
+      "description": "Register initialization entry (obsolete).",
+      "properties": {
+        "reg_name": {
+          "title": "Reg Name",
+          "type": "string"
+        },
+        "reg_type": {
+          "title": "Reg Type",
+          "type": "integer"
+        },
+        "value": {
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "reg_name",
+        "reg_type",
+        "value"
+      ],
+      "title": "RegisterEntry",
+      "type": "object"
+    },
+    "SegAccess": {
+      "enum": [
+        "RO",
+        "EO",
+        "ER",
+        "RW"
+      ],
+      "type": "string"
+    },
+    "SegAlignment": {
+      "description": "SEGDEF alignment values (A field in ACBP byte).\n\n- Absolute: Absolute segment (frame number and offset follow)\n- Byte: Relocatable, byte aligned\n- Word: Relocatable, word (2-byte) aligned\n- Paragraph: Relocatable, paragraph (16-byte) aligned\n- Page: Relocatable, page aligned (256-byte Intel / 4K IBM)\n- DWord: Relocatable, dword (4-byte) aligned\n- LTL(6): Not supported (Intel: LTL paragraph aligned)\n- Undefined(7): Not defined",
+      "enum": [
+        [
+          0,
+          "Absolute"
+        ],
+        [
+          1,
+          "Byte"
+        ],
+        [
+          2,
+          "Word"
+        ],
+        [
+          3,
+          "Paragraph"
+        ],
+        [
+          4,
+          "Page (256-byte Intel / 4K IBM)"
+        ],
+        [
+          5,
+          "DWord"
+        ],
+        [
+          6,
+          "LTL(6)"
+        ],
+        [
+          7,
+          "Undefined(7)"
+        ]
+      ],
+      "title": "SegAlignment",
+      "type": "array"
+    },
+    "SegCombine": {
+      "description": "SEGDEF combine values (C field in ACBP byte).\n\n- Private: Do not combine with any other segment\n- Reserved(1) [Intel: Common]: Reserved (Intel 8086 used this for Common)\n- Public: Combine by appending at alignment boundary\n- Reserved(3): Reserved\n- Public(4): Same as Public\n- Stack: Combine as Public, forces byte alignment\n- Common: Combine by overlay using maximum size\n- Public(7): Same as Public",
+      "enum": [
+        [
+          0,
+          "Private"
+        ],
+        [
+          1,
+          "Reserved(1) [Intel: Common]"
+        ],
+        [
+          2,
+          "Public"
+        ],
+        [
+          3,
+          "Reserved(3)"
+        ],
+        [
+          4,
+          "Public(4)"
+        ],
+        [
+          5,
+          "Stack"
+        ],
+        [
+          6,
+          "Common"
+        ],
+        [
+          7,
+          "Public(7)"
+        ]
+      ],
+      "title": "SegCombine",
+      "type": "array"
+    },
+    "StartAddress": {
+      "description": "MODEND start address information.",
+      "properties": {
+        "frame_method": {
+          "title": "Frame Method",
+          "type": "integer"
+        },
+        "p_bit": {
+          "title": "P Bit",
+          "type": "integer"
+        },
+        "target_method": {
+          "title": "Target Method",
+          "type": "integer"
+        },
+        "frame_datum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame Datum"
+        },
+        "target_datum": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Datum"
+        },
+        "target_displacement": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Displacement"
+        }
+      },
+      "required": [
+        "frame_method",
+        "p_bit",
+        "target_method"
+      ],
+      "title": "StartAddress",
+      "type": "object"
+    },
+    "TargetMethod": {
+      "description": "FIXUPP target determination methods.\n\n- T0:SEGDEF: Target specified by SEGDEF index with displacement\n- T1:GRPDEF: Target specified by GRPDEF index with displacement\n- T2:EXTDEF: Target specified by EXTDEF index with displacement\n- T3:FrameNum: Explicit frame number (not supported)\n- T4:SEGDEF(0): Target specified by SEGDEF index, displacement assumed 0\n- T5:GRPDEF(0): Target specified by GRPDEF index, displacement assumed 0\n- T6:EXTDEF(0): Target specified by EXTDEF index, displacement assumed 0",
+      "enum": [
+        [
+          0,
+          "T0:SEGDEF"
+        ],
+        [
+          1,
+          "T1:GRPDEF"
+        ],
+        [
+          2,
+          "T2:EXTDEF"
+        ],
+        [
+          3,
+          "T3:FrameNum"
+        ],
+        [
+          4,
+          "T4:SEGDEF(0)"
+        ],
+        [
+          5,
+          "T5:GRPDEF(0)"
+        ],
+        [
+          6,
+          "T6:EXTDEF(0)"
+        ]
+      ],
+      "title": "TargetMethod",
+      "type": "array"
+    },
+    "ThreadKind": {
+      "description": "FIXUPP thread type.",
+      "enum": [
+        "FRAME",
+        "TARGET"
+      ],
+      "title": "ThreadKind",
+      "type": "string"
+    },
+    "TypDefLeafFar": {
+      "description": "TYPDEF FAR leaf descriptor.",
+      "properties": {
+        "type": {
+          "const": "FAR",
+          "title": "Type",
+          "type": "string"
+        },
+        "leaf_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Leaf Index"
+        },
+        "leaf_type": {
+          "title": "Leaf Type",
+          "type": "integer"
+        },
+        "num_elements": {
+          "title": "Num Elements",
+          "type": "integer"
+        },
+        "element_type": {
+          "title": "Element Type",
+          "type": "string"
+        },
+        "element_type_index": {
+          "title": "Element Type Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "leaf_type",
+        "num_elements",
+        "element_type",
+        "element_type_index"
+      ],
+      "title": "TypDefLeafFar",
+      "type": "object"
+    },
+    "TypDefLeafNear": {
+      "description": "TYPDEF NEAR leaf descriptor.",
+      "properties": {
+        "type": {
+          "const": "NEAR",
+          "title": "Type",
+          "type": "string"
+        },
+        "leaf_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Leaf Index"
+        },
+        "leaf_type": {
+          "title": "Leaf Type",
+          "type": "integer"
+        },
+        "var_type": {
+          "title": "Var Type",
+          "type": "string"
+        },
+        "var_type_raw": {
+          "title": "Var Type Raw",
+          "type": "integer"
+        },
+        "size_bits": {
+          "title": "Size Bits",
+          "type": "integer"
+        },
+        "size_bytes": {
+          "title": "Size Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "leaf_type",
+        "var_type",
+        "var_type_raw",
+        "size_bits",
+        "size_bytes"
+      ],
+      "title": "TypDefLeafNear",
+      "type": "object"
+    },
+    "TypDefLeafUnknown": {
+      "description": "TYPDEF unknown leaf descriptor.",
+      "properties": {
+        "type": {
+          "const": "Unknown",
+          "title": "Type",
+          "type": "string"
+        },
+        "leaf_index": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Leaf Index"
+        },
+        "leaf_type": {
+          "title": "Leaf Type",
+          "type": "integer"
+        },
+        "remaining": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Remaining"
+        }
+      },
+      "required": [
+        "type",
+        "leaf_type"
+      ],
+      "title": "TypDefLeafUnknown",
+      "type": "object"
+    }
+  },
+  "description": "Complete parsed OMF file.",
+  "properties": {
+    "filepath": {
+      "title": "Filepath",
+      "type": "string"
+    },
+    "file_size": {
+      "title": "File Size",
+      "type": "integer"
+    },
+    "is_library": {
+      "title": "Is Library",
+      "type": "boolean"
+    },
+    "variant": {
+      "title": "Variant",
+      "type": "string"
+    },
+    "mixed_variants": {
+      "title": "Mixed Variants",
+      "type": "boolean"
+    },
+    "seen_variants": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Seen Variants"
+    },
+    "features": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Features",
+      "type": "array"
+    },
+    "records": {
+      "items": {
+        "$ref": "#/$defs/ParseResult"
+      },
+      "title": "Records",
+      "type": "array"
+    },
+    "warnings": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "errors": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Errors",
+      "type": "array"
+    }
+  },
+  "required": [
+    "filepath",
+    "file_size",
+    "is_library",
+    "variant",
+    "mixed_variants",
+    "seen_variants",
+    "features",
+    "records"
+  ],
+  "title": "ParsedOMFFile",
+  "type": "object"
+}

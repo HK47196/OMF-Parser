@@ -3,7 +3,7 @@
 import re
 import struct
 from dataclasses import dataclass
-from typing import Iterator, Optional, Tuple
+from typing import Iterator
 
 from .constants import RecordType
 
@@ -15,7 +15,7 @@ class OMFCandidate:
     header_type: int
     confidence: float
     description: str
-    estimated_size: Optional[int] = None
+    estimated_size: int | None = None
 
 
 # Common filename extensions in THEADR (case-insensitive)
@@ -86,7 +86,7 @@ def is_omf(data: bytes) -> bool:
     return result[0]
 
 
-def detect_omf(data: bytes, check_depth: int = 3) -> Tuple[bool, float, str]:
+def detect_omf(data: bytes, check_depth: int = 3) -> tuple[bool, float, str]:
     """
     Detect if data is likely an OMF file.
 
@@ -102,7 +102,7 @@ def detect_omf(data: bytes, check_depth: int = 3) -> Tuple[bool, float, str]:
 
     first_byte = data[0]
 
-    valid_headers = {
+    valid_headers: dict[int, str] = {
         RecordType.THEADR: "THEADR",
         RecordType.LHEADR: "LHEADR",
         RecordType.LIBHDR: "LIBHDR"
@@ -183,7 +183,7 @@ def scan_for_omf(data: bytes, min_confidence: float = 0.5) -> Iterator[OMFCandid
         offset += 1
 
 
-def scan_for_patterns(data: bytes, patterns: Optional[list[str]] = None) -> Iterator[Tuple[str, int, bytes]]:
+def scan_for_patterns(data: bytes, patterns: list[str] | None = None) -> Iterator[tuple[str, int, bytes]]:
     """
     Scan data using regex patterns for quick OMF signature matching.
 
@@ -205,7 +205,7 @@ def scan_for_patterns(data: bytes, patterns: Optional[list[str]] = None) -> Iter
             yield (name, match.start(), match.group())
 
 
-def _validate_record_chain(data: bytes, offset: int, count: int, is_library: bool = False) -> Tuple[bool, int]:
+def _validate_record_chain(data: bytes, offset: int, count: int, is_library: bool = False) -> tuple[bool, int]:
     """Validate a chain of OMF records starting at offset."""
     pos = offset
 
@@ -239,7 +239,7 @@ def _validate_record_chain(data: bytes, offset: int, count: int, is_library: boo
     return (True, pos)
 
 
-def _check_theadr(data: bytes, offset: int) -> Optional[OMFCandidate]:
+def _check_theadr(data: bytes, offset: int) -> OMFCandidate | None:
     """Check for THEADR/LHEADR at offset."""
     if offset + 4 > len(data):
         return None
@@ -296,7 +296,7 @@ def _check_theadr(data: bytes, offset: int) -> Optional[OMFCandidate]:
     )
 
 
-def _check_libhdr(data: bytes, offset: int) -> Optional[OMFCandidate]:
+def _check_libhdr(data: bytes, offset: int) -> OMFCandidate | None:
     """Check for LIBHDR at offset."""
     if offset + 10 > len(data):
         return None
@@ -339,7 +339,7 @@ def _check_libhdr(data: bytes, offset: int) -> Optional[OMFCandidate]:
     )
 
 
-def _check_easy_omf_marker(data: bytes, offset: int) -> Optional[OMFCandidate]:
+def _check_easy_omf_marker(data: bytes, offset: int) -> OMFCandidate | None:
     """Check for Easy OMF-386 COMENT marker."""
     if offset + 3 > len(data):
         return None

@@ -3,10 +3,12 @@
 from . import omf_record
 from ..constants import RecordType
 from ..models import ParsedPubDef, PubDefSymbol
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.PUBDEF, RecordType.PUBDEF32, RecordType.LPUBDEF, RecordType.LPUBDEF32)
-def handle_pubdef(omf, record):
+def handle_pubdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedPubDef:
     """Handle PUBDEF/LPUBDEF (90H/91H/B6H/B7H)."""
     sub = omf.make_parser(record)
     is_32bit = record.type in (RecordType.PUBDEF32, RecordType.LPUBDEF32)

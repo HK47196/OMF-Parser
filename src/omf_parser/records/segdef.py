@@ -4,11 +4,13 @@ from . import omf_record
 from ..constants import (
     RecordType, SegdefFlags, SegmentSize, SegAlignment, SegCombine
 )
-from ..models import ParsedSegDef
+from ..models import ParsedSegDef, SegAccess
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.SEGDEF, RecordType.SEGDEF32)
-def handle_segdef(omf, record):
+def handle_segdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedSegDef | None:
     """Handle SEGDEF (98H/99H)."""
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.SEGDEF32)
@@ -32,7 +34,15 @@ def handle_segdef(omf, record):
 
     if align_val == 0:
         result.absolute_frame = sub.parse_numeric(2)
-        result.absolute_offset = sub.read_byte()
+        abs_offset = sub.read_byte()
+        if abs_offset is None:
+            # Per TIS OMF 1.1: Record Length declares expected size.
+            # Missing data indicates malformed record.
+            result.warnings.append("Truncated SEGDEF absolute offset")
+            raw_name = f"Seg#{len(omf.segdefs)}"
+            omf.segdefs.append(raw_name)
+            return result
+        result.absolute_offset = abs_offset
 
     size_bytes = sub.get_offset_field_size(is_32bit)
     length = sub.parse_numeric(size_bytes)
@@ -56,10 +66,15 @@ def handle_segdef(omf, record):
     if sub.bytes_remaining() >= 1:
         if omf.variant.segdef_has_access_byte():
             access_byte = sub.read_byte()
-            access_type = access_byte & SegdefFlags.ACCESS_TYPE_MASK
-            result.access_byte = access_byte
-            access_map: dict[int, str] = {0: "RO", 1: "EO", 2: "ER", 3: "RW"}
-            result.access = access_map.get(access_type)
+            if access_byte is None:
+                # Per TIS OMF 1.1: Record Length declares expected size.
+                # Missing data indicates malformed record.
+                result.warnings.append("Truncated SEGDEF access byte")
+            else:
+                access_type = access_byte & SegdefFlags.ACCESS_TYPE_MASK
+                result.access_byte = access_byte
+                access_map: dict[int, SegAccess] = {0: "RO", 1: "EO", 2: "ER", 3: "RW"}
+                result.access = access_map.get(access_type)
 
     raw_name = omf.lnames[seg_name_idx] if seg_name_idx < len(omf.lnames) else f"Seg#{len(omf.segdefs)}"
     omf.segdefs.append(raw_name)

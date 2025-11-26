@@ -1,8 +1,21 @@
 """COMENT class handler registry."""
 
 from collections import defaultdict
+from typing import TypedDict, Callable
 
-COMENT_CLASS_HANDLERS = defaultdict(list)
+from ..protocols import OMFFileProtocol
+from ..parsing import RecordParser
+from ..models import ParsedComentContent
+
+ComentHandler = Callable[[OMFFileProtocol, RecordParser, int, bytes], ParsedComentContent | None]
+
+
+class ComentHandlerEntry(TypedDict):
+    handler: ComentHandler
+    features: frozenset[str]
+
+
+COMENT_CLASS_HANDLERS: defaultdict[int, list[ComentHandlerEntry]] = defaultdict(list)
 
 
 class DuplicateHandlerError(Exception):
@@ -10,7 +23,9 @@ class DuplicateHandlerError(Exception):
     pass
 
 
-def coment_class(*classes, features=None):
+def coment_class(
+    *classes: int, features: set[str] | None = None
+) -> Callable[[ComentHandler], ComentHandler]:
     """Register a handler for one or more COMENT classes.
 
     Args:
@@ -32,7 +47,7 @@ def coment_class(*classes, features=None):
     """
     required_features = frozenset(features) if features else frozenset()
 
-    def decorator(fn):
+    def decorator(fn: ComentHandler) -> ComentHandler:
         for cls in classes:
             for existing in COMENT_CLASS_HANDLERS[cls]:
                 if existing['features'] == required_features:
@@ -49,7 +64,7 @@ def coment_class(*classes, features=None):
     return decorator
 
 
-def get_coment_handler(cls, active_features):
+def get_coment_handler(cls: int, active_features: set[str]) -> ComentHandler | None:
     """Get the best matching handler for a comment class.
 
     Selects the handler whose required features are all present in

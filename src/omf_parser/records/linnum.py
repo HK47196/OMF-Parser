@@ -3,10 +3,12 @@
 from . import omf_record
 from ..constants import RecordType
 from ..models import ParsedLinNum, LineEntry
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.LINNUM, RecordType.LINNUM32)
-def handle_linnum(omf, record):
+def handle_linnum(omf: OMFFileProtocol, record: RecordInfo) -> ParsedLinNum:
     """Handle LINNUM (94H/95H)."""
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.LINNUM32)

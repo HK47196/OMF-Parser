@@ -3,10 +3,12 @@
 from . import omf_record
 from ..constants import RecordType
 from ..models import ParsedLocSym, PubDefSymbol
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.LOCSYM)
-def handle_locsym(omf, record):
+def handle_locsym(omf: OMFFileProtocol, record: RecordInfo) -> ParsedLocSym:
     """Handle LOCSYM (92H) - Local Symbols."""
     sub = omf.make_parser(record)
 

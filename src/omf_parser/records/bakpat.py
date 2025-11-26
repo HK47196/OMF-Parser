@@ -5,10 +5,12 @@ from ..constants import RecordType, BackpatchLocation
 from ..models import (
     ParsedBackpatch, ParsedNamedBackpatch, BackpatchRecord, NamedBackpatchRecord
 )
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.BAKPAT, RecordType.BAKPAT32)
-def handle_bakpat(omf, record):
+def handle_bakpat(omf: OMFFileProtocol, record: RecordInfo) -> ParsedBackpatch:
     """Handle BAKPAT (B2H/B3H)."""
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.BAKPAT32)
@@ -18,6 +20,11 @@ def handle_bakpat(omf, record):
     while sub.bytes_remaining() > 0:
         seg_idx = sub.parse_index()
         loc_type_val = sub.read_byte()
+        if loc_type_val is None:
+            # Per TIS OMF 1.1: Record Length declares expected size.
+            # Missing data indicates malformed record.
+            result.warnings.append("Truncated BAKPAT record")
+            break
 
         location = BackpatchLocation(loc_type_val)
 
@@ -40,7 +47,7 @@ def handle_bakpat(omf, record):
 
 
 @omf_record(RecordType.NBKPAT, RecordType.NBKPAT32)
-def handle_nbkpat(omf, record):
+def handle_nbkpat(omf: OMFFileProtocol, record: RecordInfo) -> ParsedNamedBackpatch:
     """Handle NBKPAT (C8H/C9H)."""
     sub = omf.make_parser(record)
     # NBKPAT has INVERTED bit order: C8H = 32-bit, C9H = 16-bit
@@ -50,6 +57,11 @@ def handle_nbkpat(omf, record):
 
     while sub.bytes_remaining() > 0:
         loc_type_val = sub.read_byte()
+        if loc_type_val is None:
+            # Per TIS OMF 1.1: Record Length declares expected size.
+            # Missing data indicates malformed record.
+            result.warnings.append("Truncated NBKPAT record")
+            break
 
         if omf.variant.nbkpat_uses_inline_name():
             symbol = sub.parse_name()

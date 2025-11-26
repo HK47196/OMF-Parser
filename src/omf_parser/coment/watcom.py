@@ -11,6 +11,7 @@ from ..models import (
     LinkerDirPackData, LinkerDirFlatAddrs, LinkerDirTimestamp
 )
 from ..parsing import RecordParser
+from ..protocols import OMFFileProtocol
 
 
 PROCESSOR_NAMES = {
@@ -68,7 +69,7 @@ def parse_proc_model(text: bytes) -> ComentProcModel:
 
 
 @coment_class(CommentClass.WAT_PROC_MODEL)
-def handle_wat_proc_model(omf, sub, flags, text):
+def handle_wat_proc_model(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentProcModel:
     """Watcom Processor & Model info (0x9B)."""
     return parse_proc_model(text)
 
@@ -87,7 +88,7 @@ LINKER_DIRECTIVE_NAMES = {
 }
 
 
-def _safe_lookup(table, index, prefix=""):
+def _safe_lookup(table: list[str], index: int, prefix: str = "") -> str:
     """Safely look up an index in a 1-based table."""
     if index <= 0 or index >= len(table):
         return f"{prefix}[{index}]"
@@ -95,7 +96,7 @@ def _safe_lookup(table, index, prefix=""):
 
 
 @coment_class(CommentClass.LINKER_DIRECTIVE)
-def handle_linker_directive(omf, sub, flags, text):
+def handle_linker_directive(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentLinkerDirective | None:
     """Watcom Linker Directive (0xFE)."""
     if not text:
         return None
@@ -132,7 +133,7 @@ def handle_linker_directive(omf, sub, flags, text):
     return result
 
 
-def _parse_source_language(omf, data, result):
+def _parse_source_language(omf: OMFFileProtocol, data: bytes, result: ComentLinkerDirective) -> LinkerDirSourceLang | None:
     """Parse 'D' - Source Language directive."""
     if len(data) < 2:
         result.warnings.append("Source language directive too short")
@@ -149,7 +150,7 @@ def _parse_source_language(omf, data, result):
     )
 
 
-def _parse_default_library(omf, data, result):
+def _parse_default_library(omf: OMFFileProtocol, data: bytes, result: ComentLinkerDirective) -> LinkerDirDefaultLib | None:
     """Parse 'L' - Default Library directive."""
     if len(data) < 2:
         result.warnings.append("Default library directive too short")
@@ -170,7 +171,7 @@ def _parse_default_library(omf, data, result):
     )
 
 
-def _parse_opt_far_calls(omf, data, result):
+def _parse_opt_far_calls(omf: OMFFileProtocol, data: bytes, result: ComentLinkerDirective) -> LinkerDirOptFarCalls:
     """Parse 'O' - Optimize Far Calls directive."""
     parser = RecordParser(data)
     seg_idx = parser.parse_index()
@@ -183,7 +184,7 @@ def _parse_opt_far_calls(omf, data, result):
     )
 
 
-def _parse_vf_table_def(omf, data, result, is_pure):
+def _parse_vf_table_def(omf: OMFFileProtocol, data: bytes, result: ComentLinkerDirective, is_pure: bool) -> LinkerDirVFTableDef:
     """Parse 'V'/'P' - VF Table Definition directive."""
     parser = RecordParser(data)
 
@@ -213,7 +214,7 @@ def _parse_vf_table_def(omf, data, result, is_pure):
     )
 
 
-def _parse_vf_reference(omf, data, result):
+def _parse_vf_reference(omf: OMFFileProtocol, data: bytes, result: ComentLinkerDirective) -> LinkerDirVFReference:
     """Parse 'R' - VF Reference directive."""
     parser = RecordParser(data)
 
@@ -241,7 +242,7 @@ def _parse_vf_reference(omf, data, result):
     return content
 
 
-def _parse_pack_data(omf, data, result):
+def _parse_pack_data(omf: OMFFileProtocol, data: bytes, result: ComentLinkerDirective) -> LinkerDirPackData:
     """Parse '7' - Pack Far Data directive."""
     if len(data) < 4:
         result.warnings.append("Pack data directive too short (expected 4 bytes)")
@@ -254,7 +255,7 @@ def _parse_pack_data(omf, data, result):
     return LinkerDirPackData(pack_limit=pack_limit)
 
 
-def _parse_timestamp(omf, data, result):
+def _parse_timestamp(omf: OMFFileProtocol, data: bytes, result: ComentLinkerDirective) -> LinkerDirTimestamp:
     """Parse 'T' - Object Timestamp directive."""
     if len(data) < 4:
         result.warnings.append("Timestamp directive too short (expected 4 bytes)")
@@ -283,7 +284,7 @@ DISASM_DIRECTIVE_SUBTYPES = {
 
 
 @coment_class(CommentClass.DISASM_DIRECTIVE)
-def handle_disasm_directive(omf, sub, flags, text):
+def handle_disasm_directive(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentDisasmDirective | None:
     """Watcom Disassembler Directive (0xFD).
 
     Marks non-executable data regions within code segments for disassemblers.
@@ -292,9 +293,11 @@ def handle_disasm_directive(omf, sub, flags, text):
         return None
 
     parser = RecordParser(text)
-    warnings = []
+    warnings: list[str] = []
 
     subtype_byte = parser.read_byte()
+    if subtype_byte is None:
+        return None
     subtype_info = DISASM_DIRECTIVE_SUBTYPES.get(subtype_byte)
 
     if subtype_info is None:

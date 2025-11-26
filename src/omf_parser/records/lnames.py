@@ -1,18 +1,22 @@
 """LNAMES and LLNAMES record handlers."""
 
+from typing import Literal
+
 from . import omf_record
 from ..constants import RecordType, RESERVED_SEGMENTS
-from ..models import ParsedLNames
+from ..models import ParsedLNames, LNameEntry
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.LNAMES, RecordType.LLNAMES)
-def handle_lnames(omf, record):
+def handle_lnames(omf: OMFFileProtocol, record: RecordInfo) -> ParsedLNames:
     """Handle LNAMES (96H) and LLNAMES (CAH)."""
     sub = omf.make_parser(record)
-    rec_name = "LNAMES" if record.type == RecordType.LNAMES else "LLNAMES (Local)"
+    rec_name: Literal["LNAMES", "LLNAMES (Local)"] = "LNAMES" if record.type == RecordType.LNAMES else "LLNAMES (Local)"
     start_idx = len(omf.lnames)
 
-    names = []
+    names: list[LNameEntry] = []
     while sub.bytes_remaining() > 0:
         name = sub.parse_name()
         omf.lnames.append(name)

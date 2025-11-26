@@ -3,10 +3,12 @@
 from . import omf_record
 from ..constants import RecordType
 from ..models import ParsedExtDef, ParsedCExtDef, ExtDefEntry, CExtDefEntry
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.EXTDEF, RecordType.LEXTDEF, RecordType.LEXTDEF2)
-def handle_extdef(omf, record):
+def handle_extdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedExtDef:
     """Handle EXTDEF/LEXTDEF (8CH/B4H/B5H)."""
     sub = omf.make_parser(record)
     is_local = record.type in (RecordType.LEXTDEF, RecordType.LEXTDEF2)
@@ -29,7 +31,7 @@ def handle_extdef(omf, record):
 
 
 @omf_record(RecordType.CEXTDEF)
-def handle_cextdef(omf, record):
+def handle_cextdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedCExtDef:
     """Handle CEXTDEF (BCH)."""
     sub = omf.make_parser(record)
 

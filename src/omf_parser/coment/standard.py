@@ -3,11 +3,13 @@
 from ..records import omf_record
 from ..constants import RecordType, ComentFlags, COMMENT_CLASSES
 from ..models import ParsedComent
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 from . import get_coment_handler
 
 
 @omf_record(RecordType.COMENT)
-def handle_coment(omf, record):
+def handle_coment(omf: OMFFileProtocol, record: RecordInfo) -> ParsedComent | None:
     """Handle COMENT (88H)."""
     sub = omf.make_parser(record)
 

@@ -4,10 +4,12 @@ import struct
 from . import omf_record
 from ..constants import RecordType, LibraryConsts
 from ..models import ParsedLibHdr, ParsedLibEnd, ParsedLibDict, ParsedExtDict, DictEntry, ExtDictModule
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.LIBHDR)
-def handle_libhdr(omf, record):
+def handle_libhdr(omf: OMFFileProtocol, record: RecordInfo) -> ParsedLibHdr | None:
     """Handle Library Header (F0H)."""
     sub = omf.make_parser(record)
 
@@ -15,7 +17,11 @@ def handle_libhdr(omf, record):
     omf.lib_page_size = page_size
     omf.lib_dict_offset = sub.parse_numeric(4)
     omf.lib_dict_blocks = sub.parse_numeric(2)
-    lib_flags = sub.read_byte() or 0
+    lib_flags = sub.read_byte()
+    if lib_flags is None:
+        # Per TIS OMF 1.1: Record Length declares expected size.
+        # Missing data indicates malformed record.
+        return None
 
     return ParsedLibHdr(
         page_size=page_size,
@@ -27,12 +33,12 @@ def handle_libhdr(omf, record):
 
 
 @omf_record(RecordType.LIBEND)
-def handle_libend(omf, record):
+def handle_libend(omf: OMFFileProtocol, record: RecordInfo) -> ParsedLibEnd:
     """Handle Library End (F1H)."""
     return ParsedLibEnd()
 
 
-def parse_library_dictionary(omf):
+def parse_library_dictionary(omf: OMFFileProtocol) -> tuple[ParsedLibDict | None, ParsedExtDict | None]:
     """Parse Library Dictionary after LIBEND.
 
     This is called separately after all records are processed,
@@ -42,6 +48,9 @@ def parse_library_dictionary(omf):
         Tuple of (ParsedLibDict, Optional[ParsedExtDict])
     """
     if omf.lib_dict_offset == 0 or omf.lib_dict_blocks == 0:
+        return None, None
+
+    if omf.data is None:
         return None, None
 
     dict_start = omf.lib_dict_offset
@@ -91,13 +100,13 @@ def parse_library_dictionary(omf):
     return result, ext_dict
 
 
-def parse_extended_dictionary(omf, offset):
+def parse_extended_dictionary(omf: OMFFileProtocol, offset: int) -> ParsedExtDict | None:
     """Parse Extended Dictionary.
 
     Returns:
         ParsedExtDict or None
     """
-    if offset >= len(omf.data):
+    if omf.data is None or offset >= len(omf.data):
         return None
 
     header = omf.data[offset]

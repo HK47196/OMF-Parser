@@ -3,10 +3,12 @@
 from . import omf_record
 from ..constants import RecordType
 from ..models import ParsedLEData
+from ..protocols import OMFFileProtocol
+from ..scanner import RecordInfo
 
 
 @omf_record(RecordType.LEDATA, RecordType.LEDATA32)
-def handle_ledata(omf, record):
+def handle_ledata(omf: OMFFileProtocol, record: RecordInfo) -> ParsedLEData:
     """Handle LEDATA (A0H/A1H)."""
     sub = omf.make_parser(record)
     is_32bit = (record.type == RecordType.LEDATA32)
