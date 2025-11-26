@@ -26,6 +26,7 @@ from omf_parser.constants import (
     WatcomMemModel,
     WatcomFPMode,
     LinkerDirectiveCode,
+    DisasmDirectiveSubtype,
 )
 
 # Bytes serialize as hex string
@@ -901,8 +902,7 @@ class ComentLinkerDirective(ParsedComentContent):
 
 class ComentDisasmDirective(ParsedComentContent):
     """Watcom Disassembler Directive (COMENT class 0xFD)."""
-    subtype: str
-    subtype_name: str
+    subtype: DisasmDirectiveSubtype
     is_32bit: bool
     segment_index: int
     segment_name: Optional[str] = None

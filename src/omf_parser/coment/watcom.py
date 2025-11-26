@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from . import coment_class
-from ..constants import CommentClass, WatcomProcessor, WatcomMemModel, WatcomFPMode, LinkerDirectiveCode
+from ..constants import CommentClass, WatcomProcessor, WatcomMemModel, WatcomFPMode, LinkerDirectiveCode, DisasmDirectiveSubtype
 from ..models import (
     ComentProcModel, ComentLinkerDirective, ComentDisasmDirective,
     LinkerDirSourceLang, LinkerDirDefaultLib, LinkerDirOptFarCalls,
@@ -244,12 +244,6 @@ def _parse_timestamp(omf: OMFFileProtocol, data: bytes, result: ComentLinkerDire
     )
 
 
-DISASM_DIRECTIVE_SUBTYPES = {
-    0x73: ('s', 'DDIR_SCAN_TABLE', False),      # 16-bit offsets
-    0x53: ('S', 'DDIR_SCAN_TABLE_32', True),    # 32-bit offsets
-}
-
-
 @coment_class(CommentClass.DISASM_DIRECTIVE)
 def handle_disasm_directive(omf: OMFFileProtocol, sub: RecordParser, flags: int, text: bytes) -> ComentDisasmDirective | None:
     """Watcom Disassembler Directive (0xFD).
@@ -265,22 +259,13 @@ def handle_disasm_directive(omf: OMFFileProtocol, sub: RecordParser, flags: int,
     subtype_byte = parser.read_byte()
     if subtype_byte is None:
         return None
-    subtype_info = DISASM_DIRECTIVE_SUBTYPES.get(subtype_byte)
 
-    if subtype_info is None:
-        warnings.append(f"Unknown disasm directive subtype: 0x{subtype_byte:02X}")
-        return ComentDisasmDirective(
-            subtype=chr(subtype_byte) if 0x20 <= subtype_byte < 0x7F else f"0x{subtype_byte:02X}",
-            subtype_name=f"Unknown(0x{subtype_byte:02X})",
-            is_32bit=False,
-            segment_index=0,
-            start_offset=0,
-            end_offset=0,
-            region_size=0,
-            warnings=warnings
-        )
+    try:
+        subtype = DisasmDirectiveSubtype(chr(subtype_byte))
+    except ValueError:
+        raise ValueError(f"Unknown disasm directive subtype: 0x{subtype_byte:02X}") from None
 
-    subtype_char, subtype_name, is_32bit = subtype_info
+    is_32bit = subtype == DisasmDirectiveSubtype.SCAN_TABLE_32
     offset_size = 4 if is_32bit else 2
 
     seg_idx = parser.parse_index()
@@ -300,8 +285,7 @@ def handle_disasm_directive(omf: OMFFileProtocol, sub: RecordParser, flags: int,
     region_size = end_offset - start_offset
 
     return ComentDisasmDirective(
-        subtype=subtype_char,
-        subtype_name=subtype_name,
+        subtype=subtype,
         is_32bit=is_32bit,
         segment_index=seg_idx,
         segment_name=seg_name,

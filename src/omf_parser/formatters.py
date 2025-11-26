@@ -676,7 +676,7 @@ class HumanFormatter:
             return "\n".join(lines)
 
         if name == 'ComentDisasmDirective':
-            lines = [f"  Subtype: '{content.subtype}' ({content.subtype_name})"]
+            lines = [f"  Subtype: '{content.subtype.char_val}' ({content.subtype.label})"]
             for warn in content.warnings:
                 lines.append(f"    [!] WARNING: {warn}")
             if content.segment_index > 0:

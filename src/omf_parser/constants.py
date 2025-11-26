@@ -502,6 +502,18 @@ class LinkerDirectiveCode(CharLabeledEnum):
     TIMESTAMP = CharEnumValue('T', "Object Timestamp")
 
 
+class DisasmDirectiveSubtype(CharLabeledEnum):
+    """Watcom disassembler directive subtypes (COMENT class 0xFD).
+
+    Marks non-executable data regions within code segments for disassemblers.
+
+    - SCAN_TABLE_16: 16-bit scan table ('s', 0x73) - uses 16-bit offsets
+    - SCAN_TABLE_32: 32-bit scan table ('S', 0x53) - uses 32-bit offsets
+    """
+    SCAN_TABLE_16 = CharEnumValue('s', "DDIR_SCAN_TABLE")
+    SCAN_TABLE_32 = CharEnumValue('S', "DDIR_SCAN_TABLE_32")
+
+
 class ModEndType(IntFlag):
     """MODEND module type flags.
 
