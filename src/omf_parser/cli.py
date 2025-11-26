@@ -6,6 +6,7 @@ import argparse
 from typing import Any
 from .file import OMFFile
 from .formatters import HumanFormatter, JSONFormatter
+from .constants import OMFVariant
 from .records.library import parse_library_dictionary
 from .detect import detect_omf, scan_for_omf, scan_for_patterns, GREP_PATTERNS
 
@@ -30,7 +31,7 @@ def main() -> None:
     parser.add_argument('--schema', action='store_true',
                         help='Output JSON schema for the parser output format')
     parser.add_argument('--detect', action='store_true',
-                        help='Detect if file is OMF format (returns confidence)')
+                        help='Detect OMF format and output structured info (JSON)')
     parser.add_argument('--scan', action='store_true',
                         help='Scan file for embedded OMF structures')
     parser.add_argument('--scan-patterns', action='store_true',
@@ -55,17 +56,38 @@ def main() -> None:
             with open(args.file, 'rb') as f:
                 data = f.read()
             is_omf, confidence, description = detect_omf(data)
-            if args.json:
-                output = {
-                    'file': args.file,
-                    'is_omf': is_omf,
-                    'confidence': confidence,
-                    'description': description
-                }
-                print(json.dumps(output, indent=args.json_indent))
+
+            if is_omf:
+                # Run scan phase to get detailed info
+                try:
+                    omf = OMFFile(args.file, data=data)
+                    omf.scan()
+                    # PharLap is always 32-bit
+                    is_32bit = omf.has_32bit_records or omf.variant.omf_variant == OMFVariant.PHARLAP
+                    output = {
+                        'valid': True,
+                        'is_library': omf.is_library,
+                        'is_32bit': is_32bit,
+                        'variant': omf.variant.name,
+                    }
+                except Exception as e:
+                    output = {
+                        'valid': False,
+                        'is_library': None,
+                        'is_32bit': None,
+                        'variant': None,
+                        'error': str(e),
+                    }
+                    is_omf = False
             else:
-                status = "YES" if is_omf else "NO"
-                print(f"{args.file}: {status} ({confidence:.0%}) - {description}")
+                output = {
+                    'valid': False,
+                    'is_library': None,
+                    'is_32bit': None,
+                    'variant': None,
+                }
+
+            print(json.dumps(output, indent=args.json_indent))
             sys.exit(0 if is_omf else 1)
         except FileNotFoundError:
             print(f"Error: File not found: {args.file}", file=sys.stderr)

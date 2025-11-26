@@ -36,6 +36,7 @@ class Scanner:
         self.features: set[str] = set()
         self.variant: Variant = TIS_STANDARD
         self.is_library = False
+        self.has_32bit_records = False
         self.mixed_variants = False
         self._module_variant: Variant = TIS_STANDARD
         self._seen_variants: set[OMFVariant] = set()
@@ -105,6 +106,14 @@ class Scanner:
         rec_offset = self.offset
         rec_type = self.data[self.offset]
         self.offset += 1
+
+        # Detect 32-bit records (odd record types like SEGDEF32=0x99, LEDATA32=0xA1)
+        try:
+            rt = RecordType(rec_type)
+            if rt.is_32bit:
+                self.has_32bit_records = True
+        except ValueError:
+            pass  # Unknown record type, ignore for 32-bit detection
 
         rec_len = struct.unpack('<H', self.data[self.offset:self.offset + 2])[0]
         self.offset += 2

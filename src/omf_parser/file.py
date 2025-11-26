@@ -27,6 +27,7 @@ class OMFFile:
         self.variant: Variant = TIS_STANDARD
         self.features: set[str] = set()
         self.is_library = False
+        self.has_32bit_records = False
 
         self.lnames: list[str] = ["<null>"]
         self.segdefs: list[str] = ["<null>"]
@@ -62,6 +63,7 @@ class OMFFile:
         self.variant = scanner.variant
         self.features = scanner.features
         self.is_library = scanner.is_library
+        self.has_32bit_records = scanner.has_32bit_records
         self.mixed_variants = scanner.mixed_variants
         self.seen_variants = scanner._seen_variants
 
