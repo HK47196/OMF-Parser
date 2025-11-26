@@ -25,6 +25,12 @@ class EnumValue(NamedTuple):
     label: str
 
 
+class CharEnumValue(NamedTuple):
+    """Value for CharLabeledEnum members (character-keyed)."""
+    char_val: str
+    label: str
+
+
 class LabeledEnum(Enum):
     """Enum with both integer value and string label.
 
@@ -64,6 +70,49 @@ class LabeledEnum(Enum):
                 raise ValueError(f"Invalid {cls.__name__} value: {value}")
             for member in cls:
                 if member.int_val == value:
+                    return member
+        return None
+
+    def __str__(self) -> str:
+        return self.label
+
+
+class CharLabeledEnum(Enum):
+    """Enum with character value and string label.
+
+    Similar to LabeledEnum but for character-keyed enums (e.g., Watcom fields).
+    Allows construction from char (for parsing) while keeping unique tuple values.
+    """
+
+    char_val: str
+    label: str
+
+    @overload
+    def __new__(cls, char_val: str, label: str) -> "CharLabeledEnum": ...
+    @overload
+    def __new__(cls, char_val: str) -> "CharLabeledEnum": ...
+
+    def __new__(cls, char_val: str, label: str | None = None) -> "CharLabeledEnum":
+        if label is None:
+            raise ValueError("Use enum lookup")
+        obj = object.__new__(cls)
+        obj._value_ = CharEnumValue(char_val, label)
+        obj.char_val = char_val
+        obj.label = label
+        return obj
+
+    def __init_subclass__(cls, **kwargs: object) -> None:
+        super().__init_subclass__(**kwargs)
+        char_vals = [m.char_val for m in cls]
+        if len(char_vals) != len(set(char_vals)):
+            dupes = [v for v in char_vals if char_vals.count(v) > 1]
+            raise ValueError(f"{cls.__name__} has duplicate char values: {set(dupes)}")
+
+    @classmethod
+    def _missing_(cls, value: object) -> "CharLabeledEnum | None":
+        if isinstance(value, str):
+            for member in cls:
+                if member.char_val == value:
                     return member
         return None
 
@@ -401,6 +450,39 @@ class BackpatchLocation(LabeledEnum):
     WORD = EnumValue(1, "Word(16)")
     DWORD = EnumValue(2, "DWord(32)")
     DWORD_IBM = EnumValue(9, "DWord(32-IBM)")
+
+
+class WatcomProcessor(CharLabeledEnum):
+    """Watcom processor type (COMENT 0x9B/0x9D first byte).
+
+    Values from Watcom compiler processor/memory model string.
+    """
+    I8086 = CharEnumValue('0', "8086")
+    I80286 = CharEnumValue('2', "80286")
+    I80386_PLUS = CharEnumValue('3', "80386+")
+
+
+class WatcomMemModel(CharLabeledEnum):
+    """Watcom memory model (COMENT 0x9B/0x9D second byte).
+
+    Values from Watcom compiler processor/memory model string.
+    """
+    SMALL = CharEnumValue('s', "Small")
+    MEDIUM = CharEnumValue('m', "Medium")
+    COMPACT = CharEnumValue('c', "Compact")
+    LARGE = CharEnumValue('l', "Large")
+    HUGE = CharEnumValue('h', "Huge")
+    FLAT = CharEnumValue('f', "Flat")
+
+
+class WatcomFPMode(CharLabeledEnum):
+    """Watcom floating point mode (COMENT 0x9B/0x9D fourth byte).
+
+    Values from Watcom compiler processor/memory model string.
+    """
+    EMULATED_INLINE = CharEnumValue('e', "Emulated inline")
+    EMULATOR_CALLS = CharEnumValue('c', "Emulator calls")
+    FP80X87_INLINE = CharEnumValue('p', "80x87 inline")
 
 
 class ModEndType(IntFlag):

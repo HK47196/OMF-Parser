@@ -22,6 +22,9 @@ from omf_parser.constants import (
     OMFVariant,
     TypDefVarType,
     RegisterType,
+    WatcomProcessor,
+    WatcomMemModel,
+    WatcomFPMode,
 )
 
 # Bytes serialize as hex string
@@ -775,13 +778,10 @@ class ComentDosVersion(ParsedComentContent):
 
 class ComentProcModel(ParsedComentContent):
     """Processor and memory model info (Watcom 0x9B / MS 0x9D)."""
-    processor: str
-    processor_raw: str
-    mem_model: str
-    mem_model_raw: str
+    processor: WatcomProcessor | None
+    mem_model: WatcomMemModel | None
     optimized: bool
-    fp_mode: str
-    fp_mode_raw: str
+    fp_mode: WatcomFPMode | None
     pic: bool
 
 

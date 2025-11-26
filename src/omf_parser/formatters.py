@@ -625,10 +625,13 @@ class HumanFormatter:
             return "  [Obsolete] MS-DOS Version"
 
         if name == 'ComentProcModel':
+            proc = content.processor.label if content.processor else "Unknown"
+            mem = content.mem_model.label if content.mem_model else "Unknown"
+            fp = content.fp_mode.label if content.fp_mode else "Unknown"
             lines = [
-                f"  Processor: {content.processor}",
-                f"  Memory Model: {content.mem_model}",
-                f"  Floating Point: {content.fp_mode}",
+                f"  Processor: {proc}",
+                f"  Memory Model: {mem}",
+                f"  Floating Point: {fp}",
             ]
             if content.pic:
                 lines.append("  Position Independent: Yes")
