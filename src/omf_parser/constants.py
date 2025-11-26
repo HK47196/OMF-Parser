@@ -327,6 +327,23 @@ class SegCombine(LabeledEnum):
     PUBLIC_7 = EnumValue(7, "Public(7)")
 
 
+class SegAccess(LabeledEnum):
+    """SEGDEF access types (AT field in PharLap access byte).
+
+    Per PharLap Easy OMF-386 specification, the access byte contains a 2-bit
+    AT field specifying the segment's access type.
+
+    - RO: Read only (0)
+    - EO: Execute only (1)
+    - ER: Execute/read (2)
+    - RW: Read/write (3)
+    """
+    RO = EnumValue(0, "Read only")
+    EO = EnumValue(1, "Execute only")
+    ER = EnumValue(2, "Execute/read")
+    RW = EnumValue(3, "Read/write")
+
+
 class FixupLocation(LabeledEnum):
     """FIXUPP location types. Some values differ between TIS and PharLap variants.
 

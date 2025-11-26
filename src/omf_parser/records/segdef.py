@@ -2,9 +2,9 @@
 
 from . import omf_record
 from ..constants import (
-    RecordType, SegdefFlags, SegmentSize, SegAlignment, SegCombine
+    RecordType, SegdefFlags, SegmentSize, SegAlignment, SegCombine, SegAccess
 )
-from ..models import ParsedSegDef, SegAccess
+from ..models import ParsedSegDef
 from ..protocols import OMFFileProtocol
 from ..scanner import RecordInfo
 
@@ -73,8 +73,10 @@ def handle_segdef(omf: OMFFileProtocol, record: RecordInfo) -> ParsedSegDef | No
             else:
                 access_type = access_byte & SegdefFlags.ACCESS_TYPE_MASK
                 result.access_byte = access_byte
-                access_map: dict[int, SegAccess] = {0: "RO", 1: "EO", 2: "ER", 3: "RW"}
-                result.access = access_map.get(access_type)
+                access = SegAccess(access_type)
+                if access is None:
+                    raise ValueError(f"Invalid SegAccess value: {access_type}")
+                result.access = access
 
     raw_name = omf.lnames[seg_name_idx] if seg_name_idx < len(omf.lnames) else f"Seg#{len(omf.segdefs)}"
     omf.segdefs.append(raw_name)

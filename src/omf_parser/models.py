@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, ConfigDict, PlainSerializer, computed_fie
 from omf_parser.constants import (
     SegAlignment,
     SegCombine,
+    SegAccess,
     FixupLocation,
     FrameMethod,
     TargetMethod,
@@ -309,9 +310,6 @@ class ParsedLNames(ParsedRecord):
     start_index: int
     end_index: int
     names: List[LNameEntry]
-
-
-type SegAccess = Literal["RO", "EO", "ER", "RW"]
 
 
 class ParsedSegDef(ParsedRecord):
